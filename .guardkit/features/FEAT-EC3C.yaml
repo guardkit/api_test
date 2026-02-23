@@ -1,0 +1,45 @@
+id: FEAT-EC3C
+name: FastAPI app with health endpoint
+description: Bootstrap FastAPI application with production-ready structure and GET
+  /health endpoint
+created: '2026-02-23T15:04:55.431816'
+status: planned
+complexity: 3
+estimated_tasks: 3
+tasks:
+- id: TASK-70ED
+  name: Create project scaffold
+  file_path: tasks/backlog/fastapi-health-endpoint/TASK-70ED-create-project-scaffold.md
+  complexity: 3
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-C086
+  name: Implement FastAPI app init and core config
+  file_path: tasks/backlog/fastapi-health-endpoint/TASK-C086-implement-fastapi-app-init-and-core-config.md
+  complexity: 3
+  dependencies:
+  - TASK-70ED
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-ED5F
+  name: Implement health endpoint and tests
+  file_path: tasks/backlog/fastapi-health-endpoint/TASK-ED5F-implement-health-endpoint-and-tests.md
+  complexity: 3
+  dependencies:
+  - TASK-C086
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+orchestration:
+  parallel_groups:
+  - - TASK-70ED
+  - - TASK-C086
+  - - TASK-ED5F
+  estimated_duration_minutes: 99
+  recommended_parallel: 1
