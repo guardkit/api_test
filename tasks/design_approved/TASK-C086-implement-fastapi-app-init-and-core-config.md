@@ -1,55 +1,55 @@
 ---
-id: TASK-C086
-title: Implement FastAPI app init and core config
-status: blocked
+autobuild_state:
+  base_branch: main
+  current_turn: 3
+  last_updated: '2026-02-23T17:34:01.900904'
+  max_turns: 5
+  started_at: '2026-02-23T17:12:18.346083'
+  turns:
+  - coach_success: true
+    decision: feedback
+    feedback: "- Independent test verification failed:\n  SDK API error: invalid_request"
+    player_success: true
+    player_summary: Implementation via task-work delegation
+    timestamp: '2026-02-23T17:12:18.346083'
+    turn: 1
+  - coach_success: true
+    decision: feedback
+    feedback: "- Independent test verification failed:\n  SDK API error: invalid_request"
+    player_success: true
+    player_summary: Implementation via task-work delegation
+    timestamp: '2026-02-23T17:23:39.029853'
+    turn: 2
+  - coach_success: true
+    decision: feedback
+    feedback: "- Independent test verification failed:\n  SDK API error: invalid_request"
+    player_success: true
+    player_summary: Implementation via task-work delegation
+    timestamp: '2026-02-23T17:29:37.159541'
+    turn: 3
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-EC3C
+complexity: 3
 created: 2026-02-23 00:00:00+00:00
-updated: 2026-02-23 00:00:00+00:00
+dependencies:
+- TASK-70ED
+feature_id: FEAT-HEALTH
+id: TASK-C086
+implementation_mode: task-work
+parent_review: TASK-21B6
 priority: high
-task_type: feature
+status: design_approved
 tags:
 - fastapi
 - config
 - app-init
-complexity: 3
-parent_review: TASK-21B6
-feature_id: FEAT-HEALTH
-wave: 2
-implementation_mode: task-work
-dependencies:
-- TASK-70ED
+task_type: feature
 test_results:
-  status: pending
   coverage: null
   last_run: null
-autobuild_state:
-  current_turn: 3
-  max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-EC3C
-  base_branch: main
-  started_at: '2026-02-23T17:12:18.346083'
-  last_updated: '2026-02-23T17:34:01.900904'
-  turns:
-  - turn: 1
-    decision: feedback
-    feedback: "- Independent test verification failed:\n  SDK API error: invalid_request"
-    timestamp: '2026-02-23T17:12:18.346083'
-    player_summary: Implementation via task-work delegation
-    player_success: true
-    coach_success: true
-  - turn: 2
-    decision: feedback
-    feedback: "- Independent test verification failed:\n  SDK API error: invalid_request"
-    timestamp: '2026-02-23T17:23:39.029853'
-    player_summary: Implementation via task-work delegation
-    player_success: true
-    coach_success: true
-  - turn: 3
-    decision: feedback
-    feedback: "- Independent test verification failed:\n  SDK API error: invalid_request"
-    timestamp: '2026-02-23T17:29:37.159541'
-    player_summary: Implementation via task-work delegation
-    player_success: true
-    coach_success: true
+  status: pending
+title: Implement FastAPI app init and core config
+updated: 2026-02-23 00:00:00+00:00
+wave: 2
 ---
 
 # Task: Implement FastAPI app init and core config
