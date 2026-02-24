@@ -1,21 +1,25 @@
 ---
-id: TASK-ADOC-002
-title: Add response examples to Pydantic schemas
-task_type: feature
-parent_review: TASK-REV-7158
-feature_id: FEAT-7158
-wave: 2
-implementation_mode: task-work
 complexity: 3
 dependencies:
-  - TASK-ADOC-001
-status: pending
+- TASK-ADOC-001
+feature_id: FEAT-7158
+id: TASK-ADOC-002
+implementation_mode: task-work
+parent_review: TASK-REV-7158
 priority: high
-tags: [documentation, pydantic, schemas, examples]
+status: design_approved
+tags:
+- documentation
+- pydantic
+- schemas
+- examples
+task_type: feature
 test_results:
-  status: pending
   coverage: null
   last_run: null
+  status: pending
+title: Add response examples to Pydantic schemas
+wave: 2
 ---
 
 # Task: Add response examples to Pydantic schemas
