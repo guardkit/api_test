@@ -8,14 +8,33 @@ wave: 2
 implementation_mode: task-work
 complexity: 3
 dependencies:
-  - TASK-ADOC-001
-status: pending
+- TASK-ADOC-001
+status: in_review
 priority: high
-tags: [documentation, pydantic, schemas, examples]
+tags:
+- documentation
+- pydantic
+- schemas
+- examples
 test_results:
   status: pending
   coverage: null
   last_run: null
+autobuild_state:
+  current_turn: 1
+  max_turns: 5
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-B2D7
+  base_branch: main
+  started_at: '2026-02-24T14:22:24.321107'
+  last_updated: '2026-02-24T14:29:12.098540'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-02-24T14:22:24.321107'
+    player_summary: Implementation via task-work delegation
+    player_success: true
+    coach_success: true
 ---
 
 # Task: Add response examples to Pydantic schemas

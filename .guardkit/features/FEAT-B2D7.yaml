@@ -3,7 +3,7 @@ name: Add comprehensive API documentation
 description: Add Swagger UI, ReDoc, OpenAPI schema customization with API versioning
   headers and response examples using FastAPI built-in capabilities
 created: '2026-02-24T14:07:10.767450'
-status: in_progress
+status: completed
 complexity: 3
 estimated_tasks: 3
 tasks:
@@ -12,30 +12,36 @@ tasks:
   file_path: tasks/backlog/api-documentation/TASK-ADOC-001-customize-openapi-metadata-and-docs-config.md
   complexity: 3
   dependencies: []
-  status: in_progress
+  status: completed
   implementation_mode: direct
   estimated_minutes: 33
   requires_infrastructure: []
-  result: null
-  turns_completed: 0
-  current_turn: 1
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+  turns_completed: 1
+  current_turn: 0
   started_at: '2026-02-24T14:13:28.313033'
-  completed_at: null
+  completed_at: '2026-02-24T14:22:24.310247'
 - id: TASK-ADOC-002
   name: Add response examples to schemas
   file_path: tasks/backlog/api-documentation/TASK-ADOC-002-add-response-examples-to-schemas.md
   complexity: 3
   dependencies:
   - TASK-ADOC-001
-  status: pending
+  status: completed
   implementation_mode: direct
   estimated_minutes: 33
   requires_infrastructure: []
-  result: null
-  turns_completed: 0
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+  turns_completed: 1
   current_turn: 0
-  started_at: null
-  completed_at: null
+  started_at: '2026-02-24T14:22:24.316154'
+  completed_at: '2026-02-24T14:29:12.099926'
 - id: TASK-ADOC-003
   name: Add API versioning headers middleware
   file_path: tasks/backlog/api-documentation/TASK-ADOC-003-add-api-versioning-middleware.md
@@ -43,15 +49,18 @@ tasks:
   dependencies:
   - TASK-ADOC-001
   - TASK-ADOC-002
-  status: pending
+  status: completed
   implementation_mode: direct
   estimated_minutes: 33
   requires_infrastructure: []
-  result: null
-  turns_completed: 0
+  result:
+    total_turns: 2
+    final_decision: approved
+    error: null
+  turns_completed: 2
   current_turn: 0
-  started_at: null
-  completed_at: null
+  started_at: '2026-02-24T14:29:12.112415'
+  completed_at: '2026-02-24T14:40:21.474619'
 orchestration:
   parallel_groups:
   - - TASK-ADOC-001
@@ -61,13 +70,16 @@ orchestration:
   recommended_parallel: 1
 execution:
   started_at: '2026-02-24T14:13:28.309756'
-  completed_at: null
+  completed_at: '2026-02-24T14:40:21.479326'
   worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-B2D7
-  total_turns: 0
-  tasks_completed: 0
+  total_turns: 4
+  tasks_completed: 3
   tasks_failed: 0
-  current_wave: 1
-  completed_waves: []
-  last_updated: '2026-02-24T14:13:28.313039'
+  current_wave: 3
+  completed_waves:
+  - 1
+  - 2
+  - 3
+  last_updated: '2026-02-24T14:40:21.476822'
   archived_at: null
   archived_to: null
