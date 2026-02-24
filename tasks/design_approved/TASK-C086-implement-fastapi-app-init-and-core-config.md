@@ -1,33 +1,4 @@
 ---
-autobuild_state:
-  base_branch: main
-  current_turn: 3
-  last_updated: '2026-02-23T17:34:01.900904'
-  max_turns: 5
-  started_at: '2026-02-23T17:12:18.346083'
-  turns:
-  - coach_success: true
-    decision: feedback
-    feedback: "- Independent test verification failed:\n  SDK API error: invalid_request"
-    player_success: true
-    player_summary: Implementation via task-work delegation
-    timestamp: '2026-02-23T17:12:18.346083'
-    turn: 1
-  - coach_success: true
-    decision: feedback
-    feedback: "- Independent test verification failed:\n  SDK API error: invalid_request"
-    player_success: true
-    player_summary: Implementation via task-work delegation
-    timestamp: '2026-02-23T17:23:39.029853'
-    turn: 2
-  - coach_success: true
-    decision: feedback
-    feedback: "- Independent test verification failed:\n  SDK API error: invalid_request"
-    player_success: true
-    player_summary: Implementation via task-work delegation
-    timestamp: '2026-02-23T17:29:37.159541'
-    turn: 3
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-EC3C
 complexity: 3
 created: 2026-02-23 00:00:00+00:00
 dependencies:
