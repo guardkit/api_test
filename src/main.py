@@ -23,8 +23,30 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.1.0",
+    version=settings.app_version,
     debug=settings.debug,
+    description=settings.app_description,
+    summary=settings.app_summary,
+    contact={
+        "name": settings.app_contact_name,
+        "url": settings.app_contact_url,
+        "email": settings.app_contact_email,
+    },
+    license_info={
+        "name": settings.app_license_name,
+        "url": settings.app_license_url,
+    },
+    terms_of_service=settings.app_terms_of_service,
+    openapi_tags=[
+        {
+            "name": "health",
+            "description": "Health check and status endpoints",
+        },
+    ],
+    swagger_ui_parameters={
+        "defaultModelsExpandDepth": -1,
+        "tryItOutEnabled": True,
+    },
     lifespan=lifespan,
 )
 
