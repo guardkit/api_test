@@ -1,23 +1,26 @@
 ---
-id: TASK-ED5F
-title: Implement health endpoint and tests
-status: backlog
-created: 2026-02-23T00:00:00Z
-updated: 2026-02-23T00:00:00Z
-priority: high
-task_type: feature
-tags: [fastapi, health, testing]
 complexity: 3
-parent_review: TASK-21B6
-feature_id: FEAT-HEALTH
-wave: 3
-implementation_mode: task-work
+created: 2026-02-23 00:00:00+00:00
 dependencies:
-  - TASK-C086
+- TASK-C086
+feature_id: FEAT-HEALTH
+id: TASK-ED5F
+implementation_mode: task-work
+parent_review: TASK-21B6
+priority: high
+status: design_approved
+tags:
+- fastapi
+- health
+- testing
+task_type: feature
 test_results:
-  status: pending
   coverage: null
   last_run: null
+  status: pending
+title: Implement health endpoint and tests
+updated: 2026-02-23 00:00:00+00:00
+wave: 3
 ---
 
 # Task: Implement health endpoint and tests

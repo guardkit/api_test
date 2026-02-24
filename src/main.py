@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.core.config import settings
+from src.health.router import router as health_router
 
 
 @asynccontextmanager
@@ -26,3 +27,6 @@ app = FastAPI(
     debug=settings.debug,
     lifespan=lifespan,
 )
+
+# Include health router with empty prefix so endpoint is at /health
+app.include_router(health_router)
