@@ -1,54 +1,26 @@
 ---
-id: TASK-C086
-title: Implement FastAPI app init and core config
-status: in_review
+complexity: 3
 created: 2026-02-23 00:00:00+00:00
-updated: 2026-02-23 00:00:00+00:00
+dependencies:
+- TASK-70ED
+feature_id: FEAT-HEALTH
+id: TASK-C086
+implementation_mode: task-work
+parent_review: TASK-21B6
 priority: high
-task_type: feature
+status: design_approved
 tags:
 - fastapi
 - config
 - app-init
-complexity: 3
-parent_review: TASK-21B6
-feature_id: FEAT-HEALTH
-wave: 2
-implementation_mode: task-work
-dependencies:
-- TASK-70ED
+task_type: feature
 test_results:
-  status: pending
   coverage: null
   last_run: null
-autobuild_state:
-  current_turn: 2
-  max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-EC3C
-  base_branch: main
-  started_at: '2026-02-24T13:12:01.629216'
-  last_updated: '2026-02-24T13:31:04.148456'
-  turns:
-  - turn: 1
-    decision: feedback
-    feedback: "- Not all acceptance criteria met:\n  \u2022 `src/core/config.py` defines\
-      \ a `Settings` class using `pydantic-settings` (`BaseSettings`) with at m\n\
-      \  \u2022 Settings reads from environment / `.env` file via `model_config =\
-      \ SettingsConfigDict(env_file=\".env\"\n  \u2022 A module-level `settings =\
-      \ Settings()` singleton is exported\n  \u2022 `src/main.py` creates the `FastAPI`\
-      \ app instance using `settings.app_name`\n  \u2022 App includes standard metadata:\
-      \ `title`, `version=\"0.1.0\"`, `debug=settings.debug`\n  (3 more)"
-    timestamp: '2026-02-24T13:12:01.629216'
-    player_summary: Implementation via task-work delegation
-    player_success: true
-    coach_success: true
-  - turn: 2
-    decision: approve
-    feedback: null
-    timestamp: '2026-02-24T13:23:17.037241'
-    player_summary: Implementation via task-work delegation
-    player_success: true
-    coach_success: true
+  status: pending
+title: Implement FastAPI app init and core config
+updated: 2026-02-23 00:00:00+00:00
+wave: 2
 ---
 
 # Task: Implement FastAPI app init and core config
