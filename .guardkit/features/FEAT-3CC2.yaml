@@ -1,0 +1,68 @@
+id: FEAT-3CC2
+name: Structured JSON Logging
+description: Implement structured JSON logging with request correlation IDs, middleware
+  for request/response logging, and configurable log levels per environment
+created: '2026-02-24T15:16:35.966410'
+status: planned
+complexity: 5
+estimated_tasks: 5
+tasks:
+- id: TASK-LOG-001
+  name: Add logging settings to config
+  file_path: tasks/backlog/structured-json-logging/TASK-LOG-001-add-logging-settings-to-config.md
+  complexity: 2
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 22
+- id: TASK-LOG-002
+  name: Create structlog configuration module
+  file_path: tasks/backlog/structured-json-logging/TASK-LOG-002-create-structlog-configuration-module.md
+  complexity: 5
+  dependencies:
+  - TASK-LOG-001
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-LOG-003
+  name: Create correlation ID and request logging middleware
+  file_path: tasks/backlog/structured-json-logging/TASK-LOG-003-create-correlation-id-and-request-logging-middleware.md
+  complexity: 6
+  dependencies:
+  - TASK-LOG-002
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-LOG-004
+  name: Integrate logging config with health endpoint
+  file_path: tasks/backlog/structured-json-logging/TASK-LOG-004-integrate-logging-config-with-health-endpoint.md
+  complexity: 3
+  dependencies:
+  - TASK-LOG-002
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-LOG-005
+  name: Add comprehensive logging tests
+  file_path: tasks/backlog/structured-json-logging/TASK-LOG-005-add-comprehensive-logging-tests.md
+  complexity: 5
+  dependencies:
+  - TASK-LOG-003
+  - TASK-LOG-004
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+orchestration:
+  parallel_groups:
+  - - TASK-LOG-001
+  - - TASK-LOG-002
+  - - TASK-LOG-003
+    - TASK-LOG-004
+  - - TASK-LOG-005
+  estimated_duration_minutes: 318
+  recommended_parallel: 2
