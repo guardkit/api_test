@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.core.config import settings
+from src.core.middleware import APIVersionHeaderMiddleware
 from src.health.router import router as health_router
 
 
@@ -25,7 +26,7 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     debug=settings.debug,
-    description=settings.app_description,
+    description=settings.app_description + "\n\n> All responses include an `X-API-Version` header indicating the current API version.",
     summary=settings.app_summary,
     contact={
         "name": settings.app_contact_name,
@@ -49,6 +50,9 @@ app = FastAPI(
     },
     lifespan=lifespan,
 )
+
+# Register middleware
+app.add_middleware(APIVersionHeaderMiddleware)
 
 # Include health router with empty prefix so endpoint is at /health
 app.include_router(health_router)

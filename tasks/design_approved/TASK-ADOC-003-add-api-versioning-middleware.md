@@ -1,22 +1,26 @@
 ---
-id: TASK-ADOC-003
-title: Add API versioning headers middleware
-task_type: feature
-parent_review: TASK-REV-7158
-feature_id: FEAT-7158
-wave: 3
-implementation_mode: task-work
 complexity: 3
 dependencies:
-  - TASK-ADOC-001
-  - TASK-ADOC-002
-status: pending
+- TASK-ADOC-001
+- TASK-ADOC-002
+feature_id: FEAT-7158
+id: TASK-ADOC-003
+implementation_mode: task-work
+parent_review: TASK-REV-7158
 priority: high
-tags: [documentation, versioning, middleware, headers]
+status: design_approved
+tags:
+- documentation
+- versioning
+- middleware
+- headers
+task_type: feature
 test_results:
-  status: pending
   coverage: null
   last_run: null
+  status: pending
+title: Add API versioning headers middleware
+wave: 3
 ---
 
 # Task: Add API versioning headers middleware
