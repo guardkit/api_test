@@ -1,24 +1,28 @@
 ---
-id: TASK-LOG-002
-title: Create structlog configuration module
-task_type: feature
-parent_review: TASK-REV-E19E
-feature_id: FEAT-LOG
-status: pending
-priority: high
 complexity: 5
-wave: 2
-implementation_mode: task-work
-dependencies:
-  - TASK-LOG-001
-estimated_minutes: 60
-tags: [logging, structlog, config]
 consumer_context:
-  - task: TASK-LOG-001
-    consumes: LOGGING_SETTINGS
-    framework: "structlog processor pipeline"
-    driver: "structlog"
-    format_note: "log_level must be a valid Python logging level string (DEBUG/INFO/WARNING/ERROR/CRITICAL); log_format must be 'json' or 'console'"
+- consumes: LOGGING_SETTINGS
+  driver: structlog
+  format_note: log_level must be a valid Python logging level string (DEBUG/INFO/WARNING/ERROR/CRITICAL);
+    log_format must be 'json' or 'console'
+  framework: structlog processor pipeline
+  task: TASK-LOG-001
+dependencies:
+- TASK-LOG-001
+estimated_minutes: 60
+feature_id: FEAT-LOG
+id: TASK-LOG-002
+implementation_mode: task-work
+parent_review: TASK-REV-E19E
+priority: high
+status: design_approved
+tags:
+- logging
+- structlog
+- config
+task_type: feature
+title: Create structlog configuration module
+wave: 2
 ---
 
 # Task: Create structlog configuration module

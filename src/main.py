@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.core.config import settings
+from src.core.logging import setup_logging
 from src.core.middleware import APIVersionHeaderMiddleware
 from src.health.router import router as health_router
 
@@ -17,8 +18,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Lifespan context manager for startup/shutdown events.
 
-    Currently a no-op, but provides the pattern for future startup/shutdown logic.
+    On startup, configures structlog logging infrastructure.
+    On shutdown, performs any cleanup if needed.
     """
+    # Configure logging on startup
+    setup_logging()
     yield
 
 
