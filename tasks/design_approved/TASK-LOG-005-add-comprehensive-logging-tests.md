@@ -1,19 +1,21 @@
 ---
-id: TASK-LOG-005
-title: Add comprehensive tests for logging components
-task_type: testing
-parent_review: TASK-REV-E19E
-feature_id: FEAT-LOG
-status: pending
-priority: high
 complexity: 5
-wave: 4
-implementation_mode: task-work
 dependencies:
-  - TASK-LOG-003
-  - TASK-LOG-004
+- TASK-LOG-003
+- TASK-LOG-004
 estimated_minutes: 60
-tags: [logging, testing]
+feature_id: FEAT-LOG
+id: TASK-LOG-005
+implementation_mode: task-work
+parent_review: TASK-REV-E19E
+priority: high
+status: design_approved
+tags:
+- logging
+- testing
+task_type: testing
+title: Add comprehensive tests for logging components
+wave: 4
 ---
 
 # Task: Add comprehensive tests for logging components
