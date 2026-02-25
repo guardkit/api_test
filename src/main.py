@@ -9,7 +9,11 @@ from fastapi import FastAPI
 
 from src.core.config import settings
 from src.core.logging import setup_logging
-from src.core.middleware import APIVersionHeaderMiddleware
+from src.core.middleware import (
+    APIVersionHeaderMiddleware,
+    CorrelationIDMiddleware,
+    RequestLoggingMiddleware,
+)
 from src.health.router import router as health_router
 
 
@@ -55,7 +59,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Register middleware
+# Register middleware (order matters: CorrelationID first, then RequestLogging, then APIVersion)
+app.add_middleware(CorrelationIDMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(APIVersionHeaderMiddleware)
 
 # Include health router with empty prefix so endpoint is at /health

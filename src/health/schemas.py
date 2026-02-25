@@ -11,10 +11,12 @@ class HealthResponse(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
-                {"status": "ok", "version": "0.1.0"},
+                {"status": "ok", "version": "0.1.0", "log_level": "INFO", "log_format": "json"},
             ]
         }
     )
 
     status: str = Field(description="Service health status")
     version: str = Field(description="API version string")
+    log_level: str = Field(description="Current configured log level (e.g., INFO, DEBUG)")
+    log_format: str = Field(description="Current configured log format (e.g., json, console)")

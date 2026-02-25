@@ -33,7 +33,21 @@ class TestHealthResponseSchema:
 
         assert isinstance(examples, list)
         assert len(examples) >= 1
-        assert examples[0] == {"status": "ok", "version": "0.1.0"}
+        assert examples[0] == {"status": "ok", "version": "0.1.0", "log_level": "INFO", "log_format": "json"}
+
+    def test_health_response_has_logging_fields(self) -> None:
+        """Test that HealthResponse includes log_level and log_format fields."""
+        schema = HealthResponse.model_json_schema()
+
+        # Check log_level field exists with description
+        assert "log_level" in schema["properties"]
+        assert "description" in schema["properties"]["log_level"]
+        assert schema["properties"]["log_level"]["description"] == "Current configured log level (e.g., INFO, DEBUG)"
+
+        # Check log_format field exists with description
+        assert "log_format" in schema["properties"]
+        assert "description" in schema["properties"]["log_format"]
+        assert schema["properties"]["log_format"]["description"] == "Current configured log format (e.g., json, console)"
 
     def test_health_response_has_field_descriptions(self) -> None:
         """Test that HealthResponse fields have descriptions via Field()."""
@@ -63,8 +77,31 @@ class TestHealthResponseSchema:
 
         assert "examples" in health_response_schema
         assert health_response_schema["examples"] == [
-            {"status": "ok", "version": "0.1.0"}
+            {"status": "ok", "version": "0.1.0", "log_level": "INFO", "log_format": "json"}
         ]
+
+    def test_openapi_schema_includes_logging_fields(self, client: TestClient) -> None:
+        """Test that OpenAPI schema includes log_level and log_format fields."""
+        response = client.get("/openapi.json")
+        assert response.status_code == 200
+
+        openapi_schema = response.json()
+        components = openapi_schema.get("components", {})
+        schemas = components.get("schemas", {})
+
+        assert "HealthResponse" in schemas
+        health_response_schema = schemas["HealthResponse"]
+        properties = health_response_schema.get("properties", {})
+
+        # Verify log_level field is present
+        assert "log_level" in properties
+        assert properties["log_level"]["type"] == "string"
+        assert properties["log_level"]["description"] == "Current configured log level (e.g., INFO, DEBUG)"
+
+        # Verify log_format field is present
+        assert "log_format" in properties
+        assert properties["log_format"]["type"] == "string"
+        assert properties["log_format"]["description"] == "Current configured log format (e.g., json, console)"
 
     def test_openapi_path_contains_response_descriptions(self, client: TestClient) -> None:
         """Test that OpenAPI paths contain response descriptions."""

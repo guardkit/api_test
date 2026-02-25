@@ -15,7 +15,7 @@ router = APIRouter()
     response_model=HealthResponse,
     tags=["health"],
     summary="Check service health",
-    description="Returns the current health status and version of the API service.",
+    description="Returns the current health status, version, and logging configuration of the API service.",
     responses={
         200: {"description": "Service is healthy"},
     },
@@ -25,4 +25,6 @@ async def health_check() -> HealthResponse:
     return HealthResponse(
         status="ok",
         version=settings.app_version,
+        log_level=settings.log_level,
+        log_format=settings.log_format,
     )

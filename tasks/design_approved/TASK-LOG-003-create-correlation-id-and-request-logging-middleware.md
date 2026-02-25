@@ -1,24 +1,28 @@
 ---
-id: TASK-LOG-003
-title: Create correlation ID and request logging middleware
-task_type: feature
-parent_review: TASK-REV-E19E
-feature_id: FEAT-LOG
-status: pending
-priority: high
 complexity: 6
-wave: 3
-implementation_mode: task-work
-dependencies:
-  - TASK-LOG-002
-estimated_minutes: 90
-tags: [logging, middleware, correlation-id]
 consumer_context:
-  - task: TASK-LOG-002
-    consumes: STRUCTLOG_LOGGER
-    framework: "structlog bound logger via get_logger()"
-    driver: "structlog"
-    format_note: "Logger must be obtained via get_logger() from src.core.logging; correlation ID must be bound via structlog.contextvars.bind_contextvars()"
+- consumes: STRUCTLOG_LOGGER
+  driver: structlog
+  format_note: Logger must be obtained via get_logger() from src.core.logging; correlation
+    ID must be bound via structlog.contextvars.bind_contextvars()
+  framework: structlog bound logger via get_logger()
+  task: TASK-LOG-002
+dependencies:
+- TASK-LOG-002
+estimated_minutes: 90
+feature_id: FEAT-LOG
+id: TASK-LOG-003
+implementation_mode: task-work
+parent_review: TASK-REV-E19E
+priority: high
+status: design_approved
+tags:
+- logging
+- middleware
+- correlation-id
+task_type: feature
+title: Create correlation ID and request logging middleware
+wave: 3
 ---
 
 # Task: Create correlation ID and request logging middleware
