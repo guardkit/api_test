@@ -17,14 +17,13 @@ tasks:
   estimated_minutes: 22
   requires_infrastructure: []
   result:
-    total_turns: 3
-    final_decision: unrecoverable_stall
-    error: Unrecoverable stall detected after 3 turn(s). AutoBuild cannot make forward
-      progress.
-  turns_completed: 3
+    total_turns: 0
+    final_decision: timeout
+    error: Task TASK-LOG-001 timed out after 2400s (40 min)
+  turns_completed: 0
   current_turn: 0
-  started_at: '2026-02-24T15:35:03.658557'
-  completed_at: '2026-02-24T15:52:44.720400'
+  started_at: '2026-02-24T18:22:21.310664'
+  completed_at: '2026-02-24T19:02:21.414356'
 - id: TASK-LOG-002
   name: Create structlog configuration module
   file_path: tasks/backlog/structured-json-logging/TASK-LOG-002-create-structlog-configuration-module.md
@@ -96,14 +95,14 @@ orchestration:
   estimated_duration_minutes: 318
   recommended_parallel: 2
 execution:
-  started_at: '2026-02-24T15:35:03.654460'
-  completed_at: '2026-02-24T15:52:44.723280'
+  started_at: '2026-02-24T18:22:21.306843'
+  completed_at: '2026-02-24T19:07:21.558289'
   worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-3CC2
-  total_turns: 3
+  total_turns: 0
   tasks_completed: 0
   tasks_failed: 1
   current_wave: 1
   completed_waves: []
-  last_updated: '2026-02-24T15:52:44.720412'
+  last_updated: '2026-02-24T19:02:21.414377'
   archived_at: null
   archived_to: null
