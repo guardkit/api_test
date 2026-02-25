@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0"
     debug: bool = False
 
+    # Logging configuration
+    log_level: str = "INFO"
+    log_format: str = "json"
+
     # Documentation / OpenAPI metadata
     app_description: str = (
         "A production-ready FastAPI backend template implementing best practices "
