@@ -3,7 +3,9 @@
   "turn": 2,
   "files_modified": [],
   "files_created": [],
-  "tests_written": ["tests/test_config.py"],
+  "tests_written": [
+    "tests/test_config.py"
+  ],
   "tests_run": true,
   "tests_passed": true,
   "test_output_summary": "All 7 tests passed: default log_level, default log_format, env-configurable log_level, env-configurable log_format, valid log_level values, valid log_format values, and all config values present.",
@@ -17,46 +19,6 @@
     "AC-005: .env.example updated with new variables"
   ],
   "requirements_remaining": [],
-  "completion_policies": [
-    {
-      "criterion_id": "AC-001",
-      "criterion_text": "Settings class has log_level field with default INFO",
-      "status": "complete",
-      "evidence": "src/core/config.py contains `log_level: str = \"INFO\"` on line 20",
-      "test_file": "tests/test_config.py",
-      "implementation_files": ["src/core/config.py"]
-    },
-    {
-      "criterion_id": "AC-002",
-      "criterion_text": "Settings class has log_format field with default json",
-      "status": "complete",
-      "evidence": "src/core/config.py contains `log_format: str = \"json\"` on line 21",
-      "test_file": "tests/test_config.py",
-      "implementation_files": ["src/core/config.py"]
-    },
-    {
-      "criterion_id": "AC-003",
-      "criterion_text": "log_level is configurable via LOG_LEVEL environment variable",
-      "status": "complete",
-      "evidence": "test_settings_log_level_configurable_via_env test verifies env var configuration",
-      "test_file": "tests/test_config.py",
-      "implementation_files": ["src/core/config.py"]
-    },
-    {
-      "criterion_id": "AC-004",
-      "criterion_text": "log_format is configurable via LOG_FORMAT environment variable",
-      "status": "complete",
-      "evidence": "test_settings_log_format_configurable_via_env test verifies env var configuration",
-      "test_file": "tests/test_config.py",
-      "implementation_files": ["src/core/config.py"]
-    },
-    {
-      "criterion_id": "AC-005",
-      "criterion_text": ".env.example updated with new variables",
-      "status": "complete",
-      "evidence": ".env.example contains LOG_LEVEL=INFO and LOG_FORMAT=json",
-      "test_file": "tests/test_config.py",
-      "implementation_files": [".env.example"]
-    }
-  ]
+  "implementation_mode": "direct",
+  "success": true
 }
