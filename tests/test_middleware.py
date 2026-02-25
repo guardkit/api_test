@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import time
 from typing import TYPE_CHECKING
 
 import pytest
@@ -18,6 +17,8 @@ from src.core.middleware import (
 from src.main import app
 
 if TYPE_CHECKING:
+    from starlette.types import ASGIApp
+
     from fastapi.testclient import TestClient
 
 
@@ -102,8 +103,6 @@ class TestRequestLoggingMiddleware:
     def test_health_endpoint_can_be_logged(self, client, caplog) -> None:
         """Test that health endpoint logging can be enabled."""
         # Create a test app with logging enabled for health
-        from starlette.types import ASGIApp
-
         class TestApp:
             def __init__(self) -> None:
                 self.middleware: list = []
@@ -114,6 +113,54 @@ class TestRequestLoggingMiddleware:
         # Test that skip_health_logging=False works
         middleware = RequestLoggingMiddleware(TestApp(), skip_health_logging=False)
         assert middleware.skip_health_logging is False
+
+    def test_get_client_ip_with_x_forwarded_for(self, client) -> None:
+        """Test _get_client_ip with X-Forwarded-For header."""
+        from starlette.applications import Starlette
+        from starlette.responses import PlainTextResponse
+        from starlette.routing import Route
+        from starlette.testclient import TestClient as StarletteTestClient
+
+        def homepage(request):
+            return PlainTextResponse("OK")
+
+        test_app = Starlette(routes=[Route("/test", homepage)])
+
+        # Get the middleware's _get_client_ip method
+        middleware = RequestLoggingMiddleware(test_app)
+        from fastapi import Request
+
+        # Create a mock request with X-Forwarded-For
+        class MockRequest:
+            headers = {"X-Forwarded-For": "192.168.1.1, 10.0.0.1"}
+            client = None
+
+        ip = middleware._get_client_ip(MockRequest())
+        assert ip == "192.168.1.1", (
+            "Should return first IP from X-Forwarded-For"
+        )
+
+    def test_get_client_ip_fallback_to_client(self, client) -> None:
+        """Test _get_client_ip fallback to request.client.host."""
+        from starlette.applications import Starlette
+        from starlette.responses import PlainTextResponse
+        from starlette.routing import Route
+        from starlette.testclient import TestClient as StarletteTestClient
+
+        def homepage(request):
+            return PlainTextResponse("OK")
+
+        test_app = Starlette(routes=[Route("/test", homepage)])
+        middleware = RequestLoggingMiddleware(test_app)
+
+        class MockRequest:
+            headers = {}
+            client = type("Client", (), {"host": "127.0.0.1"})()
+
+        ip = middleware._get_client_ip(MockRequest())
+        assert ip == "127.0.0.1", (
+            "Should fallback to client.host when no X-Forwarded-For"
+        )
 
 
 class TestMiddlewareIntegration:
