@@ -1,0 +1,103 @@
+id: FEAT-947C
+name: PostgreSQL Database Integration
+description: Add PostgreSQL database integration using SQLAlchemy async with connection
+  pooling, health check integration, and a sample users table with CRUD endpoints
+created: '2026-02-26T10:27:27.788561'
+status: planned
+complexity: 6
+estimated_tasks: 8
+tasks:
+- id: TASK-DB-001
+  name: Create database infrastructure
+  file_path: tasks/backlog/postgresql-database/TASK-DB-001-create-database-infrastructure.md
+  complexity: 5
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-DB-002
+  name: Set up Alembic migrations
+  file_path: tasks/backlog/postgresql-database/TASK-DB-002-setup-alembic-migrations.md
+  complexity: 4
+  dependencies:
+  - TASK-DB-001
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-DB-003
+  name: Create user model and schemas
+  file_path: tasks/backlog/postgresql-database/TASK-DB-003-create-user-model-and-schemas.md
+  complexity: 4
+  dependencies:
+  - TASK-DB-001
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-DB-004
+  name: Set up database test infrastructure
+  file_path: tasks/backlog/postgresql-database/TASK-DB-004-setup-test-infrastructure.md
+  complexity: 5
+  dependencies:
+  - TASK-DB-001
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-DB-005
+  name: Create initial migration
+  file_path: tasks/backlog/postgresql-database/TASK-DB-005-create-initial-migration.md
+  complexity: 2
+  dependencies:
+  - TASK-DB-002
+  - TASK-DB-003
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 22
+- id: TASK-DB-006
+  name: Implement CRUD operations
+  file_path: tasks/backlog/postgresql-database/TASK-DB-006-implement-crud-operations.md
+  complexity: 5
+  dependencies:
+  - TASK-DB-003
+  - TASK-DB-004
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 75
+- id: TASK-DB-007
+  name: Implement users API router
+  file_path: tasks/backlog/postgresql-database/TASK-DB-007-implement-users-api-router.md
+  complexity: 6
+  dependencies:
+  - TASK-DB-006
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+- id: TASK-DB-008
+  name: Integrate database health check
+  file_path: tasks/backlog/postgresql-database/TASK-DB-008-integrate-database-health-check.md
+  complexity: 4
+  dependencies:
+  - TASK-DB-001
+  - TASK-DB-004
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+orchestration:
+  parallel_groups:
+  - - TASK-DB-001
+  - - TASK-DB-002
+    - TASK-DB-003
+    - TASK-DB-004
+  - - TASK-DB-005
+    - TASK-DB-006
+    - TASK-DB-008
+  - - TASK-DB-007
+  estimated_duration_minutes: 510
+  recommended_parallel: 3
