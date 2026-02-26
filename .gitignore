@@ -1,0 +1,40 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# mypy
+.mypy_cache/
+
+# ruff
+.ruff_cache/
+
+# GuardKit worktrees
+.guardkit/worktrees/
