@@ -85,5 +85,5 @@ app.add_middleware(APIVersionHeaderMiddleware)
 # Include health router with empty prefix so endpoint is at /health
 app.include_router(health_router)
 
-# Include users router with /users prefix
-app.include_router(users_router, prefix="/users", tags=["users"])
+# Include users router (prefix already set in router.py)
+app.include_router(users_router, tags=["users"])

@@ -12,11 +12,11 @@ from src.users import crud
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import UserCreate, UserList, UserPublic, UserUpdate
 
-router = APIRouter(redirect_slashes=False)
+router = APIRouter(prefix="/users", redirect_slashes=False)
 
 
 @router.post(
-    "/",
+    "",
     response_model=UserPublic,
     status_code=201,
     tags=["users"],
@@ -36,7 +36,7 @@ async def create_user(
 
 
 @router.get(
-    "/",
+    "",
     response_model=UserList,
     tags=["users"],
     summary="List users with pagination",

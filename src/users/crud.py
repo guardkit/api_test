@@ -144,6 +144,6 @@ async def count_users(db: AsyncSession) -> int:
     Returns:
         Total number of users in the database.
     """
-    stmt = select(select(func.count()).select_from(User).scalar_subquery())
+    stmt = select(func.count()).select_from(User)
     result = await db.execute(stmt)
-    return result.scalar_one_or_none() or 0
+    return result.scalar_one() or 0
