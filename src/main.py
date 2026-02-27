@@ -16,6 +16,7 @@ from src.core.middleware import (
 )
 from src.db.session import dispose_engine, init_engine
 from src.health.router import router as health_router
+from src.users.router import router as users_router
 
 
 @asynccontextmanager
@@ -43,6 +44,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
+    redirect_slashes=False,
     title=settings.app_name,
     version=settings.app_version,
     debug=settings.debug,
@@ -63,6 +65,10 @@ app = FastAPI(
             "name": "health",
             "description": "Health check and status endpoints",
         },
+        {
+            "name": "users",
+            "description": "User management endpoints",
+        },
     ],
     swagger_ui_parameters={
         "defaultModelsExpandDepth": -1,
@@ -78,3 +84,6 @@ app.add_middleware(APIVersionHeaderMiddleware)
 
 # Include health router with empty prefix so endpoint is at /health
 app.include_router(health_router)
+
+# Include users router with /users prefix
+app.include_router(users_router, prefix="/users", tags=["users"])
