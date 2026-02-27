@@ -1,27 +1,4 @@
 ---
-autobuild_state:
-  base_branch: main
-  current_turn: 2
-  last_updated: '2026-02-26T16:07:08.745125'
-  max_turns: 5
-  started_at: '2026-02-26T14:56:00.471970'
-  turns:
-  - coach_success: true
-    decision: feedback
-    feedback: "- Not all acceptance criteria met:\n  • All existing tests continue
-      to pass\n  • mypy strict mode passes on new files"
-    player_success: true
-    player_summary: Implementation via task-work delegation
-    timestamp: '2026-02-26T14:56:00.471970'
-    turn: 1
-  - coach_success: true
-    decision: approve
-    feedback: null
-    player_success: true
-    player_summary: Implementation via task-work delegation
-    timestamp: '2026-02-26T15:56:16.355768'
-    turn: 2
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-947C
 complexity: 5
 dependencies: []
 estimated_minutes: 60
