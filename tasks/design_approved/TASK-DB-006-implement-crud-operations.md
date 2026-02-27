@@ -1,45 +1,44 @@
 ---
-id: TASK-DB-006
-title: Implement CRUD operations
-task_type: feature
-parent_review: TASK-REV-4B7D
-feature_id: FEAT-DB
-wave: 3
-implementation_mode: task-work
+autobuild_state:
+  base_branch: main
+  current_turn: 2
+  last_updated: '2026-02-26T20:50:49.198728'
+  max_turns: 5
+  started_at: '2026-02-26T16:46:26.199538'
+  turns:
+  - coach_success: true
+    decision: feedback
+    feedback: "- Not all acceptance criteria met:\n  • `src/users/crud.py` created
+      with the following functions:\n  • All functions use `AsyncSession` with proper
+      `await` patterns\n  • `update_user` uses `exclude_unset=True` for partial updates\n
+      \ • `tests/users/test_crud.py` created with tests for each CRUD function\n  •
+      All CRUD tests pass using SQLite in-memory test fixtures\n  (1 more)"
+    player_success: true
+    player_summary: '[RECOVERED via git_test_detection] Original error: SDK agent
+      error: unknown'
+    timestamp: '2026-02-26T16:46:26.199538'
+    turn: 1
+  - coach_success: false
+    decision: error
+    feedback: null
+    player_success: true
+    player_summary: Implementation via task-work delegation
+    timestamp: '2026-02-26T18:17:07.342287'
+    turn: 2
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-947C
 complexity: 5
 dependencies:
 - TASK-DB-003
 - TASK-DB-004
-status: blocked
 estimated_minutes: 60
-autobuild_state:
-  current_turn: 2
-  max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-947C
-  base_branch: main
-  started_at: '2026-02-26T16:46:26.199538'
-  last_updated: '2026-02-26T20:50:49.198728'
-  turns:
-  - turn: 1
-    decision: feedback
-    feedback: "- Not all acceptance criteria met:\n  \u2022 `src/users/crud.py` created\
-      \ with the following functions:\n  \u2022 All functions use `AsyncSession` with\
-      \ proper `await` patterns\n  \u2022 `update_user` uses `exclude_unset=True`\
-      \ for partial updates\n  \u2022 `tests/users/test_crud.py` created with tests\
-      \ for each CRUD function\n  \u2022 All CRUD tests pass using SQLite in-memory\
-      \ test fixtures\n  (1 more)"
-    timestamp: '2026-02-26T16:46:26.199538'
-    player_summary: '[RECOVERED via git_test_detection] Original error: SDK agent
-      error: unknown'
-    player_success: true
-    coach_success: true
-  - turn: 2
-    decision: error
-    feedback: null
-    timestamp: '2026-02-26T18:17:07.342287'
-    player_summary: Implementation via task-work delegation
-    player_success: true
-    coach_success: false
+feature_id: FEAT-DB
+id: TASK-DB-006
+implementation_mode: task-work
+parent_review: TASK-REV-4B7D
+status: design_approved
+task_type: feature
+title: Implement CRUD operations
+wave: 3
 ---
 
 # Task: Implement CRUD Operations

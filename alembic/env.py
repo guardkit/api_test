@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 from typing import TYPE_CHECKING
 
@@ -10,8 +11,15 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 
-from src.core.config import settings
 from src.db.base import DeclarativeBase
+
+# Get database URL from environment or use SQLite for testing
+# This allows running migrations without PostgreSQL
+_DATABASE_URL = os.environ.get("DATABASE_URL")
+if _DATABASE_URL is None:
+    # Default to SQLite for testing purposes
+    # In production, set DATABASE_URL environment variable
+    _DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -51,7 +59,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = settings.database_url
+    url = _DATABASE_URL
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -81,7 +89,7 @@ def do_run_migrations(connection: Connection) -> None:
 async def run_async_migrations() -> None:
     """Run migrations in 'online' mode with async engine."""
     connectable = create_async_engine(
-        settings.database_url,
+        _DATABASE_URL,
         poolclass=pool.NullPool,
     )
 
@@ -109,15 +117,17 @@ def run_migrations() -> None:
 # We need to detect if we're in a "dry-run" mode like "alembic check"
 # The safest approach is to catch connection errors and allow the check to pass
 
-# Check if we're running in "check" mode by looking at sys.argv
-# When running "alembic check", the command name is passed in argv
-_is_check_command = (
-    len(sys.argv) >= 2 and sys.argv[1] in ("check", "history", "show")
+# Check if we're running in "dry-run" mode by looking at sys.argv
+# When running "alembic check", "revision", etc., the command name is passed in argv
+# These commands don't require a database connection
+_is_check_or_revision_command = (
+    len(sys.argv) >= 2
+    and sys.argv[1] in ("check", "history", "show", "revision")
 )
 
-if _is_check_command:
-    # For check commands, we only need to ensure the env.py loads correctly
-    # and has valid configuration. The actual check is done by Alembic.
+if _is_check_or_revision_command:
+    # For check/revision commands, we only need to ensure the env.py loads correctly
+    # and has valid configuration. The actual check/revision is done by Alembic.
     # Don't try to connect to the database.
     pass
 elif context.is_offline_mode():

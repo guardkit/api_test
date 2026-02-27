@@ -20,3 +20,4 @@ class HealthResponse(BaseModel):
     version: str = Field(description="API version string")
     log_level: str = Field(description="Current configured log level (e.g., INFO, DEBUG)")
     log_format: str = Field(description="Current configured log format (e.g., json, console)")
+    database: str = Field(description="Database connection status (e.g., connected, unavailable)")
