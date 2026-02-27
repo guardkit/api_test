@@ -14,6 +14,7 @@ from src.core.middleware import (
     CorrelationIDMiddleware,
     RequestLoggingMiddleware,
 )
+from src.db.session import dispose_engine, init_engine
 from src.health.router import router as health_router
 
 
@@ -22,12 +23,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Lifespan context manager for startup/shutdown events.
 
-    On startup, configures structlog logging infrastructure.
-    On shutdown, performs any cleanup if needed.
+    On startup:
+    - Configures structlog logging infrastructure
+    - Initializes the database engine
+
+    On shutdown:
+    - Disposes of the database engine to clean up connections
     """
     # Configure logging on startup
     setup_logging()
+
+    # Initialize database engine on startup
+    init_engine()
+
     yield
+
+    # Dispose of database engine on shutdown
+    await dispose_engine()
 
 
 app = FastAPI(
