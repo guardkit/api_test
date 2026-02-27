@@ -4,11 +4,15 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from pydantic import ValidationError
 
 from src.users.schemas import UserCreate, UserList, UserPublic, UserUpdate
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class TestUserCreate:
@@ -48,7 +52,9 @@ class TestUserCreate:
 
     def test_user_create_json_schema_extra(self) -> None:
         """Test that UserCreate includes json_schema_extra with examples."""
-        examples = UserCreate.model_config["json_schema_extra"]["examples"]
+        json_schema_extra = UserCreate.model_config.get("json_schema_extra")
+        assert isinstance(json_schema_extra, Mapping)
+        examples = json_schema_extra["examples"]
 
         assert isinstance(examples, list)
         assert len(examples) >= 1
@@ -98,7 +104,9 @@ class TestUserUpdate:
 
     def test_user_update_json_schema_extra(self) -> None:
         """Test that UserUpdate includes json_schema_extra with examples."""
-        examples = UserUpdate.model_config["json_schema_extra"]["examples"]
+        json_schema_extra = UserUpdate.model_config.get("json_schema_extra")
+        assert isinstance(json_schema_extra, Mapping)
+        examples = json_schema_extra["examples"]
 
         assert isinstance(examples, list)
         assert len(examples) >= 1
@@ -147,7 +155,9 @@ class TestUserPublic:
 
     def test_user_public_json_schema_extra(self) -> None:
         """Test that UserPublic includes json_schema_extra with examples."""
-        examples = UserPublic.model_config["json_schema_extra"]["examples"]
+        json_schema_extra = UserPublic.model_config.get("json_schema_extra")
+        assert isinstance(json_schema_extra, Mapping)
+        examples = json_schema_extra["examples"]
 
         assert isinstance(examples, list)
         assert len(examples) >= 1
@@ -212,7 +222,9 @@ class TestUserList:
 
     def test_user_list_json_schema_extra(self) -> None:
         """Test that UserList includes json_schema_extra with examples."""
-        examples = UserList.model_config["json_schema_extra"]["examples"]
+        json_schema_extra = UserList.model_config.get("json_schema_extra")
+        assert isinstance(json_schema_extra, Mapping)
+        examples = json_schema_extra["examples"]
 
         assert isinstance(examples, list)
         assert len(examples) >= 1

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 import pytest
 from sqlalchemy import select
@@ -29,14 +30,15 @@ class TestUserModel:
             await conn.run_sync(DeclarativeBase.metadata.create_all)
 
         # Create session factory
-        self.async_session_factory = sessionmaker(
+        # Using Any type to avoid SQLAlchemy mypy issues with async sessionmaker
+        self.async_session_factory: Any = sessionmaker(
             bind=self.engine,
             class_=AsyncSession,
             expire_on_commit=False,
         )
 
     @pytest.fixture
-    async def async_session(self):
+    async def async_session(self) -> AsyncSession:
         """Create an async session for testing."""
         async with self.async_session_factory() as session:
             yield session
@@ -176,8 +178,8 @@ class TestUserModelIndex:
 
     def test_user_email_index(self) -> None:
         """Test that email column has an index."""
-        # Check the index exists in the table
-        indexes = User.__table__.indexes
+        # Use type: ignore for mypy - indexes is a dynamic attribute on DeclarativeMeta
+        indexes: Any = User.__table__.indexes  # type: ignore[attr-defined]
         index_names = [idx.name for idx in indexes]
 
         # There should be a unique index on email
