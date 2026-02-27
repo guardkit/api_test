@@ -1,38 +1,38 @@
 ---
-id: TASK-DB-003
-title: Create user model and schemas
-task_type: feature
-parent_review: TASK-REV-4B7D
-feature_id: FEAT-DB
-wave: 2
-implementation_mode: task-work
+autobuild_state:
+  base_branch: main
+  current_turn: 1
+  last_updated: '2026-02-26T16:46:26.140632'
+  max_turns: 5
+  started_at: '2026-02-26T16:07:08.790010'
+  turns:
+  - coach_success: true
+    decision: approve
+    feedback: null
+    player_success: true
+    player_summary: Implementation via task-work delegation
+    timestamp: '2026-02-26T16:07:08.790010'
+    turn: 1
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-947C
 complexity: 4
-dependencies:
-- TASK-DB-001
-status: in_review
-estimated_minutes: 45
 consumer_context:
-- task: TASK-DB-001
-  consumes: DATABASE_URL
-  framework: SQLAlchemy async (DeclarativeBase)
+- consumes: DATABASE_URL
   driver: asyncpg
   format_note: URL must include +asyncpg dialect suffix for async engine; model imports
     Base from src/db/base.py
-autobuild_state:
-  current_turn: 1
-  max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-947C
-  base_branch: main
-  started_at: '2026-02-26T16:07:08.790010'
-  last_updated: '2026-02-26T16:46:26.140632'
-  turns:
-  - turn: 1
-    decision: approve
-    feedback: null
-    timestamp: '2026-02-26T16:07:08.790010'
-    player_summary: Implementation via task-work delegation
-    player_success: true
-    coach_success: true
+  framework: SQLAlchemy async (DeclarativeBase)
+  task: TASK-DB-001
+dependencies:
+- TASK-DB-001
+estimated_minutes: 45
+feature_id: FEAT-DB
+id: TASK-DB-003
+implementation_mode: task-work
+parent_review: TASK-REV-4B7D
+status: design_approved
+task_type: feature
+title: Create user model and schemas
+wave: 2
 ---
 
 # Task: Create User Model and Schemas

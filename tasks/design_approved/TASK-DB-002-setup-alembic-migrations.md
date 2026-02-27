@@ -1,31 +1,31 @@
 ---
-id: TASK-DB-002
-title: Set up Alembic migrations
-task_type: scaffolding
-parent_review: TASK-REV-4B7D
-feature_id: FEAT-DB
-wave: 2
-implementation_mode: task-work
+autobuild_state:
+  base_branch: main
+  current_turn: 1
+  last_updated: '2026-02-26T16:41:08.512294'
+  max_turns: 5
+  started_at: '2026-02-26T16:07:08.795042'
+  turns:
+  - coach_success: true
+    decision: approve
+    feedback: null
+    player_success: true
+    player_summary: Implementation via task-work delegation
+    timestamp: '2026-02-26T16:07:08.795042'
+    turn: 1
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-947C
 complexity: 4
 dependencies:
 - TASK-DB-001
-status: in_review
 estimated_minutes: 45
-autobuild_state:
-  current_turn: 1
-  max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-947C
-  base_branch: main
-  started_at: '2026-02-26T16:07:08.795042'
-  last_updated: '2026-02-26T16:41:08.512294'
-  turns:
-  - turn: 1
-    decision: approve
-    feedback: null
-    timestamp: '2026-02-26T16:07:08.795042'
-    player_summary: Implementation via task-work delegation
-    player_success: true
-    coach_success: true
+feature_id: FEAT-DB
+id: TASK-DB-002
+implementation_mode: task-work
+parent_review: TASK-REV-4B7D
+status: design_approved
+task_type: scaffolding
+title: Set up Alembic migrations
+wave: 2
 ---
 
 # Task: Set Up Alembic Migrations
