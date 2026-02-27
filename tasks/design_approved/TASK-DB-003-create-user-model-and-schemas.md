@@ -1,19 +1,4 @@
 ---
-autobuild_state:
-  base_branch: main
-  current_turn: 1
-  last_updated: '2026-02-26T16:46:26.140632'
-  max_turns: 5
-  started_at: '2026-02-26T16:07:08.790010'
-  turns:
-  - coach_success: true
-    decision: approve
-    feedback: null
-    player_success: true
-    player_summary: Implementation via task-work delegation
-    timestamp: '2026-02-26T16:07:08.790010'
-    turn: 1
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-947C
 complexity: 4
 consumer_context:
 - consumes: DATABASE_URL
