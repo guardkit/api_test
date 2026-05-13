@@ -1,15 +1,15 @@
 ---
-id: TASK-DB-001
-title: "Create database infrastructure"
-task_type: scaffolding
-parent_review: TASK-REV-4B7D
-feature_id: FEAT-DB
-wave: 1
-implementation_mode: task-work
 complexity: 5
 dependencies: []
-status: pending
 estimated_minutes: 60
+feature_id: FEAT-DB
+id: TASK-DB-001
+implementation_mode: task-work
+parent_review: TASK-REV-4B7D
+status: design_approved
+task_type: scaffolding
+title: Create database infrastructure
+wave: 1
 ---
 
 # Task: Create Database Infrastructure

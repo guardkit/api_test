@@ -1,22 +1,23 @@
 ---
-id: TASK-DB-003
-title: "Create user model and schemas"
-task_type: feature
-parent_review: TASK-REV-4B7D
-feature_id: FEAT-DB
-wave: 2
-implementation_mode: task-work
 complexity: 4
-dependencies:
-  - TASK-DB-001
-status: pending
-estimated_minutes: 45
 consumer_context:
-  - task: TASK-DB-001
-    consumes: DATABASE_URL
-    framework: "SQLAlchemy async (DeclarativeBase)"
-    driver: "asyncpg"
-    format_note: "URL must include +asyncpg dialect suffix for async engine; model imports Base from src/db/base.py"
+- consumes: DATABASE_URL
+  driver: asyncpg
+  format_note: URL must include +asyncpg dialect suffix for async engine; model imports
+    Base from src/db/base.py
+  framework: SQLAlchemy async (DeclarativeBase)
+  task: TASK-DB-001
+dependencies:
+- TASK-DB-001
+estimated_minutes: 45
+feature_id: FEAT-DB
+id: TASK-DB-003
+implementation_mode: task-work
+parent_review: TASK-REV-4B7D
+status: design_approved
+task_type: feature
+title: Create user model and schemas
+wave: 2
 ---
 
 # Task: Create User Model and Schemas

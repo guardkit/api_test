@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "json"
 
+    # Database configuration
+    database_url: str = "postgresql+asyncpg://postgres:test@localhost:5432/test"
+    db_pool_size: int = 5
+    db_max_overflow: int = 10
+    db_pool_timeout: float = 30.0
+    db_pool_recycle: int = 3600
+    db_echo: bool = False
+
     # Documentation / OpenAPI metadata
     app_description: str = (
         "A production-ready FastAPI backend template implementing best practices "

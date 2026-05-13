@@ -14,7 +14,9 @@ from src.core.middleware import (
     CorrelationIDMiddleware,
     RequestLoggingMiddleware,
 )
+from src.db.session import dispose_engine, init_engine
 from src.health.router import router as health_router
+from src.users.router import router as users_router
 
 
 @asynccontextmanager
@@ -22,15 +24,27 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Lifespan context manager for startup/shutdown events.
 
-    On startup, configures structlog logging infrastructure.
-    On shutdown, performs any cleanup if needed.
+    On startup:
+    - Configures structlog logging infrastructure
+    - Initializes the database engine
+
+    On shutdown:
+    - Disposes of the database engine to clean up connections
     """
     # Configure logging on startup
     setup_logging()
+
+    # Initialize database engine on startup
+    init_engine()
+
     yield
+
+    # Dispose of database engine on shutdown
+    await dispose_engine()
 
 
 app = FastAPI(
+    redirect_slashes=False,
     title=settings.app_name,
     version=settings.app_version,
     debug=settings.debug,
@@ -51,6 +65,10 @@ app = FastAPI(
             "name": "health",
             "description": "Health check and status endpoints",
         },
+        {
+            "name": "users",
+            "description": "User management endpoints",
+        },
     ],
     swagger_ui_parameters={
         "defaultModelsExpandDepth": -1,
@@ -66,3 +84,6 @@ app.add_middleware(APIVersionHeaderMiddleware)
 
 # Include health router with empty prefix so endpoint is at /health
 app.include_router(health_router)
+
+# Include users router (prefix already set in router.py)
+app.include_router(users_router, tags=["users"])

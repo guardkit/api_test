@@ -1,16 +1,16 @@
 ---
-id: TASK-DB-007
-title: "Implement users API router"
-task_type: feature
-parent_review: TASK-REV-4B7D
-feature_id: FEAT-DB
-wave: 4
-implementation_mode: task-work
 complexity: 6
 dependencies:
-  - TASK-DB-006
-status: pending
+- TASK-DB-006
 estimated_minutes: 75
+feature_id: FEAT-DB
+id: TASK-DB-007
+implementation_mode: task-work
+parent_review: TASK-REV-4B7D
+status: design_approved
+task_type: feature
+title: Implement users API router
+wave: 4
 ---
 
 # Task: Implement Users API Router

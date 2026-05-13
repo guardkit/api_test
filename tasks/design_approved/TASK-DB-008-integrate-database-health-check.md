@@ -1,23 +1,24 @@
 ---
-id: TASK-DB-008
-title: "Integrate database health check"
-task_type: feature
-parent_review: TASK-REV-4B7D
-feature_id: FEAT-DB
-wave: 3
-implementation_mode: task-work
 complexity: 4
-dependencies:
-  - TASK-DB-001
-  - TASK-DB-004
-status: pending
-estimated_minutes: 40
 consumer_context:
-  - task: TASK-DB-001
-    consumes: DATABASE_URL
-    framework: "SQLAlchemy async (AsyncSession)"
-    driver: "asyncpg"
-    format_note: "URL must include +asyncpg dialect suffix for async engine; health check uses get_db dependency to obtain session"
+- consumes: DATABASE_URL
+  driver: asyncpg
+  format_note: URL must include +asyncpg dialect suffix for async engine; health check
+    uses get_db dependency to obtain session
+  framework: SQLAlchemy async (AsyncSession)
+  task: TASK-DB-001
+dependencies:
+- TASK-DB-001
+- TASK-DB-004
+estimated_minutes: 40
+feature_id: FEAT-DB
+id: TASK-DB-008
+implementation_mode: task-work
+parent_review: TASK-REV-4B7D
+status: design_approved
+task_type: feature
+title: Integrate database health check
+wave: 3
 ---
 
 # Task: Integrate Database Health Check

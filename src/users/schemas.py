@@ -1,0 +1,110 @@
+"""Pydantic schemas for users."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+
+
+class UserBase(BaseModel):
+    """Base schema for user operations."""
+
+    email: EmailStr
+    full_name: str | None = None
+
+
+class UserCreate(UserBase):
+    """Schema for creating a new user."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "email": "john.doe@example.com",
+                    "full_name": "John Doe",
+                }
+            ]
+        }
+    )
+
+
+class UserUpdate(BaseModel):
+    """Schema for updating an existing user."""
+
+    email: EmailStr | None = None
+    full_name: str | None = None
+    is_active: bool | None = None
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "email": "john.doe@example.com",
+                    "full_name": "John Doe",
+                    "is_active": True,
+                }
+            ]
+        }
+    )
+
+
+class UserPublic(BaseModel):
+    """Schema for user responses."""
+
+    id: str
+    email: EmailStr
+    full_name: str | None = None
+    is_active: bool = True
+    created_at: str
+    updated_at: str
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "email": "john.doe@example.com",
+                    "full_name": "John Doe",
+                    "is_active": True,
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                }
+            ]
+        }
+    )
+
+    @field_validator("created_at", "updated_at", mode="before")
+    @classmethod
+    def format_datetime(cls, v: datetime | str) -> str:
+        """Format datetime to ISO format string."""
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
+
+
+class UserList(BaseModel):
+    """Schema for paginated user list responses."""
+
+    items: list[UserPublic]
+    total: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "items": [
+                        {
+                            "id": "550e8400-e29b-41d4-a716-446655440000",
+                            "email": "john.doe@example.com",
+                            "full_name": "John Doe",
+                            "is_active": True,
+                            "created_at": "2024-01-01T00:00:00Z",
+                            "updated_at": "2024-01-01T00:00:00Z",
+                        }
+                    ],
+                    "total": 1,
+                }
+            ]
+        }
+    )
