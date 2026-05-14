@@ -1,0 +1,23 @@
+id: FEAT-9E59
+name: GET /version endpoint
+description: Expose service version metadata at GET /version returning service, version,
+  git_sha, and build_time. Mirrors src/health/ shape.
+created: '2026-05-14T16:14:21.070269'
+status: planned
+complexity: 3
+estimated_tasks: 1
+tasks:
+- id: TASK-VER-001
+  name: Add GET /version endpoint
+  file_path: tasks/backlog/version-endpoint/TASK-VER-001-add-version-endpoint.md
+  complexity: 3
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+orchestration:
+  parallel_groups:
+  - - TASK-VER-001
+  estimated_duration_minutes: 33
+  recommended_parallel: 1
