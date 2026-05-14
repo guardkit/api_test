@@ -17,6 +17,7 @@ from src.core.middleware import (
 from src.db.session import dispose_engine, init_engine
 from src.health.router import router as health_router
 from src.users.router import router as users_router
+from src.version.router import router as version_router
 
 
 @asynccontextmanager
@@ -69,6 +70,10 @@ app = FastAPI(
             "name": "users",
             "description": "User management endpoints",
         },
+        {
+            "name": "version",
+            "description": "Service version and build metadata endpoints",
+        },
     ],
     swagger_ui_parameters={
         "defaultModelsExpandDepth": -1,
@@ -87,3 +92,6 @@ app.include_router(health_router)
 
 # Include users router (prefix already set in router.py)
 app.include_router(users_router, tags=["users"])
+
+# Include version router at /version
+app.include_router(version_router)
