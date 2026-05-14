@@ -12,7 +12,7 @@ class TestSettings:
 
     def test_settings_default_values(self) -> None:
         """Test that Settings has correct default values."""
-        assert settings.app_name == "api"
+        assert settings.app_name == "api_test"
         assert settings.app_env == "development"
         assert settings.debug is False
 

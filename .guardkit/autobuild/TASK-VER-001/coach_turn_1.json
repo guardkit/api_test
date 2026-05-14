@@ -1,0 +1,210 @@
+{
+  "task_id": "TASK-VER-001",
+  "turn": 1,
+  "decision": "approve",
+  "validation_results": {
+    "quality_gates": {
+      "tests_passed": true,
+      "coverage_met": true,
+      "arch_review_passed": true,
+      "plan_audit_passed": true,
+      "all_gates_passed": true
+    },
+    "independent_tests": {
+      "tests_passed": true,
+      "test_command": "pytest tests/test_main.py tests/version/test_router.py -v --tb=short",
+      "test_output_summary": "Result:\ntests/test_main.py::TestOpenAPIMetadata::test_openapi_tags PASSED        [ 83%]\ntests/test_main.py::TestOpenAPIMetadata::test_swagger_ui_parameters PASSED [ 88%]\ntests/test_main.py::TestOpenAPIMetadata::test_terms_of_service PASSED    [ 94%]\ntests/version/test_router.py::test_version_endpoint_returns_expected_payload PASSED [100%]\n============================== 18 passed in 0.04s ==============================",
+      "duration_seconds": 0.7264454364776611
+    },
+    "requirements": {
+      "criteria_total": 10,
+      "criteria_met": 10,
+      "all_criteria_met": true,
+      "missing": []
+    }
+  },
+  "criteria_verification": [
+    {
+      "criterion_id": "AC-001",
+      "criterion_text": "`src/core/config.py` adds two new fields to `Settings`:",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Added app_git_sha and app_build_time fields to Settings class in src/core/config.py.",
+      "notes": "Added app_git_sha and app_build_time fields to Settings class in src/core/config.py."
+    },
+    {
+      "criterion_id": "AC-002",
+      "criterion_text": "`src/core/config.py` updates the default for `app_name` from `\"api\"` to",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Added `app_git_sha: str = \"unknown\"` to Settings. pydantic-settings BaseSettings auto-binds this field to the APP_GIT_SHA environment variable using the field name (case-insensitive uppercase by default).",
+      "notes": "Added `app_git_sha: str = \"unknown\"` to Settings. pydantic-settings BaseSettings auto-binds this field to the APP_GIT_SHA environment variable using the field name (case-insensitive uppercase by default)."
+    },
+    {
+      "criterion_id": "AC-003",
+      "criterion_text": "`src/version/__init__.py` exists (empty module marker, matching",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Added `app_build_time: str = \"unknown\"` to Settings. Auto-bound to APP_BUILD_TIME env var by pydantic-settings.",
+      "notes": "Added `app_build_time: str = \"unknown\"` to Settings. Auto-bound to APP_BUILD_TIME env var by pydantic-settings."
+    },
+    {
+      "criterion_id": "AC-004",
+      "criterion_text": "`src/version/router.py` defines:",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Updated `app_name: str = \"api\"` to `app_name: str = \"api_test\"` (matches the Python package name in pyproject.toml and the service value asserted in AC-020).",
+      "notes": "Updated `app_name: str = \"api\"` to `app_name: str = \"api_test\"` (matches the Python package name in pyproject.toml and the service value asserted in AC-020)."
+    },
+    {
+      "criterion_id": "AC-005",
+      "criterion_text": "`src/main.py` imports `from src.version.router import router as version_router`",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Created empty src/version/__init__.py to mark the version feature as a Python package, matching the convention used for src/health and src/users.",
+      "notes": "Created empty src/version/__init__.py to mark the version feature as a Python package, matching the convention used for src/health and src/users."
+    },
+    {
+      "criterion_id": "AC-006",
+      "criterion_text": "`tests/version/__init__.py` exists.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Created src/version/router.py defining VersionResponse, router, and the GET /version handler.",
+      "notes": "Created src/version/router.py defining VersionResponse, router, and the GET /version handler."
+    },
+    {
+      "criterion_id": "AC-007",
+      "criterion_text": "`tests/version/test_router.py` contains a single happy-path test",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Defined inline VersionResponse(BaseModel) with four str-typed fields: service, version, git_sha, build_time (each with a Field description).",
+      "notes": "Defined inline VersionResponse(BaseModel) with four str-typed fields: service, version, git_sha, build_time (each with a Field description)."
+    },
+    {
+      "criterion_id": "AC-008",
+      "criterion_text": "`mypy src/` passes (strict).",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "Created an APIRouter and decorated the handler with @router.get(\"/version\", ...).",
+      "notes": "Created an APIRouter and decorated the handler with @router.get(\"/version\", ...)."
+    },
+    {
+      "criterion_id": "AC-009",
+      "criterion_text": "`ruff check src/ tests/` passes.",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "@router.get includes response_model=VersionResponse.",
+      "notes": "@router.get includes response_model=VersionResponse."
+    },
+    {
+      "criterion_id": "AC-010",
+      "criterion_text": "All modified files pass project-configured lint/format checks with zero",
+      "result": "verified",
+      "status": "verified",
+      "evidence": "@router.get includes tags=[\"version\"]. Also registered a matching openapi_tags entry in src/main.py.",
+      "notes": "@router.get includes tags=[\"version\"]. Also registered a matching openapi_tags entry in src/main.py."
+    }
+  ],
+  "acceptance_criteria_verification": {
+    "criteria_results": [
+      {
+        "criterion_id": "AC-001",
+        "criterion_text": "`src/core/config.py` adds two new fields to `Settings`:",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Added app_git_sha and app_build_time fields to Settings class in src/core/config.py.",
+        "notes": "Added app_git_sha and app_build_time fields to Settings class in src/core/config.py."
+      },
+      {
+        "criterion_id": "AC-002",
+        "criterion_text": "`src/core/config.py` updates the default for `app_name` from `\"api\"` to",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Added `app_git_sha: str = \"unknown\"` to Settings. pydantic-settings BaseSettings auto-binds this field to the APP_GIT_SHA environment variable using the field name (case-insensitive uppercase by default).",
+        "notes": "Added `app_git_sha: str = \"unknown\"` to Settings. pydantic-settings BaseSettings auto-binds this field to the APP_GIT_SHA environment variable using the field name (case-insensitive uppercase by default)."
+      },
+      {
+        "criterion_id": "AC-003",
+        "criterion_text": "`src/version/__init__.py` exists (empty module marker, matching",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Added `app_build_time: str = \"unknown\"` to Settings. Auto-bound to APP_BUILD_TIME env var by pydantic-settings.",
+        "notes": "Added `app_build_time: str = \"unknown\"` to Settings. Auto-bound to APP_BUILD_TIME env var by pydantic-settings."
+      },
+      {
+        "criterion_id": "AC-004",
+        "criterion_text": "`src/version/router.py` defines:",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Updated `app_name: str = \"api\"` to `app_name: str = \"api_test\"` (matches the Python package name in pyproject.toml and the service value asserted in AC-020).",
+        "notes": "Updated `app_name: str = \"api\"` to `app_name: str = \"api_test\"` (matches the Python package name in pyproject.toml and the service value asserted in AC-020)."
+      },
+      {
+        "criterion_id": "AC-005",
+        "criterion_text": "`src/main.py` imports `from src.version.router import router as version_router`",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Created empty src/version/__init__.py to mark the version feature as a Python package, matching the convention used for src/health and src/users.",
+        "notes": "Created empty src/version/__init__.py to mark the version feature as a Python package, matching the convention used for src/health and src/users."
+      },
+      {
+        "criterion_id": "AC-006",
+        "criterion_text": "`tests/version/__init__.py` exists.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Created src/version/router.py defining VersionResponse, router, and the GET /version handler.",
+        "notes": "Created src/version/router.py defining VersionResponse, router, and the GET /version handler."
+      },
+      {
+        "criterion_id": "AC-007",
+        "criterion_text": "`tests/version/test_router.py` contains a single happy-path test",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Defined inline VersionResponse(BaseModel) with four str-typed fields: service, version, git_sha, build_time (each with a Field description).",
+        "notes": "Defined inline VersionResponse(BaseModel) with four str-typed fields: service, version, git_sha, build_time (each with a Field description)."
+      },
+      {
+        "criterion_id": "AC-008",
+        "criterion_text": "`mypy src/` passes (strict).",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "Created an APIRouter and decorated the handler with @router.get(\"/version\", ...).",
+        "notes": "Created an APIRouter and decorated the handler with @router.get(\"/version\", ...)."
+      },
+      {
+        "criterion_id": "AC-009",
+        "criterion_text": "`ruff check src/ tests/` passes.",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "@router.get includes response_model=VersionResponse.",
+        "notes": "@router.get includes response_model=VersionResponse."
+      },
+      {
+        "criterion_id": "AC-010",
+        "criterion_text": "All modified files pass project-configured lint/format checks with zero",
+        "result": "verified",
+        "status": "verified",
+        "evidence": "@router.get includes tags=[\"version\"]. Also registered a matching openapi_tags entry in src/main.py.",
+        "notes": "@router.get includes tags=[\"version\"]. Also registered a matching openapi_tags entry in src/main.py."
+      }
+    ]
+  },
+  "issues": [
+    {
+      "severity": "consider",
+      "category": "seam_test_recommendation",
+      "description": "No seam tests detected for cross-boundary feature. Consider adding seam/contract/boundary tests to validate technology boundary interactions. This is a recommendation, not a blocking gate."
+    }
+  ],
+  "rationale": "All quality gates passed. Independent verification confirmed. All acceptance criteria met. Architecture context: 47 chars provided.",
+  "context_used": "## Job-Specific Context\n\nBudget: 0/5200 tokens\n",
+  "approved_without_independent_tests": false,
+  "is_configuration_error": false,
+  "environment_conditional_approval": false,
+  "honesty_verification": {
+    "verified": true,
+    "honesty_score": 1.0,
+    "discrepancy_count": 0,
+    "resolved_paths": []
+  }
+}
