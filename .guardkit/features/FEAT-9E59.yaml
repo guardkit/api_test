@@ -3,7 +3,7 @@ name: GET /version endpoint
 description: Expose service version metadata at GET /version returning service, version,
   git_sha, and build_time. Mirrors src/health/ shape.
 created: '2026-05-14T16:14:21.070269'
-status: planned
+status: completed
 complexity: 3
 estimated_tasks: 1
 tasks:
@@ -12,12 +12,36 @@ tasks:
   file_path: tasks/backlog/version-endpoint/TASK-VER-001-add-version-endpoint.md
   complexity: 3
   dependencies: []
-  status: pending
-  description: ''
+  status: completed
   implementation_mode: direct
   estimated_minutes: 33
+  requires_infrastructure: []
+  result:
+    total_turns: 1
+    final_decision: approved
+    error: null
+    deferred_reason: null
+  turns_completed: 1
+  current_turn: 0
+  started_at: '2026-07-04T11:07:11.809855'
+  completed_at: '2026-07-04T11:13:46.959537'
 orchestration:
   parallel_groups:
   - - TASK-VER-001
   estimated_duration_minutes: 33
   recommended_parallel: 1
+preflight_strict: false
+evidence_repos: []
+execution:
+  started_at: '2026-07-04T11:07:11.730439'
+  completed_at: '2026-07-04T11:13:46.964745'
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-9E59
+  total_turns: 1
+  tasks_completed: 1
+  tasks_failed: 0
+  current_wave: 1
+  completed_waves:
+  - 1
+  last_updated: '2026-07-04T11:13:46.963016'
+  archived_at: null
+  archived_to: null
