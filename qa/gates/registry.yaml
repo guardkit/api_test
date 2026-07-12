@@ -26,3 +26,15 @@ gates:
       - base_url_reachable
     pass_bar_ref: qa/pass-bar-HEALTH.yaml
     evidence_dir_pattern: qa/gates/evidence/{run_id}
+  - id: stats
+    path: qa/gates/stats_gate.py
+    target:
+      base_url_env: API_TEST_BASE_URL
+      environment_id: local
+    preconditions:
+      - suite_vs_ledger
+    preflight:
+      - tool_imports
+      - base_url_reachable
+    pass_bar_ref: qa/pass-bar-STATS.yaml
+    evidence_dir_pattern: qa/gates/evidence/{run_id}

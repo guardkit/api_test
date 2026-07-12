@@ -1,0 +1,38 @@
+# F1 · pass-bar (guardkit qa kind: pass-bar) for the STATS gate — TASK-STAT-001.
+# Pinned BEFORE implementation (Factory-2 S3c; the F1 ordering rule). The criteria
+# ARE the live gate qa/gates/stats_gate.py, grounded to the originating request
+# (Mode P cid 2dfb4ef5): three exact fields, a counter that provably counts, a
+# stable first-request time, read-only semantics.
+format_version: "2.0"
+task_id: TASK-STAT-001
+registered_at:
+  sha: "3afbbbd"
+  date: "2026-07-12"
+auth_surface_bearing: false
+preconditions:
+  - suite_green_vs_ledger
+criteria:
+  - id: C-STATS-200
+    text: "GET /stats returns HTTP 200 with the standard response headers"
+    class: machine
+    evidence_kind: json
+  - id: C-STATS-FIELDS
+    text: "body is JSON with exactly service (non-empty string), requests_served (integer), first_request_at"
+    class: machine
+    evidence_kind: json
+  - id: C-STATS-COUNTS
+    text: "requests_served strictly increases across two successive calls"
+    class: machine
+    evidence_kind: json
+  - id: C-STATS-FIRST-AT
+    text: "first_request_at is non-null once a request has been handled, stable across calls, UTC ISO-8601"
+    class: machine
+    evidence_kind: json
+  - id: C-STATS-READONLY
+    text: "POST /stats is rejected with 405"
+    class: machine
+    evidence_kind: json
+negative_paths:
+  - id: N-STATS-READONLY
+    text: "mutation attempts are rejected (POST 405) — the counter is not externally settable"
+    covered_by: C-STATS-READONLY
