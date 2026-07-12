@@ -16,6 +16,7 @@ from src.core.middleware import (
 )
 from src.db.session import dispose_engine, init_engine
 from src.health.router import router as health_router
+from src.uptime.router import router as uptime_router
 from src.users.router import router as users_router
 
 
@@ -48,7 +49,8 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     debug=settings.debug,
-    description=settings.app_description + "\n\n> All responses include an `X-API-Version` header indicating the current API version.",
+    description=settings.app_description
+    + "\n\n> All responses include an `X-API-Version` header indicating the current API version.",
     summary=settings.app_summary,
     contact={
         "name": settings.app_contact_name,
@@ -69,6 +71,10 @@ app = FastAPI(
             "name": "users",
             "description": "User management endpoints",
         },
+        {
+            "name": "uptime",
+            "description": "Service uptime information",
+        },
     ],
     swagger_ui_parameters={
         "defaultModelsExpandDepth": -1,
@@ -87,3 +93,6 @@ app.include_router(health_router)
 
 # Include users router (prefix already set in router.py)
 app.include_router(users_router, tags=["users"])
+
+# Include uptime router (prefix already set in router.py)
+app.include_router(uptime_router, tags=["uptime"])
