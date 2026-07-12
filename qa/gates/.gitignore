@@ -1,0 +1,5 @@
+# Live-gate runtime outputs (per-run, not source). The runner writes the F4
+# results envelope under history/ and evidence under evidence/<run_id>/ on every
+# run — receipts, not committed artifacts.
+history/
+evidence/

@@ -1,0 +1,37 @@
+# F3 · leak-sweep manifest (guardkit qa kind: leak-sweep)
+# Minimal-honest for this API-only service. The leak sweep is a mock/placeholder
+# deny-scan over surfaces CLAIMED REAL (LPA-05): no mock identity, placeholder
+# URL, or fabricated count may appear inside a claimed-real scope.
+#
+# NOTE on wiring: api_test serves JSON, not rendered HTML pages, and has no
+# authenticated UI surface. This manifest is therefore a documentary artifact —
+# it is deliberately NOT referenced by any gate's `leak_sweep_manifest_ref` in
+# qa/gates/registry.yaml (the live-gate sweep step needs a live page-text source
+# that an API has no honest equivalent of; wiring it would only yield an
+# environment_fail, never a real signal). When a rendered surface is added, wire
+# a gate's leak_sweep_manifest_ref to this file.
+format_version: "1.0"
+personas:
+  - id: anonymous
+    login_role: none
+    # A REFERENCE (env-var / register-key NAME), never a credential value. This
+    # API has no auth surface; the anonymous caller carries no credentials.
+    credentials_ref: API_TEST_ANON_NO_CREDENTIALS
+deny:
+  identity_strings:
+    - "Jane Doe"
+    - "John Smith"
+    - "mock"
+    - "placeholder"
+    - "lorem ipsum"
+  count_patterns:
+    - "9999"
+  url_patterns:
+    - "example.com"
+    - "localhost:9999"
+  badge_patterns:
+    - "TODO"
+surfaces:
+  - route: "/health"
+    claimed_by: "TASK-HEALTH-GATE"
+    scope: full_page

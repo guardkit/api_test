@@ -1,0 +1,8 @@
+# guardkit per-repo config.
+# qa.enforce_tier1 turns on the tier-1 QA gate refusals for THIS repo
+# (guardkit/qa/enforcement.py): suite-vs-ledger (qa/known-failures.yaml), the
+# pass-bar-before-implementation ordering check, and the known-failures diff
+# guard. Reversible: set to false (or delete this file) to restore the default
+# OFF. Env override: GUARDKIT_QA_ENFORCE_TIER1.
+qa:
+  enforce_tier1: true
