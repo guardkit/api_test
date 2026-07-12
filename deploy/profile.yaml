@@ -1,0 +1,24 @@
+# deploy-profile (guardkit qa kind: deploy-profile)
+# The per-repo deploy profile the DEPLOY stage reads to render its runbook. This
+# app is the compose front door (Rich's standing doctrine): docker-compose.yml
+# brings the app (uvicorn src.main:app on host :8901) plus its OWN postgres
+# service on the compose-internal network (no host port bind — the standing
+# api-test-pg-factory1 suite DB on :5433 is left untouched).
+#
+# secret_injection is EMPTY: the app's DATABASE_URL is wired app<->db over the
+# compose network in docker-compose.yml (non-secret local test creds), so no
+# register key is injected. Any future secret would appear here as a register
+# key NAME only (values live in the WS5 register, never in this file).
+format_version: "1.0"
+env_id: local
+compose:
+  file: docker-compose.yml
+hosts:
+  - host: localhost
+    role: app
+secret_injection: []
+models_required: []
+health_checks:
+  - cmd: "curl -fsS http://localhost:8901/health"
+    expected: "\"database\":\"connected\""
+cwd: "."
