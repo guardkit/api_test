@@ -32,7 +32,12 @@ criteria:
     text: "POST /stats is rejected with 405"
     class: machine
     evidence_kind: json
+# Negative path names are plain strings (pass-bar v2.0 schema).
+# dependency_down_degradation is mandatory for every pass bar (PB-14): for /stats
+# the honest degradation story is NO degradation — the endpoint touches no
+# database, so it stays fully available when the DB is down (spec edge-case
+# scenario "Statistics remain available when the database is unavailable").
+# mutation_rejected_read_only is covered by criterion C-STATS-READONLY (POST 405).
 negative_paths:
-  - id: N-STATS-READONLY
-    text: "mutation attempts are rejected (POST 405) — the counter is not externally settable"
-    covered_by: C-STATS-READONLY
+  - dependency_down_degradation
+  - mutation_rejected_read_only
