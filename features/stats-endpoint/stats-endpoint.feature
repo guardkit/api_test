@@ -16,6 +16,7 @@ Feature: Service Request Statistics Endpoint
 
   # Why: Core path — exactly the three fields the request names, nothing more
   # [ASSUMPTION: confidence=low] The planning document's Product Documentation section (drone fleet epics) is PO-seat template bleed and is excluded — the specification is grounded solely in the Request field
+  @task:TASK-STAT-001
   @key-example @smoke
   Scenario: Requesting statistics returns the service identity and request activity
     When I request the service statistics
@@ -25,6 +26,7 @@ Feature: Service Request Statistics Endpoint
     And the response should include when the first request was handled
 
   # Why: The counter must actually count — also the deploy-time behaviour check
+  @task:TASK-STAT-001
   @key-example @smoke
   Scenario: The served-request count increases as requests are handled
     Given I have requested the service statistics once
@@ -32,6 +34,7 @@ Feature: Service Request Statistics Endpoint
     Then the number of requests served should be higher than in the previous response
 
   # Why: The first-request time is a fact about history — it must not drift once set
+  @task:TASK-STAT-001
   @key-example
   Scenario: The first-request time is stable once set
     Given the service has handled at least one request
@@ -41,6 +44,7 @@ Feature: Service Request Statistics Endpoint
 
   # Why: Zero-history boundary — the statistics request is itself the first handled request
   # [ASSUMPTION: confidence=low] Statistics requests count themselves; the in-flight request is included in its own reported count, so a fresh service reports at least one request served rather than an observable null
+  @task:TASK-STAT-001
   @boundary
   Scenario: A freshly started service counts the statistics request itself
     Given the service has just started and has handled no other requests
@@ -49,6 +53,7 @@ Feature: Service Request Statistics Endpoint
     And the response should include when the first request was handled
 
   # Why: Process-lifetime counting means the count only ever moves forward while running
+  @task:TASK-STAT-001
   @boundary
   Scenario: The served-request count never decreases while the service is running
     Given I record the number of requests served
@@ -56,6 +61,7 @@ Feature: Service Request Statistics Endpoint
     Then the number of requests served should not be lower than the recorded value
 
   # Why: Statistics are read-only — the counter is not externally settable
+  @task:TASK-STAT-001
   @negative
   Scenario: Modifying the statistics is not allowed
     When I attempt to submit changes to the service statistics
@@ -63,6 +69,7 @@ Feature: Service Request Statistics Endpoint
 
   # Why: The request forbids database access — statistics must not depend on storage health
   # [ASSUMPTION: confidence=low] Every HTTP request the service handles counts toward the total regardless of its outcome
+  @task:TASK-STAT-001
   @edge-case
   Scenario: Statistics remain available when the database is unavailable
     Given the database is unavailable
@@ -71,6 +78,7 @@ Feature: Service Request Statistics Endpoint
     And the response should include the number of requests served
 
   # Why: Process-lifetime is explicit in the request — a restart starts the story over
+  @task:TASK-STAT-001
   @edge-case
   Scenario: A service restart begins a fresh count
     Given the service restarts

@@ -1,0 +1,24 @@
+id: FEAT-AE43
+name: Service Request Statistics Endpoint
+description: 'GET /stats endpoint: configured service name, process-lifetime request
+  counter (in-process, no DB), first-request time — per features/stats-endpoint spec
+  (Mode P cid 2dfb4ef5)'
+created: '2026-07-12T14:55:49.153681'
+status: planned
+complexity: 4
+estimated_tasks: 1
+tasks:
+- id: TASK-STAT-001
+  name: Add GET /stats endpoint with in-process request counter
+  file_path: tasks/backlog/stats-endpoint/TASK-STAT-001-implement-stats-endpoint.md
+  complexity: 4
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+orchestration:
+  parallel_groups:
+  - - TASK-STAT-001
+  estimated_duration_minutes: 50
+  recommended_parallel: 1
