@@ -3,29 +3,29 @@
   "first": {
     "status": 200,
     "headers": {
-      "date": "Sun, 12 Jul 2026 14:54:02 GMT",
+      "date": "Sun, 12 Jul 2026 14:57:54 GMT",
       "server": "uvicorn",
       "content-length": "91",
       "content-type": "application/json",
-      "x-correlation-id": "12420c20-df23-42bd-a906-cf7742037523",
+      "x-correlation-id": "fee65298-c370-413a-a109-4e205398a630",
       "x-api-version": "0.1.0",
       "connection": "close"
     },
-    "body": "{\"service\":\"api\",\"requests_served\":7,\"first_request_at\":\"2026-07-12T14:53:52.179682+00:00\"}",
+    "body": "{\"service\":\"api\",\"requests_served\":4,\"first_request_at\":\"2026-07-12T14:57:52.958536+00:00\"}",
     "error": null
   },
   "second": {
     "status": 200,
     "headers": {
-      "date": "Sun, 12 Jul 2026 14:54:02 GMT",
+      "date": "Sun, 12 Jul 2026 14:57:54 GMT",
       "server": "uvicorn",
       "content-length": "91",
       "content-type": "application/json",
-      "x-correlation-id": "cf5b7926-ca53-467f-9f17-49a7890e5c85",
+      "x-correlation-id": "539ad669-1106-45ab-aa30-d7f9dbab9e00",
       "x-api-version": "0.1.0",
       "connection": "close"
     },
-    "body": "{\"service\":\"api\",\"requests_served\":8,\"first_request_at\":\"2026-07-12T14:53:52.179682+00:00\"}",
+    "body": "{\"service\":\"api\",\"requests_served\":5,\"first_request_at\":\"2026-07-12T14:57:52.958536+00:00\"}",
     "error": null
   },
   "post": {

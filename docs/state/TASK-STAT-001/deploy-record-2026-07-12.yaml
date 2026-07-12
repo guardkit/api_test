@@ -18,3 +18,5 @@ addenda:
     note: "Live-gate executed via qa/gates/local_live_gate.py (repo F16-provider driver around the unmodified guardkit LiveGateRunner) — plain 'guardkit qa live-gate' wires no F16 provider and short-circuits environment_fail (cli/qa.py:168 / preflight.py:315); guardkit follow-up filed in the Factory-2 record."
   - date: "2026-07-12"
     note: "Resting state: apitest-f2 compose stack left UP as the deployment of record; suite Postgres api-test-pg-factory1 (:5433) separate and untouched. This run's gate evidence force-added past the qa/gates .gitignore (F7 committed-artifact rule wins for the verdict of record)."
+  - date: "2026-07-12"
+    note: "VERDICT OF RECORD superseded by the clean-tree rerun: 42ba0dd was incomplete (main.py unstaged by the coordinator's stash/pop cycle — caught in own review, completed as a58bf31, pushed 0/0); stack rebuilt from the committed tree and the live-gate re-run — run FEAT-AE43-local-20260712T145754Z, verdict pass, 14/14 assertions, binding the verdict to a58bf31."
