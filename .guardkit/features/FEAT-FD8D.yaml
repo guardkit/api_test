@@ -1,0 +1,24 @@
+id: FEAT-FD8D
+name: Service Uptime Endpoint
+description: GET /uptime returning service, started_at (UTC ISO-8601) and uptime_seconds
+  (float); mirrors src/health/ module structure; no database access. Factory-1 first
+  pass — Mode P handoff 41a2e3ef, review TASK-REV-8e9b.
+created: '2026-07-12T08:02:19.551644'
+status: planned
+complexity: 3
+estimated_tasks: 1
+tasks:
+- id: TASK-UPT-001
+  name: Add GET /uptime endpoint
+  file_path: tasks/backlog/uptime-endpoint/TASK-UPT-001-add-uptime-endpoint.md
+  complexity: 3
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+orchestration:
+  parallel_groups:
+  - - TASK-UPT-001
+  estimated_duration_minutes: 33
+  recommended_parallel: 1
