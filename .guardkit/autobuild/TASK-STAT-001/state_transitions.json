@@ -1,0 +1,16 @@
+[
+  {
+    "task_id": "TASK-STAT-001",
+    "pre_path": "tasks/backlog/TASK-STAT-001-implement-stats-endpoint.md",
+    "post_path": "tasks/design_approved/TASK-STAT-001-implement-stats-endpoint.md",
+    "timestamp": "2026-07-12T14:02:45.412600+00:00",
+    "kind": "design_approved_transition"
+  },
+  {
+    "task_id": "TASK-STAT-001",
+    "pre_path": "tasks/backlog/stats-endpoint/TASK-STAT-001-implement-stats-endpoint.md",
+    "post_path": "tasks/design_approved/TASK-STAT-001-implement-stats-endpoint.md",
+    "timestamp": "2026-07-12T14:26:09.359051+00:00",
+    "kind": "design_approved_transition"
+  }
+]
