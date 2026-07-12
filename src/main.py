@@ -16,6 +16,8 @@ from src.core.middleware import (
 )
 from src.db.session import dispose_engine, init_engine
 from src.health.router import router as health_router
+from src.stats.router import StatsCounterMiddleware
+from src.stats.router import router as stats_router
 from src.uptime.router import router as uptime_router
 from src.users.router import router as users_router
 
@@ -49,8 +51,10 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     debug=settings.debug,
-    description=settings.app_description
-    + "\n\n> All responses include an `X-API-Version` header indicating the current API version.",
+    description=(
+        settings.app_description
+        + "\n\n> All responses include an `X-API-Version` header."
+    ),
     summary=settings.app_summary,
     contact={
         "name": settings.app_contact_name,
@@ -75,6 +79,10 @@ app = FastAPI(
             "name": "uptime",
             "description": "Service uptime information",
         },
+        {
+            "name": "stats",
+            "description": "Service request statistics",
+        },
     ],
     swagger_ui_parameters={
         "defaultModelsExpandDepth": -1,
@@ -83,8 +91,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Register middleware (order matters: CorrelationID first, then RequestLogging, then APIVersion)
+# Register middleware: CorrelationID -> StatsCounter -> RequestLogging -> APIVersion
 app.add_middleware(CorrelationIDMiddleware)
+app.add_middleware(StatsCounterMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(APIVersionHeaderMiddleware)
 
@@ -96,3 +105,6 @@ app.include_router(users_router, tags=["users"])
 
 # Include uptime router (prefix already set in router.py)
 app.include_router(uptime_router, tags=["uptime"])
+
+# Include stats router (prefix already set in router.py)
+app.include_router(stats_router, tags=["stats"])
