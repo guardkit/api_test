@@ -131,3 +131,31 @@ Applying the rules to the authored blocks, in order. Each row cites its DCL sour
 reason). **Not-derivable:** 1 (A-READONLY, MISS — the DCL as authored carries no rule for it).
 A-INTENT is the shared invocation surface, not a standalone pass/fail. Total assertion *concepts*
 produced by the rules = 11 (9 RUN + 1 SKIP + 1 MISS).
+
+---
+
+## R10 — the closed-world binding rule (added 2026-07-13 late evening: the Path-1 condition discharge)
+
+*Context: Rich's attended V-02 verdict on the spike was **PASS, conditional on Path 1** — closing
+the A-READONLY MISS at the RULES level, without waiting on a DCL language change. This section is
+that discharge; the re-run receipt is in `RUN-RECEIPT.md`'s dated addendum.*
+
+- **R10 · closed-world over the declared intent set → rejection assertions.** The J1 binding table
+  maps each declared `intent` to a verb+path. R10 adds ONE convention on top: **any HTTP verb with
+  mutation semantics (`POST`/`PUT`/`PATCH`/`DELETE`) on a bound path that is NOT derived from any
+  declared intent is asserted to be REJECTED (4xx; 405 where the service distinguishes).** What is
+  not declared is forbidden — the same closed-world reading a compiler gives an enum.
+  *Judgment:* none new — R10 consumes only the J1 table plus the fixed mutating-verb list; it is a
+  rule written ONCE that applies to every capability, never per-feature glue (the pass/kill
+  discipline: fixes live at the rules level or they are step-definitions reborn).
+  *Placement note:* this deliberately lives in the BINDING layer, not the language — "which verbs
+  exist" is a transport concern, and DCL stays implementation-agnostic (consistent with the
+  language's own design posture). A first-class DCL prohibition construct (Path 2) remains
+  Russell's roadmap call and would also serve non-HTTP targets.
+
+**R10 applied to `capability.dcl`:** only `GET` derives from `intent StatisticsQuery` (l.45) →
+four derived assertions **A-CW-POST / A-CW-PUT / A-CW-PATCH / A-CW-DELETE** (each: verb on
+`/stats` → 4xx). **Live result 2026-07-13: 4/4 PASS (all HTTP 405)** — the run moves to
+**13/13 RUN PASS**; A-READONLY's R9 row is kept above as the honest pre-R10 record. Count: **10
+general rules**, judgment flags unchanged (no new judgment was needed — the strongest possible
+mechanizability signal for the closure).

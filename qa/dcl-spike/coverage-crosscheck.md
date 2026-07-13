@@ -100,3 +100,13 @@ format) **but has one hard miss the others cover — the read-only negative — 
 authoring/expressiveness gap, plus venue-blocked availability/restart checks the pass-bar's own
 live-gate also stops short of.** Whether that core-covered-with-one-hard-miss clears the §7 PASS bar
 is the attended head-to-head call, not S3's to make.
+
+---
+
+**ADDENDUM (2026-07-13 late evening, R10 condition discharge):** the MISS rows above
+(C-STATS-READONLY / mutation_rejected_read_only / Gherkin scenario 6) are **CLOSED by R10** — the
+closed-world binding rule derives A-CW-POST/PUT/PATCH/DELETE from the declared intent set, and all
+four PASS live (HTTP 405; see RUN-RECEIPT.md addendum). Revised tally vs Gherkin (8):
+**FULL 4 · PARTIAL 1 · MISS 0 · DERIVED-NOT-RUN 1 · UNCOVERED 2** (the two UNCOVERED remain venue
+limits — fresh-instance and restart need harness control any notation would need equally). The
+rows above are kept as the honest pre-R10 record.

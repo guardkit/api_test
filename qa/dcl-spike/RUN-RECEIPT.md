@@ -73,3 +73,27 @@ RUN: 9  (PASS 9 / FAIL 0)   SKIP: 1   MISS: 1
 - **No glue:** the runner is stdlib `urllib` + `json`. No pytest, no pytest-bdd, no step
   definitions, no conftest bridge, no per-language plugin. This is the "zero per-stack glue" PASS
   condition made concrete — contrast the Gherkin side's unpaid glue bill in `gherkin-glue-bill.md`.
+
+---
+
+## ADDENDUM — R10 condition-discharge re-run (2026-07-13 late evening, Path 1)
+
+Context: Rich's attended V-02 verdict = **PASS, conditional on Path 1** (the closed-world binding
+rule — see `derivation-rules.md` R10). The script gained the four R10-derived rejection
+assertions and was re-run against the same live service, by the coordinator's own hand:
+
+```
+# target: http://localhost:8901/stats
+[PASS] A-CW-POST      (R10    <- closed-world over the intent set: only GET is declared (l.45))
+[PASS] A-CW-PUT       (R10    <- closed-world over the intent set: only GET is declared (l.45))
+[PASS] A-CW-PATCH     (R10    <- closed-world over the intent set: only GET is declared (l.45))
+[PASS] A-CW-DELETE    (R10    <- closed-world over the intent set: only GET is declared (l.45))
+## Summary
+RUN: 13  (PASS 13 / FAIL 0)   SKIP: 1   MISS: 1
+# finished: 2026-07-13T14:02:01.187363+00:00
+```
+
+**Result: 13/13 RUN PASS (exit 0)** — A-CW-POST/PUT/PATCH/DELETE all rejected with HTTP 405 by the
+live service. The A-READONLY row remains recorded as the honest pre-R10 MISS; under R10 the same
+check is now DERIVED and GREEN. No new judgment flags were needed — the closure consumed only the
+existing J1 binding table plus a fixed verb list, i.e. it held the rules-level discipline.

@@ -21,6 +21,7 @@ Exit:   0 iff every RUN assertion passed (SKIP/MISS do not fail the run; they ar
 import json
 import sys
 import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
@@ -154,12 +155,34 @@ def main():
            "read-only HTTP venue: needs DB fault-injection [J8: policy names no dependency/fault "
            "surface]. Recorded, not executed.")
 
-    # A-READONLY  (R9 <- NO rule block exists in capability.dcl)  -- MISS
+    # A-READONLY  (R9 <- NO rule block exists in capability.dcl)  -- MISS as R9; superseded by R10.
+    # Kept for the record: this was the spike's flagship gap before R10 (2026-07-13 late evening,
+    # Path-1 condition discharge -- Rich's conditional-pass verdict). See derivation-rules.md R10.
     record("A-READONLY", "R9",
            "no rule block in capability.dcl",
            "MISS", None,
-           "the Gherkin @negative scenario + pass-bar C-STATS-READONLY (POST /stats -> 405) has "
-           "NO DCL construct to derive from -- capability.dcl declares zero rules. Flagship gap.")
+           "as R9: the read-only negative has no rule block to derive from (the pre-R10 state, "
+           "kept honestly). R10 below now derives it from the intent set under the closed-world "
+           "binding convention.")
+
+    # A-CLOSEDWORLD-*  (R10 <- the DECLARED intent set: GET is the only verb any intent binds)
+    # [J1] Closed-world binding convention: a mutating verb NOT derived from any declared intent
+    # is asserted rejected. Rule-level (once, all capabilities), never per-feature glue.
+    declared_verbs = {"GET"}  # from intent StatisticsQuery (l.45) via the J1 binding table
+    for verb in ("POST", "PUT", "PATCH", "DELETE"):
+        if verb in declared_verbs:
+            continue
+        try:
+            req = urllib.request.Request(STATS, data=b"{}", method=verb)
+            req.add_header("Content-Type", "application/json")
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                v_status = resp.status
+        except urllib.error.HTTPError as e:
+            v_status = e.code
+        record(f"A-CW-{verb}", "R10",
+               "closed-world over the intent set: only GET is declared (l.45)",
+               "RUN", 400 <= v_status < 500,
+               f"{verb} /stats -> HTTP {v_status} (expect 4xx rejection; 405 = method not allowed)")
 
     # --- Report -------------------------------------------------------------------------
     print("## Per-assertion results\n")
