@@ -38,3 +38,5 @@ build/
 
 # GuardKit worktrees
 .guardkit/worktrees/
+# GuardKit build-time state — never committed (B4 round-19 fossil lesson; rode in via selective merges)
+.guardkit/autobuild/

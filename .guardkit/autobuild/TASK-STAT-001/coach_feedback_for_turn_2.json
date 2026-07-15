@@ -1,9 +1,0 @@
-{
-  "turn": 2,
-  "feedback_from_turn": 1,
-  "feedback_summary": "- The full existing test suite could not be verified due to missing PostgreSQL infrastructure, preventing confirmation that no net-new failures were introduced.: Ensure the test environment has the necessary PostgreSQL infrastructure or provide a way to run the full suite using mocks/containers to verify the regression requirement.",
-  "must_fix": [],
-  "should_fix": [],
-  "validation_results": {},
-  "raw_feedback": "- The full existing test suite could not be verified due to missing PostgreSQL infrastructure, preventing confirmation that no net-new failures were introduced.: Ensure the test environment has the necessary PostgreSQL infrastructure or provide a way to run the full suite using mocks/containers to verify the regression requirement."
-}
