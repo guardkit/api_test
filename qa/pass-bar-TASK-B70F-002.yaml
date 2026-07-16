@@ -1,0 +1,18 @@
+format_version: '2.0'
+task_id: TASK-B70F-002
+registered_at:
+  sha: b599ac7695501c763ff2a1c3c07deb3c80110d59
+  date: '2026-07-16'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: version-endpoint-AC-001
+  text: A GET request to /version returns the application metadata
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

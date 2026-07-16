@@ -1,0 +1,45 @@
+id: FEAT-B70F
+name: "Version Endpoint"
+description: "Add a read-only /version endpoint exposing application metadata"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 3
+estimated_tasks: 3
+
+tasks:
+  - id: TASK-B70F-001
+    name: "Create version endpoint and metadata extraction"
+    file_path: "tasks/backlog/version-endpoint/TASK-B70F-001-create-version-endpoint.md"
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 45
+
+  - id: TASK-B70F-002
+    name: "Add tests for /version endpoint"
+    file_path: "tasks/backlog/version-endpoint/TASK-B70F-002-add-version-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-B70F-001
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-B70F-003
+    name: "Update API documentation"
+    file_path: "tasks/backlog/version-endpoint/TASK-B70F-003-update-api-docs.md"
+    complexity: 2
+    dependencies:
+      - TASK-B70F-001
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 20
+
+orchestration:
+  parallel_groups:
+    - - TASK-B70F-001
+    - - TASK-B70F-002
+      - TASK-B70F-003
+  estimated_duration_minutes: 75
+  recommended_parallel: 2
