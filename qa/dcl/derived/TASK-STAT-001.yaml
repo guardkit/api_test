@@ -1,0 +1,173 @@
+feature: TASK-STAT-001
+capability: ReportServiceStatistics
+invocation:
+  method: GET
+  path: /stats
+assertions:
+- id: A-OUTCOME
+  rule: R2
+  dcl_source: outcome StatisticsReported; when always StatisticsReported
+  flags:
+  - J1
+  - J2
+  disposition: RUN
+  predicate:
+    check: status_equals
+    expected: 200
+- id: A-FIELD-SVC
+  rule: R3
+  dcl_source: 'event StatisticsProduced field service: Text required'
+  flags:
+  - J1
+  - J3
+  disposition: RUN
+  predicate:
+    check: field_present_typed
+    wire_key: service
+    dcl_type: Text
+- id: A-FIELD-REQ
+  rule: R3
+  dcl_source: 'event StatisticsProduced field requestsServed: Number required'
+  flags:
+  - J1
+  - J3
+  - J4
+  disposition: RUN
+  predicate:
+    check: field_present_typed
+    wire_key: requests_served
+    dcl_type: Number
+- id: A-FIELD-FRA
+  rule: R3
+  dcl_source: 'event StatisticsProduced field firstRequestAt: Text required'
+  flags:
+  - J1
+  - J3
+  - J6
+  disposition: RUN
+  predicate:
+    check: field_present_typed
+    wire_key: first_request_at
+    dcl_type: Text
+    nullable: true
+- id: A-COUNT-MONO
+  rule: R4
+  dcl_source: observe event/outcome count
+  flags:
+  - J1
+  - J7
+  disposition: RUN
+  predicate:
+    check: non_decreasing
+    wire_key: requests_served
+- id: A-DURATION
+  rule: R5
+  dcl_source: observe capability duration as stats_report_duration
+  flags:
+  - J1
+  - J7
+  disposition: RUN
+  predicate:
+    check: latency_below
+    bound_seconds: 5.0
+- id: A-LIFE-SERVING
+  rule: R6
+  dcl_source: lifecycle move Fresh to Serving on outcome StatisticsReported
+  flags:
+  - J1
+  - J6
+  disposition: RUN
+  predicate:
+    check: field_non_null
+    wire_key: first_request_at
+- id: A-LIFE-STABLE
+  rule: R7
+  dcl_source: lifecycle end Serving
+  flags:
+  - J1
+  - J9
+  disposition: RUN
+  predicate:
+    check: field_stable
+    wire_key: first_request_at
+- id: A-FRA-FORMAT
+  rule: R3+J5
+  dcl_source: 'event StatisticsProduced field firstRequestAt: Text required (format
+    is judgment-sourced, not DCL)'
+  flags:
+  - J1
+  - J3
+  - J5
+  disposition: RUN
+  predicate:
+    check: format
+    wire_key: first_request_at
+    format: iso8601_utc
+- id: A-AVAIL
+  rule: R8
+  dcl_source: policy StatisticsAvailability governs capability
+  flags:
+  - J1
+  - J8
+  disposition: SKIP
+  predicate:
+    check: availability_under_dependency_down
+  reason: 'derivable in shape (with the dependency down, the intent still yields its
+    success signal) but NOT runnable in the read-only HTTP venue: needs dependency
+    fault-injection (J8). Recorded, not executed.'
+- id: A-CW-POST
+  rule: R10
+  dcl_source: 'closed-world over the intent set: only [''GET''] declared on /stats'
+  flags:
+  - J1
+  disposition: RUN
+  predicate:
+    check: status_in_range
+    low: 400
+    high: 499
+  request:
+    method: POST
+    path: /stats
+    body: '{}'
+- id: A-CW-PUT
+  rule: R10
+  dcl_source: 'closed-world over the intent set: only [''GET''] declared on /stats'
+  flags:
+  - J1
+  disposition: RUN
+  predicate:
+    check: status_in_range
+    low: 400
+    high: 499
+  request:
+    method: PUT
+    path: /stats
+    body: '{}'
+- id: A-CW-PATCH
+  rule: R10
+  dcl_source: 'closed-world over the intent set: only [''GET''] declared on /stats'
+  flags:
+  - J1
+  disposition: RUN
+  predicate:
+    check: status_in_range
+    low: 400
+    high: 499
+  request:
+    method: PATCH
+    path: /stats
+    body: '{}'
+- id: A-CW-DELETE
+  rule: R10
+  dcl_source: 'closed-world over the intent set: only [''GET''] declared on /stats'
+  flags:
+  - J1
+  disposition: RUN
+  predicate:
+    check: status_in_range
+    low: 400
+    high: 499
+  request:
+    method: DELETE
+    path: /stats
+    body: '{}'

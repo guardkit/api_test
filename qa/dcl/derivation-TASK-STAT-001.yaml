@@ -1,0 +1,50 @@
+format_version: '1.0'
+feature: TASK-STAT-001
+capability: ReportServiceStatistics
+source_dcl: features/stats-endpoint/stats-endpoint.dcl
+source_dcl_sha256: cf6a12c9f96607fb92782d891293da97bf45a039a081804f3627bc34fd710b04
+checker:
+  ok: true
+  error_count: 0
+  warning_count: 0
+binding_sha256: 6de197f8a240747226b7aa67a754dee3fa337ebeb17d18a57bf4e2827824c1e3
+rules_fired:
+  R2: 1
+  R3: 3
+  R4: 1
+  R5: 1
+  R6: 1
+  R7: 1
+  R3+J5: 1
+  R8: 1
+  R10: 4
+judgment_flags:
+- J1
+- J2
+- J3
+- J4
+- J5
+- J6
+- J7
+- J8
+- J9
+assertions:
+  run:
+  - A-OUTCOME
+  - A-FIELD-SVC
+  - A-FIELD-REQ
+  - A-FIELD-FRA
+  - A-COUNT-MONO
+  - A-DURATION
+  - A-LIFE-SERVING
+  - A-LIFE-STABLE
+  - A-FRA-FORMAT
+  - A-CW-POST
+  - A-CW-PUT
+  - A-CW-PATCH
+  - A-CW-DELETE
+  skip:
+  - A-AVAIL
+tool:
+  name: guardkit-dcl-deriver
+  checker_pin: russelleast/Capability-Language@4f9fbe56

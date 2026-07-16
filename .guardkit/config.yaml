@@ -6,3 +6,9 @@
 # OFF. Env override: GUARDKIT_QA_ENFORCE_TIER1.
 qa:
   enforce_tier1: true
+  # DCL adoption (Phase D / D3): this repo is on the `dcl` spec track. guardkit's
+  # verification seam derives + runs the `.dcl` capability's outside-in assertions
+  # in addition to the Gherkin chain (which is retained, intact). Kill switch:
+  # delete this line or set `gherkin` to restore the default. Env override:
+  # GUARDKIT_SPEC_TRACK.
+  spec_track: dcl

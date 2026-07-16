@@ -1,0 +1,27 @@
+# F-format · dcl-binding — api_test's per-repo binding table (Phase D / D3).
+#
+# The J1–J3 facts a `.dcl` cannot carry, plus the two flagged per-field opt-ins
+# (J5 format, J6/J9 lifecycle observable) the /stats spike proved:
+#
+#   J1  intent -> HTTP verb + path      (intents)
+#   J2  success outcome -> HTTP status  (success_status, default 200)
+#   J3  DCL identifier -> wire key      (naming: camel_to_snake)
+#   J5  firstRequestAt is UTC ISO-8601  (fields.firstRequestAt.format — flagged in the receipt)
+#   J6/J9  firstRequestAt is the observable wire fact for the Serving lifecycle
+#          state (nullable until entered, stable once terminal)
+#
+# The field abbrevs (SVC/REQ/FRA) are the spike's assertion-id labels — a
+# repo/feature labelling choice, so they live here in the binding table, not in
+# code. Rules live in code once (guardkit R1–R10); repo facts live here; feature
+# facts live in features/stats-endpoint/stats-endpoint.dcl.
+format_version: "1.0"
+capabilities:
+  ReportServiceStatistics:
+    intents:
+      StatisticsQuery: { method: GET, path: /stats }
+    success_status: 200
+    naming: camel_to_snake
+    fields:
+      service: { abbrev: SVC }
+      requestsServed: { abbrev: REQ }
+      firstRequestAt: { abbrev: FRA, format: iso8601_utc, state: Serving }
