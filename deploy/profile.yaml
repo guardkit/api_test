@@ -23,8 +23,10 @@ hosts:
 secret_injection: []
 models_required: []
 health_checks:
-  - cmd: "curl -fsS http://localhost:8901/health"
-    expected: "\"database\":\"connected\""
+  # A vetted SCRIPT path (FMDR D12: no freehand shell; exit code = verdict).
+  # C4 live-caught 2026-07-16: a bare `curl ...` command line here is executed
+  # no-shell as one filename -> exit 127. The expectation lives IN the script.
+  - cmd: "deploy/healthcheck.sh"
 # The kept :rollback tag deploy/deploy.sh maintains. On a FAILED post-deploy
 # live-gate (O-32) forge renders a revert runbook carrying this ref; re-serving
 # it brings the prior known-good build back up. Absent ⇒ a revert is a LOUD
