@@ -21,17 +21,11 @@
 #                      image serves), then wait for health.
 #
 #   The forge revert runbook (runbook_builder.build_revert_runbook) puts
-#   `revert: True` and `rollback_image_ref` in the deploy_compose STEP PARAMS,
-#   but shell_steps.deploy_compose forwards ONLY cwd/script/env_file to the
-#   subprocess -- it does NOT translate those two params into env or argv. So as
-#   forge stands today the revert SIGNAL never reaches this script and an O-32
-#   revert would re-run this script in NORMAL (rebuild) mode. The one-line forge
-#   fix is to have shell_steps.deploy_compose set, before subprocess.run:
-#       if step.params.get("revert"): env["REVERT"] = "1"
-#       if "rollback_image_ref" in step.params:
-#           env["ROLLBACK_IMAGE_REF"] = step.params["rollback_image_ref"]
-#   This script honours exactly those env names so the fix is trivial and the
-#   revert logic below is already proven (deploy/tests/run_deploy_tests.sh).
+#   `revert: True` and `rollback_image_ref` in the deploy_compose STEP PARAMS;
+#   shell_steps.deploy_compose threads them to this script as REVERT=1 and
+#   ROLLBACK_IMAGE_REF=<tag> (forge commit deff3c4f, 2026-07-16 — the O-32
+#   revert-signal fix this lane surfaced). The revert logic below is proven by
+#   deploy/tests/run_deploy_tests.sh against a PATH-shimmed fake docker.
 #
 # SAFETY: this script is EXECUTED ONLY BY FORGE AT C4 (attended). It is proven
 # in this lane with a PATH-shimmed fake docker/curl harness, never run against
