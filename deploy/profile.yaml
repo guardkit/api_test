@@ -13,6 +13,10 @@ format_version: "1.0"
 env_id: local
 compose:
   file: docker-compose.yml
+  # The vetted deploy wrapper the deploy_compose step runs (never inline shell).
+  # It snapshots the running image as the rollback tag then `up -d --build`;
+  # in revert mode it re-tags the rollback image and `up -d --no-build`.
+  script: deploy/deploy.sh
 hosts:
   - host: localhost
     role: app
@@ -21,4 +25,23 @@ models_required: []
 health_checks:
   - cmd: "curl -fsS http://localhost:8901/health"
     expected: "\"database\":\"connected\""
-cwd: "."
+# The kept :rollback tag deploy/deploy.sh maintains. On a FAILED post-deploy
+# live-gate (O-32) forge renders a revert runbook carrying this ref; re-serving
+# it brings the prior known-good build back up. Absent ⇒ a revert is a LOUD
+# terminal failure (never a silent keep-serving of the unverified build).
+rollback_image_ref: "apitest-app:rollback-pre-deploy"
+# Absolute repo root (the api_test bind mount is at this same path inside the
+# forge-prod container). deploy_compose resolves `script` relative to this cwd,
+# and the forge daemon's own cwd is /home/forge — a relative "." would NOT find
+# deploy/deploy.sh, so cwd MUST be absolute for the C4 attended deploy.
+cwd: "/home/richardwoollcott/Projects/appmilla_github/api_test"
+# Per-target live-gate driver (the F16 real backend). RepoDriverLiveGateInvoker
+# runs this argv with cwd=repo root and env overlaid with `env` below, appending
+# --feature/--target (and --gates when a subset is set). `python3` inside
+# forge-prod is /opt/venv/bin/python3 (3.14.4) and imports guardkit — probed.
+live_gate:
+  driver: ["python3", "qa/gates/local_live_gate.py"]
+  gates: []
+  timeout_seconds: 600
+  env:
+    API_TEST_BASE_URL: "http://localhost:8901"

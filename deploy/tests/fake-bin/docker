@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+#
+# Fake `docker` for the deploy.sh dry-run harness. Records every invocation to
+# $FAKE_DOCKER_LOG and models a tiny image-tag store ($FAKE_DOCKER_STATE, one
+# ref per line) so `docker tag` / `docker image inspect` behave enough like the
+# real thing to exercise deploy.sh's snapshot / re-tag / not-found logic.
+# `docker compose ...` is recorded and always succeeds. NEVER touches real docker.
+set -u
+
+LOG="${FAKE_DOCKER_LOG:?FAKE_DOCKER_LOG unset}"
+STATE="${FAKE_DOCKER_STATE:?FAKE_DOCKER_STATE unset}"
+printf 'docker %s\n' "$*" >>"${LOG}"
+
+known() { grep -qxF -- "$1" "${STATE}" 2>/dev/null; }
+add() { known "$1" || printf '%s\n' "$1" >>"${STATE}"; }
+
+case "${1:-}" in
+  image)
+    # docker image inspect --format '{{.Id}}' <ref>
+    if [[ "${2:-}" == "inspect" ]]; then
+      ref=""
+      for a in "$@"; do ref="$a"; done # last arg is the ref
+      if known "${ref}"; then
+        printf 'sha256:fake-%s\n' "$(printf '%s' "${ref}" | tr '/:' '__')"
+        exit 0
+      fi
+      exit 1 # absent -> non-zero, like real docker
+    fi
+    ;;
+  tag)
+    src="${2:?}"
+    dst="${3:?}"
+    if known "${src}"; then
+      add "${dst}"
+      exit 0
+    fi
+    printf 'Error response from daemon: No such image: %s\n' "${src}" >&2
+    exit 1
+    ;;
+  compose)
+    exit 0 # record-only (already logged above)
+    ;;
+esac
+exit 0
