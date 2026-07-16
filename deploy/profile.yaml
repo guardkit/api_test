@@ -47,3 +47,18 @@ live_gate:
   timeout_seconds: 600
   env:
     API_TEST_BASE_URL: "http://localhost:8901"
+# Candidate-then-promote sandbox (design §3, S2). During the CANDIDATE leg ONLY,
+# this `env` overlay is threaded to deploy.sh (CANDIDATE=1), to healthcheck.sh,
+# and to the live-gate driver env, so the gate runs against the candidate copy on
+# the offset port BEFORE it is allowed to take the live name. Absent ⇒ byte-
+# identical to today's direct-live flow. `keep: false` ⇒ tear the candidate down
+# after promote (true keeps it up on :8902 for manual poking).
+# NOTE: the current forge parser folds this unknown top-level key into
+# DeployProfile.extra (verified 2026-07-16, profile.py known_keys/extra); a
+# parallel stage adds a typed `candidate:` parser. Until then it is inert to
+# forge and consumed only by the candidate-leg env threading.
+candidate:
+  env:
+    CANDIDATE_PORT: "8902"
+    API_TEST_BASE_URL: "http://localhost:8902"
+  keep: false

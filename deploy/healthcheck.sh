@@ -9,7 +9,21 @@
 # Healthy = GET /health answers 200 AND reports the database connected.
 set -euo pipefail
 
-HEALTH_URL="${HEALTH_URL:-http://localhost:8901/health}"
+# Truthy test for the env var NAMED by $1 (mirrors deploy.sh).
+is_truthy() {
+  case "${!1:-}" in
+    1 | true | TRUE | yes | YES) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Candidate leg: forge threads CANDIDATE=1 + CANDIDATE_PORT (the candidate.env
+# overlay) so this vetted script probes the candidate URL, not the live one.
+if is_truthy CANDIDATE; then
+  HEALTH_URL="${HEALTH_URL:-http://localhost:${CANDIDATE_PORT:-8902}/health}"
+else
+  HEALTH_URL="${HEALTH_URL:-http://localhost:8901/health}"
+fi
 HEALTH_EXPECT="${HEALTH_EXPECT:-\"database\":\"connected\"}"
 
 body="$(curl -fsS "${HEALTH_URL}")"
