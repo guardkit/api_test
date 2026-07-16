@@ -1,5 +1,6 @@
 {
-  "content_hash": "38ac2fc27d1a1f6ef60c958ffce589d503946162b214078dc9c18d721fbee73a",
+  "content_hash": "c5ebdf933115a7972c4e149ce031c83f3abeb24ce1d90af16f01477d26aba2d7",
   "success": true,
-  "timestamp": "2026-02-27T07:56:30.003969"
+  "timestamp": "2026-07-16T09:30:41.369660",
+  "venv_python": "/tmp/forge-autobuild-worktrees/build-FEAT-B70F-20260716080140/.guardkit/worktrees/FEAT-B70F/.venv/bin/python"
 }

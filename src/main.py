@@ -20,6 +20,7 @@ from src.stats.router import StatsCounterMiddleware
 from src.stats.router import router as stats_router
 from src.uptime.router import router as uptime_router
 from src.users.router import router as users_router
+from src.version.router import router as version_router
 
 
 @asynccontextmanager
@@ -83,6 +84,10 @@ app = FastAPI(
             "name": "stats",
             "description": "Service request statistics",
         },
+        {
+            "name": "version",
+            "description": "Version and build information",
+        },
     ],
     swagger_ui_parameters={
         "defaultModelsExpandDepth": -1,
@@ -108,3 +113,6 @@ app.include_router(uptime_router, tags=["uptime"])
 
 # Include stats router (prefix already set in router.py)
 app.include_router(stats_router, tags=["stats"])
+
+# Include version router (prefix already set in router.py)
+app.include_router(version_router, tags=["version"])
