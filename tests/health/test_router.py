@@ -6,7 +6,6 @@ from collections.abc import AsyncGenerator
 from http import HTTPStatus
 
 import pytest
-from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -82,9 +81,7 @@ async def test_health_endpoint_database_connected(
 class FailingAsyncSession:
     """A mock session that fails on execute."""
 
-    async def execute(
-        self, statement: object, *args: object, **kwargs: object
-    ) -> None:
+    async def execute(self, statement: object, *args: object, **kwargs: object) -> None:
         raise SQLAlchemyError("Database connection failed")
 
     async def commit(self) -> None:  # noqa: D401
@@ -133,3 +130,102 @@ async def test_health_endpoint_database_unavailable(
         # Clean up override
         if app_get_db in main_app.dependency_overrides:
             del main_app.dependency_overrides[app_get_db]
+
+
+@pytest.mark.asyncio
+async def test_ready_endpoint_returns_200(async_client: AsyncClient) -> None:
+    """Test that GET /ready returns HTTP 200 OK."""
+    response = await async_client.get("/ready")
+
+    assert response.status_code == HTTPStatus.OK
+
+
+@pytest.mark.asyncio
+async def test_ready_endpoint_response_body(async_client: AsyncClient) -> None:
+    """Test that GET /ready returns the correct response body structure."""
+    response = await async_client.get("/ready")
+    data = response.json()
+
+    # Verify the response has the expected structure
+    assert "status" in data
+    assert data["status"] == "ready"
+
+
+@pytest.mark.asyncio
+async def test_ready_endpoint_content_type(async_client: AsyncClient) -> None:
+    """Test that GET /ready returns application/json content type."""
+    response = await async_client.get("/ready")
+
+    assert response.headers["content-type"] == "application/json"
+
+
+@pytest.mark.asyncio
+async def test_ready_endpoint_post_method_not_allowed(
+    async_client: AsyncClient,
+) -> None:
+    """Test that POST /ready returns HTTP 405 Method Not Allowed.
+
+    This is an invariant test: the /ready endpoint only supports GET requests.
+    Any other HTTP method should return 405, regardless of what other endpoints
+    or features are added to the application.
+    """
+    response = await async_client.post("/ready")
+
+    assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+
+
+@pytest.mark.asyncio
+async def test_ready_endpoint_put_method_not_allowed(
+    async_client: AsyncClient,
+) -> None:
+    """Test that PUT /ready returns HTTP 405 Method Not Allowed.
+
+    This verifies the invariant that /ready only accepts GET requests.
+    """
+    response = await async_client.put("/ready")
+
+    assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+
+
+@pytest.mark.asyncio
+async def test_ready_endpoint_delete_method_not_allowed(
+    async_client: AsyncClient,
+) -> None:
+    """Test that DELETE /ready returns HTTP 405 Method Not Allowed.
+
+    This verifies the invariant that /ready only accepts GET requests.
+    """
+    response = await async_client.delete("/ready")
+
+    assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+
+
+@pytest.mark.asyncio
+async def test_ready_endpoint_patch_method_not_allowed(
+    async_client: AsyncClient,
+) -> None:
+    """Test that PATCH /ready returns HTTP 405 Method Not Allowed.
+
+    This verifies the invariant that /ready only accepts GET requests.
+    """
+    response = await async_client.patch("/ready")
+
+    assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+
+
+@pytest.mark.asyncio
+async def test_ready_endpoint_lightweight_no_db_dependency(
+    async_client: AsyncClient,
+) -> None:
+    """Test that GET /ready succeeds without database dependency.
+
+    This verifies that the /ready endpoint is a lightweight check that doesn't
+    require database connectivity, making it suitable for Kubernetes readiness
+    probes. Unlike /health, it should work even if database dependencies fail.
+    """
+    response = await async_client.get("/ready")
+
+    # Should succeed regardless of database state
+    assert response.status_code == HTTPStatus.OK
+    data = response.json()
+    assert data["status"] == "ready"
