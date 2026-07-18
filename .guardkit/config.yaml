@@ -12,3 +12,9 @@ qa:
   # delete this line or set `gherkin` to restore the default. Env override:
   # GUARDKIT_SPEC_TRACK.
   spec_track: dcl
+
+# W2b brief-harvest capture (DCL machine-authoring lane, Done-bar receipt
+# 2026-07-18). Reversible one-line kill: set false or delete the block.
+# Zero verdict impact by construction (swallow-to-log; no seat calls).
+dcl:
+  capture: true
