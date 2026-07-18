@@ -70,4 +70,4 @@ async def readiness_check() -> ReadyResponse:
     Returns a simple status indicating the service is ready to accept requests.
     This is a lightweight check suitable for Kubernetes readiness probes.
     """
-    return ReadyResponse(status="ready")
+    return ReadyResponse(status="ready", service=settings.app_name)

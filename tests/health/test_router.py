@@ -149,6 +149,9 @@ async def test_ready_endpoint_response_body(async_client: AsyncClient) -> None:
     # Verify the response has the expected structure
     assert "status" in data
     assert data["status"] == "ready"
+    assert "service" in data
+    assert isinstance(data["service"], str)
+    assert len(data["service"]) > 0
 
 
 @pytest.mark.asyncio
@@ -229,3 +232,46 @@ async def test_ready_endpoint_lightweight_no_db_dependency(
     assert response.status_code == HTTPStatus.OK
     data = response.json()
     assert data["status"] == "ready"
+
+
+@pytest.mark.asyncio
+async def test_ready_endpoint_service_field_matches_app_name(
+    async_client: AsyncClient,
+) -> None:
+    """Test that GET /ready service field matches settings.app_name.
+
+    This verifies that the service identifier in the readiness response
+    correctly reflects the configured application name from settings.
+    This is an invariant test: the service field should always equal
+    settings.app_name regardless of other configuration changes.
+    """
+    from src.core.config import settings
+
+    response = await async_client.get("/ready")
+    data = response.json()
+
+    assert "service" in data
+    assert data["service"] == settings.app_name
+
+
+def test_ready_response_schema_accepts_api_test_service() -> None:
+    """Test that ReadyResponse schema can be instantiated with 'api_test' service.
+
+    This test verifies that the ReadyResponse schema correctly accepts
+    'api_test' as a valid service identifier value, demonstrating that
+    the response body can identify the service appropriately when configured.
+
+    This is an invariant test: the schema should accept any valid string
+    as the service name, not just the default 'api' value.
+    """
+    from src.health.schemas import ReadyResponse
+
+    # Test that schema accepts api_test as service name
+    response = ReadyResponse(status="ready", service="api_test")
+
+    assert response.status == "ready"
+    assert response.service == "api_test"
+
+    # Verify it serializes correctly
+    response_dict = response.model_dump()
+    assert response_dict == {"status": "ready", "service": "api_test"}

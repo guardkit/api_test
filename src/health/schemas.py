@@ -40,9 +40,10 @@ class ReadyResponse(BaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
-                {"status": "ready"},
+                {"status": "ready", "service": "api"},
             ]
         }
     )
 
     status: str = Field(description="Service readiness status")
+    service: str = Field(description="The name of the service")
