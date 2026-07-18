@@ -1,0 +1,52 @@
+format_version: '1.0'
+feature: ready-endpoint
+task: TASK-READY-001
+capability: null
+authored: true
+artifact: features/ready-endpoint/ready-endpoint.dcl
+model: qwen36-workhorse
+endpoint: http://127.0.0.1:9000/v1/chat/completions
+sampling:
+  temperature: 0.3
+  top_p: 0.9
+  max_tokens: 16384
+prompt:
+  system_sha256: 419e455b26af1d3014e28100f6e6520c1fbdba10d05941adbbd0e2d0163d7316
+  prompt_sha256: 8db0725e08254400be10ce949b4f59152e632f0aac2ba585a2023201dab50cd6
+  composition: 'recorded feature Request (verbatim) + machine criteria (rendered:
+    each criterion''s class/evidence_kind/text + the negative paths) + VOCAB_DELIM
+    + the sha-pinned vocab-reference.md (verbatim, at the end)'
+vocab_ref:
+  path: guardkit/qa/dcl/vocab-reference.md
+  sha256: 25121afe7415b15cba161fa2f3e728dad7095675f214a298317b51bb0e8fee2b
+attempts: 2
+zero_shot_clean: false
+repaired_clean: true
+envelopes:
+  attempt1:
+    ok: false
+    error_count: 3
+    warning_count: 0
+    error_codes:
+    - DCL_SEM_UNKNOWN_SHAPE
+    - DCL_LEX_UNEXPECTED_CHAR
+    - DCL_LEX_UNEXPECTED_CHAR
+  attempt2:
+    ok: true
+    error_count: 0
+    warning_count: 0
+    error_codes: []
+single_slot_probes:
+- url: http://127.0.0.1:9000/running
+  ok: true
+- url: http://127.0.0.1:9000/running
+  ok: true
+wall_time_s: 94.63
+repair_wall_time_s: 185.66
+finish_reasons:
+  attempt1: stop
+  attempt2: stop
+failure_reason: null
+tool:
+  name: guardkit dcl author
+  checker_pin: russelleast/Capability-Language@4f9fbe56
