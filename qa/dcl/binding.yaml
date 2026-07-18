@@ -25,3 +25,12 @@ capabilities:
       service: { abbrev: SVC }
       requestsServed: { abbrev: REQ }
       firstRequestAt: { abbrev: FRA, format: iso8601_utc, state: Serving }
+  # CheckReadiness — the FIRST machine-authored capability (W1-S2 §10 seat,
+  # run s3dcl-2e4b9ee3bb98, authored 2026-07-18). J1-J3 facts only: the
+  # artifact declares no response shape, so derivation yields intent/status
+  # assertions (Ready=200, MethodNotAllowed via the R-rules' negative path).
+  CheckReadiness:
+    intents:
+      ReadinessRequest: { method: GET, path: /ready }
+    success_status: 200
+    naming: camel_to_snake
