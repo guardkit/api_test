@@ -1,0 +1,59 @@
+id: FEAT-8737
+name: Runtime smoke — seeded round-trip against a sandboxed deployment
+description: 'Layer-3 runtime verification: deploy the freshly built app into a sandboxed
+  throwaway compose stack (internal-only zero-egress networks, hardened non-root app,
+  pre-built image), seed Postgres with a per-run marker, verify seeded-data round-trip
+  + POST-GET read-back + negative probes via an in-network stdlib probe container;
+  lands as the independent behavioural oracle tests/acceptance/users_roundtrip.py'
+created: '2026-07-25T11:30:10.171777'
+status: planned
+complexity: 5
+estimated_tasks: 3
+tasks:
+- id: TASK-SMOKE-001
+  name: Create sandboxed smoke compose stack
+  file_path: tasks/backlog/runtime-smoke/TASK-SMOKE-001-create-sandboxed-smoke-compose-stack.md
+  complexity: 3
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: direct
+  estimated_minutes: 33
+- id: TASK-SMOKE-002
+  name: Add seed template and stdlib probe
+  file_path: tasks/backlog/runtime-smoke/TASK-SMOKE-002-add-seed-template-and-stdlib-probe.md
+  complexity: 4
+  dependencies: []
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 50
+- id: TASK-SMOKE-003
+  name: Add users round-trip oracle
+  file_path: tasks/backlog/runtime-smoke/TASK-SMOKE-003-add-users-roundtrip-oracle.md
+  complexity: 6
+  dependencies:
+  - TASK-SMOKE-001
+  - TASK-SMOKE-002
+  status: pending
+  description: ''
+  implementation_mode: task-work
+  estimated_minutes: 113
+orchestration:
+  parallel_groups:
+  - - TASK-SMOKE-001
+    - TASK-SMOKE-002
+  - - TASK-SMOKE-003
+  estimated_duration_minutes: 196
+  recommended_parallel: 2
+
+# Feature-level smoke gate (R3): the deliverable IS the gate — after wave 2
+# lands the oracle, run it end to end. Temporal rule honoured: the path is
+# created by wave 2 (TASK-SMOKE-003) and the gate fires after wave 2.
+smoke_gates:
+  after_wave: 2
+  command: |
+    set -e
+    python -m pytest tests/acceptance -x -q
+  expected_exit: 0
+  timeout: 600

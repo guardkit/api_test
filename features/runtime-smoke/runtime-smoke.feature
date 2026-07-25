@@ -16,6 +16,7 @@ Feature: Runtime smoke — seeded round-trip against a sandboxed deployment
 
   # Why: the anti-stub heart — a canned response cannot contain a value invented at run time
   # [ASSUMPTION: confidence=low] The per-run marker is a random value embedded in the seeded user's details
+  @task:TASK-SMOKE-002
   @key-example @smoke
   Scenario: Data seeded directly into the database is visible through the running service
     Given the environment is up and reports itself healthy
@@ -24,6 +25,7 @@ Feature: Runtime smoke — seeded round-trip against a sandboxed deployment
     Then the listing should include the seeded record with the per-run marker
 
   # Why: proves the write path against the real database, not a recorded answer
+  @task:TASK-SMOKE-002
   @key-example @smoke
   Scenario: A user created through the service reads back with identical details
     Given the environment is up and reports itself healthy
@@ -32,6 +34,7 @@ Feature: Runtime smoke — seeded round-trip against a sandboxed deployment
     Then the fetched details should match what was submitted
 
   # Why: the verdict and the cleanliness are the two things the factory consumes
+  @task:TASK-SMOKE-003
   @key-example
   Scenario: A fully passing smoke run produces a passing verdict and a clean teardown
     Given the environment is up and reports itself healthy
@@ -41,6 +44,7 @@ Feature: Runtime smoke — seeded round-trip against a sandboxed deployment
 
   # Why: just-inside boundary — the oracle machinery enforces a hard time budget
   # [ASSUMPTION: confidence=low] The oracle time budget is 300 seconds with health-wait capped at 120 seconds
+  @task:TASK-SMOKE-003
   @boundary
   Scenario: The smoke completes within the oracle time budget
     When the full smoke run executes end to end
@@ -54,6 +58,7 @@ Feature: Runtime smoke — seeded round-trip against a sandboxed deployment
     Then the listing should contain exactly those two records
 
   # Why: negative probe — absence must be reported honestly
+  @task:TASK-SMOKE-002
   @negative
   Scenario: Looking up a user that was never created is reported as not found
     Given the environment is up and reports itself healthy
@@ -61,6 +66,7 @@ Feature: Runtime smoke — seeded round-trip against a sandboxed deployment
     Then the service should report that no such user exists
 
   # Why: negative probe — uniqueness must be enforced by the real datastore
+  @task:TASK-SMOKE-002
   @negative
   Scenario: Creating a user with an email already in use is rejected as a conflict
     Given a user with a known email already exists in the environment
@@ -69,6 +75,7 @@ Feature: Runtime smoke — seeded round-trip against a sandboxed deployment
     And the original record should remain unchanged
 
   # Why: negative probe — validation must reject malformed submissions
+  @task:TASK-SMOKE-002
   @negative
   Scenario: A malformed user submission is rejected as invalid
     Given the environment is up and reports itself healthy
@@ -77,6 +84,7 @@ Feature: Runtime smoke — seeded round-trip against a sandboxed deployment
     And no record should be created
 
   # Why: the smoke must fail loudly when the runtime lies — this protects the stub-escape measurable
+  @task:TASK-SMOKE-002
   @negative @regression
   Scenario: A service that returns canned data fails the smoke
     Given a service whose listing does not reflect the seeded per-run marker
@@ -85,6 +93,7 @@ Feature: Runtime smoke — seeded round-trip against a sandboxed deployment
     And the failure should name the missing marker
 
   # Why: teardown is unconditional — a failed run must not leak infrastructure
+  @task:TASK-SMOKE-003
   @edge-case
   Scenario: A failed run still leaves nothing behind
     Given a smoke run that fails partway through its probes
@@ -92,6 +101,7 @@ Feature: Runtime smoke — seeded round-trip against a sandboxed deployment
     Then no part of the throwaway environment should remain
 
   # Why: project isolation — the smoke is a sibling of the live stack, never a tenant of it
+  @task:TASK-SMOKE-003
   @edge-case
   Scenario: The smoke never touches the live deployment
     Given the live deployment is running alongside the smoke
@@ -100,6 +110,7 @@ Feature: Runtime smoke — seeded round-trip against a sandboxed deployment
 
   # Why: the governed-egress law made testable at the sandbox boundary
   # [ASSUMPTION: confidence=low] Egress verification is configuration-level for v1 — the sandbox networks are declared internal-only
+  @task:TASK-SMOKE-001
   @edge-case
   Scenario: The sandboxed application has no route to the outside world
     Given the environment is up and reports itself healthy
