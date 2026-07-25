@@ -68,3 +68,7 @@ Python probe; and — once FEAT-8AD1 is merged — the same `.hurl` runs as a di
 |---|---|---|---|
 | scope+design | DESIGN-READY (gated on FEAT-8AD1) | 2026-07-25 | — |
 | hurl 8.0.1 installed ~/.local/bin | done | 2026-07-25 | — |
+| hurl 8.0.1 installed ~/.local/bin | done | 2026-07-25 | — |
+| pilot driven by hand (green over the wire) | PASS | 2026-07-25 | — |
+| discovered-oracle via behavioural_oracle.command (fix B end-to-end) | PROVEN | 2026-07-25 | — |
+| A/B record | docs/http-pilot-hurl-results-2026-07-25.md | 2026-07-25 | — |
