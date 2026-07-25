@@ -50,12 +50,21 @@ def parse_scenarios(feature_text: str) -> list[tuple[str, list[str]]]:
     if cur: scenarios.append((cur, steps))
     return scenarios
 
-def call_llm(system: str, user: str) -> str:
+def call_llm(system: str, user: str, retries: int = 3) -> str:
     body = json.dumps({"model": LLM_MODEL, "temperature": 0,
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}).encode()
-    req = urllib.request.Request(LLM_ENDPOINT, data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=180) as r:
-        out = json.loads(r.read().decode())
+    last = None
+    for attempt in range(retries):
+        try:
+            req = urllib.request.Request(LLM_ENDPOINT, data=body, headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=300) as r:
+                out = json.loads(r.read().decode())
+            break
+        except (urllib.error.URLError, TimeoutError, OSError) as e:  # slow/contended local seat
+            last = e
+            print(f"  llm call timed out (attempt {attempt+1}/{retries}), retrying...", file=sys.stderr)
+    else:
+        raise RuntimeError(f"llm call failed after {retries} retries: {last}")
     txt = out["choices"][0]["message"]["content"]
     # strip any accidental fences (defensive — same class as the coach fence bug)
     txt = re.sub(r"^```[a-zA-Z]*\n?|\n?```$", "", txt.strip())
