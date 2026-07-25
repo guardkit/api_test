@@ -8,6 +8,34 @@ wave: 1
 implementation_mode: task-work
 complexity: 4
 dependencies: []
+status: in_review
+autobuild_state:
+  current_turn: 2
+  max_turns: 30
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-8737
+  base_branch: ddd-demo
+  started_at: '2026-07-25T12:11:55.002783'
+  last_updated: '2026-07-25T12:35:12.454137'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: '- Coach verdict-emission failed: Coach decision not found: no assistant
+      text in harness events for TASK-SMOKE-002 turn 1 (0 AssistantMessageEvent).
+      Likely substrate limitation (qwen36-workhorse F2 at Coach level). Player should
+      retry on turn 2 with this feedback.'
+    timestamp: '2026-07-25T12:11:55.002783'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-25T12:27:41.975700'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 # Add seed template and stdlib probe
 

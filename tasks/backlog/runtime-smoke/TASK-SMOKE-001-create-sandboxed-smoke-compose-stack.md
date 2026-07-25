@@ -8,6 +8,28 @@ wave: 1
 implementation_mode: direct
 complexity: 3
 dependencies: []
+status: in_review
+autobuild_state:
+  current_turn: 1
+  max_turns: 30
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-8737
+  base_branch: ddd-demo
+  started_at: '2026-07-25T11:42:26.257163'
+  last_updated: '2026-07-25T12:05:16.512466'
+  turns:
+  - turn: 1
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-25T11:42:26.257163'
+    player_summary: "Created deploy/docker-compose.smoke.yml \u2014 a sandboxed smoke\
+      \ compose stack with exactly two services (app and db). The app service uses\
+      \ image: apitest-app:smoke (no build: key), runs hardened (non-root user 1000:1000,\
+      \ cap_drop ALL, no-new-privileges, read_only filesystem with tmpfs /tmp, memory\
+      \ and pids limits, PYTHONDONTWRITEBYTECODE=1), and connects to db via DATABASE_URL\
+      \ with service_healthy dependency. The db service uses postgres:16-alpine with\
+      \ tmpfs-backed data and pg_isready healthcheck. T"
+    player_success: true
+    coach_success: true
 ---
 # Create sandboxed smoke compose stack
 

@@ -7,18 +7,57 @@ feature_id: FEAT-8737
 wave: 2
 implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-SMOKE-001, TASK-SMOKE-002]
+dependencies:
+- TASK-SMOKE-001
+- TASK-SMOKE-002
 consumer_context:
-  - task: TASK-SMOKE-001
-    consumes: SMOKE_COMPOSE_FILE
-    framework: "docker compose v2 (subprocess)"
-    driver: "docker CLI"
-    format_note: "Standalone file deploy/docker-compose.smoke.yml, project name apitest-smoke, services app+db, networks backend+probe both internal:true, app image apitest-app:smoke, no ports, no build key"
-  - task: TASK-SMOKE-002
-    consumes: PROBE_VERDICT_JSON
-    framework: "pytest (json.loads on captured stdout)"
-    driver: "python:3.12-slim probe container"
-    format_note: "Exactly one stdout line: {\"pass\": bool, \"marker\": str, \"checks\": [{\"id\", \"pass\", \"detail\"}...]}; exit 0 iff all checks pass"
+- task: TASK-SMOKE-001
+  consumes: SMOKE_COMPOSE_FILE
+  framework: docker compose v2 (subprocess)
+  driver: docker CLI
+  format_note: Standalone file deploy/docker-compose.smoke.yml, project name apitest-smoke,
+    services app+db, networks backend+probe both internal:true, app image apitest-app:smoke,
+    no ports, no build key
+- task: TASK-SMOKE-002
+  consumes: PROBE_VERDICT_JSON
+  framework: pytest (json.loads on captured stdout)
+  driver: python:3.12-slim probe container
+  format_note: 'Exactly one stdout line: {"pass": bool, "marker": str, "checks": [{"id",
+    "pass", "detail"}...]}; exit 0 iff all checks pass'
+status: in_review
+autobuild_state:
+  current_turn: 2
+  max_turns: 30
+  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-8737
+  base_branch: ddd-demo
+  started_at: '2026-07-25T12:35:12.482671'
+  last_updated: '2026-07-25T13:31:25.432156'
+  turns:
+  - turn: 1
+    decision: feedback
+    feedback: "- Runtime-parity failure: a test in the feature smoke suite FAILED\
+      \ under this task's changes (exit=5, expected=0). The smoke command runs the\
+      \ feature's test suite \u2014 fix the failing test(s) named in the output below.\
+      \ Command: set -e\npython -m pytest tests/acceptance -x -q\n:\n  \n===============================\
+      \ warnings summary ===============================\n.venv/lib/python3.11/site-packages/fastapi/testclient.py:1\n\
+      \  /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-8737/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1:\
+      \ StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is\
+      \ deprecated; install `httpx2` instead.\n    from starlette.testclient import\
+      \ TestClient as TestClient  # noqa\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n\
+      1 warning in 0.00s"
+    timestamp: '2026-07-25T12:35:12.482671'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
+  - turn: 2
+    decision: approve
+    feedback: null
+    timestamp: '2026-07-25T13:19:40.198654'
+    player_summary: 'Implementation via task-work delegation. Files planned: 0, Files
+      actual: 0'
+    player_success: true
+    coach_success: true
 ---
 # Add users round-trip oracle
 
