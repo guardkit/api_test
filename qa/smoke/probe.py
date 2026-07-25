@@ -86,7 +86,7 @@ def check_user_list_contains_marker() -> tuple[str, bool, str]:
         items = cast(list[dict[str, object]], data.get("items", []))
         for item in items:
             email = item.get("email", "")
-            pattern = f"seeded-{marker}@smoke.local"
+            pattern = f"seeded-{marker}@smoke.internal"
             if email == pattern:
                 return (
                     "user_list_contains_marker",
@@ -107,7 +107,7 @@ def check_user_list_contains_marker() -> tuple[str, bool, str]:
 def check_created_user_fetch() -> tuple[str, bool, str]:
     """Check 2: created user fetched back has identical email and full_name."""
     marker = _marker()
-    test_email = f"probe-{marker}@test.local"
+    test_email = f"probe-{marker}@test.internal"
     test_name = f"Probe User {marker}"
     try:
         # Create the user
@@ -171,7 +171,7 @@ def check_random_id_not_found() -> tuple[str, bool, str]:
 def check_duplicate_email_conflict() -> tuple[str, bool, str]:
     """Check 4: re-creating the same email reports a conflict."""
     marker = _marker()
-    test_email = f"probe-{marker}@test.local"
+    test_email = f"probe-{marker}@test.internal"
     try:
         status, data = _post("/users", {"email": test_email, "full_name": "Duplicate"})
         if status == 409:

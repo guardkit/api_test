@@ -1,25 +1,32 @@
 ---
-id: TASK-SMOKE-003
-title: Add users round-trip oracle
-task_type: testing
-parent_review: TASK-REV-RSMK
-feature_id: FEAT-8737
-wave: 2
-implementation_mode: task-work
 complexity: 6
-dependencies: [TASK-SMOKE-001, TASK-SMOKE-002]
 consumer_context:
-  - task: TASK-SMOKE-001
-    consumes: SMOKE_COMPOSE_FILE
-    framework: "docker compose v2 (subprocess)"
-    driver: "docker CLI"
-    format_note: "Standalone file deploy/docker-compose.smoke.yml, project name apitest-smoke, services app+db, networks backend+probe both internal:true, app image apitest-app:smoke, no ports, no build key"
-  - task: TASK-SMOKE-002
-    consumes: PROBE_VERDICT_JSON
-    framework: "pytest (json.loads on captured stdout)"
-    driver: "python:3.12-slim probe container"
-    format_note: "Exactly one stdout line: {\"pass\": bool, \"marker\": str, \"checks\": [{\"id\", \"pass\", \"detail\"}...]}; exit 0 iff all checks pass"
+- consumes: SMOKE_COMPOSE_FILE
+  driver: docker CLI
+  format_note: Standalone file deploy/docker-compose.smoke.yml, project name apitest-smoke,
+    services app+db, networks backend+probe both internal:true, app image apitest-app:smoke,
+    no ports, no build key
+  framework: docker compose v2 (subprocess)
+  task: TASK-SMOKE-001
+- consumes: PROBE_VERDICT_JSON
+  driver: python:3.12-slim probe container
+  format_note: 'Exactly one stdout line: {"pass": bool, "marker": str, "checks": [{"id",
+    "pass", "detail"}...]}; exit 0 iff all checks pass'
+  framework: pytest (json.loads on captured stdout)
+  task: TASK-SMOKE-002
+dependencies:
+- TASK-SMOKE-001
+- TASK-SMOKE-002
+feature_id: FEAT-8737
+id: TASK-SMOKE-003
+implementation_mode: task-work
+parent_review: TASK-REV-RSMK
+status: design_approved
+task_type: testing
+title: Add users round-trip oracle
+wave: 2
 ---
+
 # Add users round-trip oracle
 
 One new pytest file: `tests/acceptance/users_roundtrip.py` — the independent behavioural
