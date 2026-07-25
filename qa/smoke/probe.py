@@ -17,6 +17,7 @@ import json
 import os
 import sys
 import uuid
+from typing import cast
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -41,8 +42,10 @@ def _marker() -> str:
 # HTTP helpers
 # ---------------------------------------------------------------------------
 
-def _request(method: str, path: str,
-             body: object | None = None) -> tuple[int, object]:
+
+def _request(
+    method: str, path: str, body: object | None = None
+) -> tuple[int, dict[str, object]]:
     """Send an HTTP request and return (status_code, parsed_json_body).
 
     Raises HTTPError for 4xx/5xx responses -- the caller inspects the status.
@@ -58,12 +61,12 @@ def _request(method: str, path: str,
     return resp.status, json.loads(resp.read().decode("utf-8"))
 
 
-def _get(path: str) -> tuple[int, object]:
+def _get(path: str) -> tuple[int, dict[str, object]]:
     """GET helper."""
     return _request("GET", path)
 
 
-def _post(path: str, body: object) -> tuple[int, object]:
+def _post(path: str, body: object) -> tuple[int, dict[str, object]]:
     """POST helper."""
     return _request("POST", path, body)
 
@@ -72,29 +75,33 @@ def _post(path: str, body: object) -> tuple[int, object]:
 # Check functions -- each returns (check_id, passed: bool, detail: str)
 # ---------------------------------------------------------------------------
 
+
 def check_user_list_contains_marker() -> tuple[str, bool, str]:
     """Check 1: the user listing contains the seeded marker row."""
     marker = _marker()
     try:
         status, data = _get("/users")
         if status != 200:
-            return ("user_list_contains_marker", False,
-                    f"GET /users returned {status}")
-        items = data.get("items", [])
+            return ("user_list_contains_marker", False, f"GET /users returned {status}")
+        items = cast(list[dict[str, object]], data.get("items", []))
         for item in items:
             email = item.get("email", "")
             pattern = f"seeded-{marker}@smoke.local"
             if email == pattern:
-                return ("user_list_contains_marker", True,
-                        "Seeded marker row found in user list")
-        return ("user_list_contains_marker", False,
-                f"Marker '{marker}' not found in user list")
+                return (
+                    "user_list_contains_marker",
+                    True,
+                    "Seeded marker row found in user list",
+                )
+        return (
+            "user_list_contains_marker",
+            False,
+            f"Marker '{marker}' not found in user list",
+        )
     except HTTPError as exc:
-        return ("user_list_contains_marker", False,
-                f"GET /users HTTPError: {exc.code}")
+        return ("user_list_contains_marker", False, f"GET /users HTTPError: {exc.code}")
     except OSError as exc:
-        return ("user_list_contains_marker", False,
-                f"GET /users network error: {exc}")
+        return ("user_list_contains_marker", False, f"GET /users network error: {exc}")
 
 
 def check_created_user_fetch() -> tuple[str, bool, str]:
@@ -104,29 +111,41 @@ def check_created_user_fetch() -> tuple[str, bool, str]:
     test_name = f"Probe User {marker}"
     try:
         # Create the user
-        status, created = _post("/users",
-                                {"email": test_email,
-                                 "full_name": test_name})
+        status, created = _post("/users", {"email": test_email, "full_name": test_name})
         if status != 201:
-            return ("created_user_fetch", False,
-                    f"POST /users returned {status}: {created}")
+            return (
+                "created_user_fetch",
+                False,
+                f"POST /users returned {status}: {created}",
+            )
         user_id = created.get("id")
         if not user_id:
-            return ("created_user_fetch", False,
-                    "POST /users did not return an id")
+            return ("created_user_fetch", False, "POST /users did not return an id")
         # Fetch it back
         status2, fetched = _get(f"/users/{user_id}")
         if status2 != 200:
-            return ("created_user_fetch", False,
-                    f"GET /users/{user_id} returned {status2}")
+            return (
+                "created_user_fetch",
+                False,
+                f"GET /users/{user_id} returned {status2}",
+            )
         if fetched.get("email") != test_email:
-            return ("created_user_fetch", False,
-                    f"Email mismatch: {fetched.get('email')}")
+            return (
+                "created_user_fetch",
+                False,
+                f"Email mismatch: {fetched.get('email')}",
+            )
         if fetched.get("full_name") != test_name:
-            return ("created_user_fetch", False,
-                    f"Full name mismatch: {fetched.get('full_name')}")
-        return ("created_user_fetch", True,
-                "Created user fetched back with matching fields")
+            return (
+                "created_user_fetch",
+                False,
+                f"Full name mismatch: {fetched.get('full_name')}",
+            )
+        return (
+            "created_user_fetch",
+            True,
+            "Created user fetched back with matching fields",
+        )
     except HTTPError as exc:
         return ("created_user_fetch", False, f"HTTPError: {exc.code}")
     except OSError as exc:
@@ -139,16 +158,12 @@ def check_random_id_not_found() -> tuple[str, bool, str]:
     try:
         status, data = _get(f"/users/{fake_id}")
         if status == 404:
-            return ("random_id_not_found", True,
-                    f"GET /users/{fake_id} returned 404")
-        return ("random_id_not_found", False,
-                f"Expected 404, got {status}")
+            return ("random_id_not_found", True, f"GET /users/{fake_id} returned 404")
+        return ("random_id_not_found", False, f"Expected 404, got {status}")
     except HTTPError as exc:
         if exc.code == 404:
-            return ("random_id_not_found", True,
-                    f"GET /users/{fake_id} returned 404")
-        return ("random_id_not_found", False,
-                f"Unexpected HTTPError: {exc.code}")
+            return ("random_id_not_found", True, f"GET /users/{fake_id} returned 404")
+        return ("random_id_not_found", False, f"Unexpected HTTPError: {exc.code}")
     except OSError as exc:
         return ("random_id_not_found", False, f"Network error: {exc}")
 
@@ -158,53 +173,60 @@ def check_duplicate_email_conflict() -> tuple[str, bool, str]:
     marker = _marker()
     test_email = f"probe-{marker}@test.local"
     try:
-        status, data = _post("/users",
-                             {"email": test_email,
-                              "full_name": "Duplicate"})
+        status, data = _post("/users", {"email": test_email, "full_name": "Duplicate"})
         if status == 409:
-            return ("duplicate_email_conflict", True,
-                    "POST /users returned 409 conflict")
-        return ("duplicate_email_conflict", False,
-                f"Expected 409, got {status}: {data}")
+            return (
+                "duplicate_email_conflict",
+                True,
+                "POST /users returned 409 conflict",
+            )
+        return (
+            "duplicate_email_conflict",
+            False,
+            f"Expected 409, got {status}: {data}",
+        )
     except HTTPError as exc:
         if exc.code == 409:
-            return ("duplicate_email_conflict", True,
-                    "POST /users returned 409 conflict")
-        return ("duplicate_email_conflict", False,
-                f"Unexpected HTTPError: {exc.code}")
+            return (
+                "duplicate_email_conflict",
+                True,
+                "POST /users returned 409 conflict",
+            )
+        return ("duplicate_email_conflict", False, f"Unexpected HTTPError: {exc.code}")
     except OSError as exc:
-        return ("duplicate_email_conflict", False,
-                f"Network error: {exc}")
+        return ("duplicate_email_conflict", False, f"Network error: {exc}")
 
 
 def check_malformed_submission_validation_failure() -> tuple[str, bool, str]:
     """Check 5: malformed submission reports validation failure."""
     try:
         # Send invalid email
-        status, data = _post("/users",
-                             {"email": "not-an-email",
-                              "full_name": "Bad"})
+        status, data = _post("/users", {"email": "not-an-email", "full_name": "Bad"})
         if status == 422:
-            return ("malformed_submission", True,
-                    "POST /users returned 422 validation error")
-        return ("malformed_submission", False,
-                f"Expected 422, got {status}: {data}")
+            return (
+                "malformed_submission",
+                True,
+                "POST /users returned 422 validation error",
+            )
+        return ("malformed_submission", False, f"Expected 422, got {status}: {data}")
     except HTTPError as exc:
         if exc.code == 422:
-            return ("malformed_submission", True,
-                    "POST /users returned 422 validation error")
-        return ("malformed_submission", False,
-                f"Unexpected HTTPError: {exc.code}")
+            return (
+                "malformed_submission",
+                True,
+                "POST /users returned 422 validation error",
+            )
+        return ("malformed_submission", False, f"Unexpected HTTPError: {exc.code}")
     except OSError as exc:
-        return ("malformed_submission", False,
-                f"Network error: {exc}")
+        return ("malformed_submission", False, f"Network error: {exc}")
 
 
 # ---------------------------------------------------------------------------
 # Verdict assembly
 # ---------------------------------------------------------------------------
 
-def run_all_checks() -> list[dict]:
+
+def run_all_checks() -> list[dict[str, object]]:
     """Run all five checks and return the list of check result dicts."""
     checks = [
         check_user_list_contains_marker(),
@@ -213,24 +235,23 @@ def run_all_checks() -> list[dict]:
         check_duplicate_email_conflict(),
         check_malformed_submission_validation_failure(),
     ]
-    return [{"id": cid, "pass": passed,
-             "detail": detail}
-            for cid, passed, detail in checks]
+    return [
+        {"id": cid, "pass": passed, "detail": detail} for cid, passed, detail in checks
+    ]
 
 
-def verdict_json(checks: list[dict], marker: str | None = None) -> str:
+def verdict_json(checks: list[dict[str, object]], marker: str | None = None) -> str:
     """Build the single-line verdict JSON."""
     if marker is None:
         marker = _marker()
     all_pass = all(c["pass"] for c in checks)
-    return json.dumps({"pass": all_pass,
-                       "marker": marker,
-                       "checks": checks})
+    return json.dumps({"pass": all_pass, "marker": marker, "checks": checks})
 
 
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     """Run the probe and emit verdict JSON to stdout."""

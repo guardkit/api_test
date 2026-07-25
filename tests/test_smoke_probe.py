@@ -24,52 +24,173 @@ _PROBE_PATH = Path(__file__).resolve().parent.parent / "qa" / "smoke" / "probe.p
 # AC-002: stdlib-only import rule (AST walk)
 # ---------------------------------------------------------------------------
 
+
 def _stdlib_modules() -> set[str]:
     """Return the set of known stdlib top-level module names."""
     return {
         "__future__",
-        "abc", "argparse", "array", "ast", "asyncio",
-        "atexit", "base64", "binascii", "bisect", "builtins",
+        "abc",
+        "argparse",
+        "array",
+        "ast",
+        "asyncio",
+        "atexit",
+        "base64",
+        "binascii",
+        "bisect",
+        "builtins",
         "bz2",
-        "calendar", "cgi", "cmath", "cmd",
-        "codecs", "collections", "concurrent", "configparser",
-        "contextlib", "contextvars", "copy", "csv", "ctypes",
-        "curses", "dataclasses", "datetime", "dbm", "decimal",
-        "difflib", "dis", "distutils", "doctest",
-        "email", "encodings", "enum", "errno",
-        "faulthandler", "fcntl", "filecmp", "fileinput", "fnmatch",
-        "fractions", "ftplib", "functools",
-        "gc", "getopt", "getpass", "gettext", "glob", "grp", "gzip",
-        "hashlib", "heapq", "hmac", "html", "http",
-        "imaplib", "importlib", "inspect", "io", "ipaddress",
+        "calendar",
+        "cgi",
+        "cmath",
+        "cmd",
+        "codecs",
+        "collections",
+        "concurrent",
+        "configparser",
+        "contextlib",
+        "contextvars",
+        "copy",
+        "csv",
+        "ctypes",
+        "curses",
+        "dataclasses",
+        "datetime",
+        "dbm",
+        "decimal",
+        "difflib",
+        "dis",
+        "distutils",
+        "doctest",
+        "email",
+        "encodings",
+        "enum",
+        "errno",
+        "faulthandler",
+        "fcntl",
+        "filecmp",
+        "fileinput",
+        "fnmatch",
+        "fractions",
+        "ftplib",
+        "functools",
+        "gc",
+        "getopt",
+        "getpass",
+        "gettext",
+        "glob",
+        "grp",
+        "gzip",
+        "hashlib",
+        "heapq",
+        "hmac",
+        "html",
+        "http",
+        "imaplib",
+        "importlib",
+        "inspect",
+        "io",
+        "ipaddress",
         "itertools",
         "json",
         "keyword",
-        "linecache", "locale", "logging", "lzma",
-        "mailbox", "marshal", "math", "mimetypes", "mmap",
+        "linecache",
+        "locale",
+        "logging",
+        "lzma",
+        "mailbox",
+        "marshal",
+        "math",
+        "mimetypes",
+        "mmap",
         "multiprocessing",
-        "netrc", "numbers",
-        "operator", "optparse", "os",
-        "pathlib", "pdb", "pickle", "pipes", "pkgutil", "platform",
-        "plistlib", "poplib", "posix", "posixpath",
-        "pprint", "profile", "pstats", "pty", "pwd", "py_compile",
-        "queue", "quopri",
-        "random", "re", "readline", "reprlib", "resource",
+        "netrc",
+        "numbers",
+        "operator",
+        "optparse",
+        "os",
+        "pathlib",
+        "pdb",
+        "pickle",
+        "pipes",
+        "pkgutil",
+        "platform",
+        "plistlib",
+        "poplib",
+        "posix",
+        "posixpath",
+        "pprint",
+        "profile",
+        "pstats",
+        "pty",
+        "pwd",
+        "py_compile",
+        "queue",
+        "quopri",
+        "random",
+        "re",
+        "readline",
+        "reprlib",
+        "resource",
         "runpy",
-        "sched", "secrets", "select", "selectors", "shelve", "shlex",
-        "shutil", "signal", "site", "smtplib", "socket",
-        "socketserver", "sqlite3", "ssl", "stat", "statistics",
-        "string", "struct", "subprocess", "symtable",
-        "sys", "sysconfig", "syslog",
-        "tabnanny", "tarfile", "tempfile", "termios", "test",
-        "textwrap", "threading", "time", "timeit", "token",
-        "tokenize", "tomllib", "trace", "traceback", "tracemalloc",
-        "tty", "turtle", "types", "typing",
-        "unicodedata", "unittest", "urllib", "uuid",
+        "sched",
+        "secrets",
+        "select",
+        "selectors",
+        "shelve",
+        "shlex",
+        "shutil",
+        "signal",
+        "site",
+        "smtplib",
+        "socket",
+        "socketserver",
+        "sqlite3",
+        "ssl",
+        "stat",
+        "statistics",
+        "string",
+        "struct",
+        "subprocess",
+        "symtable",
+        "sys",
+        "sysconfig",
+        "syslog",
+        "tabnanny",
+        "tarfile",
+        "tempfile",
+        "termios",
+        "test",
+        "textwrap",
+        "threading",
+        "time",
+        "timeit",
+        "token",
+        "tokenize",
+        "tomllib",
+        "trace",
+        "traceback",
+        "tracemalloc",
+        "tty",
+        "turtle",
+        "types",
+        "typing",
+        "unicodedata",
+        "unittest",
+        "urllib",
+        "uuid",
         "venv",
-        "warnings", "wave", "weakref", "webbrowser", "wsgiref",
-        "xml", "xmlrpc",
-        "zipapp", "zipfile", "zipimport", "zlib",
+        "warnings",
+        "wave",
+        "weakref",
+        "webbrowser",
+        "wsgiref",
+        "xml",
+        "xmlrpc",
+        "zipapp",
+        "zipfile",
+        "zipimport",
+        "zlib",
         "_thread",
     }
 
@@ -103,6 +224,7 @@ def test_probe_imports_are_stdlib_only() -> None:
 # AC-004: verdict JSON shape
 # ---------------------------------------------------------------------------
 
+
 def test_verdict_json_shape_all_pass(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verdict JSON has correct shape when all checks pass."""
     monkeypatch.setenv("APP_BASE_URL", "http://localhost:9999")
@@ -119,8 +241,7 @@ def test_verdict_json_shape_all_pass(monkeypatch: pytest.MonkeyPatch) -> None:
     assert parsed["pass"] is True
     assert parsed["marker"] == "testmarker"
     assert isinstance(parsed["checks"], list)
-    assert all({"id", "pass", "detail"} <= set(c.keys())
-               for c in parsed["checks"])
+    assert all({"id", "pass", "detail"} <= set(c.keys()) for c in parsed["checks"])
 
 
 def test_verdict_json_shape_any_fail(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -145,16 +266,14 @@ def test_verdict_json_shape_any_fail(monkeypatch: pytest.MonkeyPatch) -> None:
 # AC-005: check-aggregation logic
 # ---------------------------------------------------------------------------
 
+
 def test_aggregation_all_pass_yields_true(monkeypatch: pytest.MonkeyPatch) -> None:
     """All-pass -> pass is true."""
     monkeypatch.setenv("APP_BASE_URL", "http://localhost:9999")
     monkeypatch.setenv("MARKER", "testmarker")
     from qa.smoke.probe import verdict_json  # noqa: E402
 
-    checks = [
-        {"id": f"check_{i}", "pass": True, "detail": "ok"}
-        for i in range(5)
-    ]
+    checks = [{"id": f"check_{i}", "pass": True, "detail": "ok"} for i in range(5)]
     parsed = json.loads(verdict_json(checks))
     assert parsed["pass"] is True
 
@@ -182,10 +301,7 @@ def test_aggregation_all_fail_yields_false(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setenv("MARKER", "testmarker")
     from qa.smoke.probe import verdict_json  # noqa: E402
 
-    checks = [
-        {"id": f"check_{i}", "pass": False, "detail": "boom"}
-        for i in range(5)
-    ]
+    checks = [{"id": f"check_{i}", "pass": False, "detail": "boom"} for i in range(5)]
     parsed = json.loads(verdict_json(checks))
     assert parsed["pass"] is False
 
@@ -204,6 +320,7 @@ def test_aggregation_empty_checks_yields_true(monkeypatch: pytest.MonkeyPatch) -
 # AC-004 (seam): single JSON line output with contract keys
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.seam
 def test_probe_verdict_json_is_single_parseable_line(
     monkeypatch: pytest.MonkeyPatch,
@@ -217,15 +334,13 @@ def test_probe_verdict_json_is_single_parseable_line(
     """
     result = subprocess.run(
         [sys.executable, str(_PROBE_PATH)],
-        env={"APP_BASE_URL": "http://127.0.0.1:1",
-             "MARKER": "seamtest"},
-        capture_output=True, text=True, timeout=60,
+        env={"APP_BASE_URL": "http://127.0.0.1:1", "MARKER": "seamtest"},
+        capture_output=True,
+        text=True,
+        timeout=60,
     )
-    lines = [line for line in result.stdout.splitlines()
-             if line.strip()]
-    assert len(lines) == 1, (
-        f"expected exactly one stdout line, got {len(lines)}"
-    )
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    assert len(lines) == 1, f"expected exactly one stdout line, got {len(lines)}"
     verdict = json.loads(lines[0])
     assert set(verdict) == {"pass", "marker", "checks"}
     assert verdict["pass"] is False and verdict["marker"] == "seamtest"
