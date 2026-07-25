@@ -1,6 +1,6 @@
 # Runtime smoke — users round-trip in a sandboxed candidate · Scope + Build Plan
 ## For: /feature-spec → Rich's Gherkin review → /feature-plan → guardkit autobuild (shadow watching)
-## Status: DRAFT for Rich's red-pen · 2026-07-25 · R5 feature 1 of the review-and-mission program
+## Status: EXECUTED 2026-07-25 (merge `bea55e2`) · R5 feature 1 of the review-and-mission program · NOTE: runsc is now ACTIVE on the app service (§2.1's "commented line" text describes the pre-install plan; Rich's attended install + the B1 green runs flipped it same-day, with the db dialed by static IP — the gVisor/embedded-DNS note lives in the compose file)
 ## Rulings embodied: ai-transition docs/software-factory-sandbox-options-card-2026-07-25.md (all five axes) + docs/software-factory-mission-statement-2026-07-25.md (moves M3: 0 → 1, and instruments M2)
 
 ## 1. What and why (one minute)
@@ -112,3 +112,8 @@ flips 0 → 1 only on that receipt, and M4 gains this build's shadow-judged verd
 | TASK-SMOKE-003 | debug: `server_default` → Python `default` | fixed | 2026-07-25 | — |
 | TASK-SMOKE-003 | debug: add `await db.commit()` to `create_user` | fixed | 2026-07-25 | — |
 | TASK-SMOKE-003 | pytest green (all 5 checks) | PASS | 2026-07-25 | — |
+| feature build | 3/3 coach-approved · 1 runtime-parity stub-catch fixed in-loop · smoke gate exit=0 | SUCCESS | 2026-07-25 | — |
+| coordinator verify | oracle green 4x own-hand (2 runc + 2 runsc) · models.py revert (net-new breakage coach missed) · suite 274 passed / 8 pre-existing reds identical on base · lint clean | PASS | 2026-07-25 | 538bfb8 |
+| runsc B1 | runtime: runsc ACTIVE post Rich's install; gVisor/embedded-DNS cured via static db IP (test-pinned) | LIVE | 2026-07-25 | 538bfb8 |
+| merge | M3: 0 → 1 · behavioural_oracle populates (ran/passed/11.4s) · first organic shadow receipts | MERGED | 2026-07-25 | bea55e2 |
+| post-merge receipt | oracle green from merged root · teardown clean | PASS | 2026-07-25 | — |
