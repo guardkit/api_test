@@ -1,0 +1,22 @@
+format_version: '2.0'
+task_id: TASK-SMOKE-002
+registered_at:
+  sha: 974464501c9c66b6488f756c8d6796da83ced922
+  date: '2026-07-25'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+criteria:
+- id: smoke-probe-AC-001
+  text: The probe performs the five contract checks (seeded-marker listing, create-then-fetch equality, not-found, duplicate conflict, malformed rejection) and emits exactly one JSON verdict line on stdout
+  class: machine
+  evidence_kind: json
+  runbook_ref: null
+- id: smoke-probe-AC-002
+  text: The probe imports only the Python standard library and the seed template carries the __MARKER__ token in both email and full name
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

@@ -1,0 +1,22 @@
+format_version: '2.0'
+task_id: TASK-SMOKE-003
+registered_at:
+  sha: 974464501c9c66b6488f756c8d6796da83ced922
+  date: '2026-07-25'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+criteria:
+- id: smoke-oracle-AC-001
+  text: The round-trip oracle deploys the sandboxed stack, seeds the per-run marker, runs the in-network probe, asserts every check passed, and tears down unconditionally, all inside the 300 second budget
+  class: machine
+  evidence_kind: json
+  runbook_ref: null
+- id: smoke-oracle-AC-002
+  text: Docker being unreachable fails the oracle loudly with a named reason and after any run no apitest-smoke containers networks or volumes remain
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
