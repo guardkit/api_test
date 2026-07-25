@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.users.exceptions import UserAlreadyExistsError, UserNotFoundError
+from src.users.exceptions import UserAlreadyExistsError
 from src.users.models import User
 from src.users.schemas import UserCreate, UserUpdate
 
@@ -36,6 +36,7 @@ async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
     try:
         await db.flush()
         await db.refresh(user)
+        await db.commit()
         return user
     except IntegrityError:
         await db.rollback()
@@ -57,7 +58,9 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     return result.scalar_one_or_none()
 
 
-async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100) -> Sequence[User]:
+async def get_users(
+    db: AsyncSession, skip: int = 0, limit: int = 100
+) -> Sequence[User]:
     """Get a list of users with optional pagination.
 
     Args:

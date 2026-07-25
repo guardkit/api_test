@@ -1,0 +1,81 @@
+# apitest-smoke sandbox — smoke-test compose stack.
+#
+# Scope: the `apitest-smoke` fence ONLY. This file never touches
+# `apitest-f2`, `apitest-f2-cand`, or the standing :5433 suite database.
+# The sandbox never builds images; every service uses a pre-pulled image.
+#
+#   docker compose -p apitest-smoke -f deploy/docker-compose.smoke.yml up -d
+#   docker compose -p apitest-smoke -f deploy/docker-compose.smoke.yml down
+#
+# Usage notes:
+#   - No host ports are published; all communication is internal-only.
+#   - The `app` service runs hardened (non-root, read-only fs, no capabilities).
+#   - The `db` service uses tmpfs for PostgreSQL data (ephemeral, no persistence).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test
+    # No `ports:` — reachable only from the app service over the compose network.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d test"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks:
+      backend:
+        # Static address: gVisor (runsc) netstack cannot reach Docker's embedded
+        # DNS on this internal network, so the app dials the db by IP, not name.
+        ipv4_address: 172.31.100.10
+
+  app:
+    runtime: runsc
+    # runsc ACTIVE since 2026-07-25 (Rich's attended install + the B1 oracle run
+    # green twice under gVisor). The db is dialed by static IP below because
+    # gVisor's netstack cannot reach Docker's embedded DNS on this internal
+    # network — do not switch DATABASE_URL back to the `db` hostname while
+    # runtime: runsc is on.
+    image: apitest-app:smoke
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - "no-new-privileges:true"
+    read_only: true
+    tmpfs:
+      - /tmp
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          pids: 100
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://postgres:test@172.31.100.10:5432/test"
+      PYTHONDONTWRITEBYTECODE: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "curl -fsS http://localhost:8901/health | grep -q '\"database\":\"connected\"'"
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    networks:
+      - backend
+      - probe
+
+networks:
+  backend:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.31.100.0/24
+  probe:
+    internal: true

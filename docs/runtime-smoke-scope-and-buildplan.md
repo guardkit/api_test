@@ -106,3 +106,9 @@ flips 0 → 1 only on that receipt, and M4 gains this build's shadow-judged verd
 | step | command | status | date | commit |
 |---|---|---|---|---|
 | scope+buildplan | this doc | DRAFT for red-pen | 2026-07-25 | — |
+| TASK-SMOKE-003 | users round-trip oracle | implemented | 2026-07-25 | — |
+| TASK-SMOKE-003 | debug: `.local` TLD → `.internal` | fixed | 2026-07-25 | — |
+| TASK-SMOKE-003 | debug: seed SQL `NOW()` for timestamps | fixed | 2026-07-25 | — |
+| TASK-SMOKE-003 | debug: `server_default` → Python `default` | fixed | 2026-07-25 | — |
+| TASK-SMOKE-003 | debug: add `await db.commit()` to `create_user` | fixed | 2026-07-25 | — |
+| TASK-SMOKE-003 | pytest green (all 5 checks) | PASS | 2026-07-25 | — |
