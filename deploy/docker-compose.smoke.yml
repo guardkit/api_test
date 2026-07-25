@@ -27,11 +27,18 @@ services:
     tmpfs:
       - /var/lib/postgresql/data
     networks:
-      - backend
+      backend:
+        # Static address: gVisor (runsc) netstack cannot reach Docker's embedded
+        # DNS on this internal network, so the app dials the db by IP, not name.
+        ipv4_address: 172.31.100.10
 
   app:
-    # runtime: runsc
-    # Flipping this on requires the attended runsc install (Rich's op).
+    runtime: runsc
+    # runsc ACTIVE since 2026-07-25 (Rich's attended install + the B1 oracle run
+    # green twice under gVisor). The db is dialed by static IP below because
+    # gVisor's netstack cannot reach Docker's embedded DNS on this internal
+    # network — do not switch DATABASE_URL back to the `db` hostname while
+    # runtime: runsc is on.
     image: apitest-app:smoke
     user: "1000:1000"
     cap_drop:
@@ -47,7 +54,7 @@ services:
           memory: 512M
           pids: 100
     environment:
-      DATABASE_URL: "postgresql+asyncpg://postgres:test@db:5432/test"
+      DATABASE_URL: "postgresql+asyncpg://postgres:test@172.31.100.10:5432/test"
       PYTHONDONTWRITEBYTECODE: "1"
     depends_on:
       db:
@@ -67,5 +74,8 @@ services:
 networks:
   backend:
     internal: true
+    ipam:
+      config:
+        - subnet: 172.31.100.0/24
   probe:
     internal: true

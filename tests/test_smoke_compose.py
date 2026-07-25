@@ -192,7 +192,8 @@ class TestAC004_NoExposedPorts:
 # ---------------------------------------------------------------------------
 
 class TestAC005_Hardening:
-    """App hardening: non-root user, cap_drop, security_opt, read_only, tmpfs /tmp, limits, env."""
+    """App hardening: non-root user, cap_drop, security_opt, read_only,
+    tmpfs /tmp, limits, env."""
 
     def test_app_user_non_root(self, compose_config):
         """App must run as non-root user."""
@@ -253,32 +254,25 @@ class TestAC005_Hardening:
 # AC-006: Commented runtime: runsc with note
 # ---------------------------------------------------------------------------
 
-class TestAC006_RunscComment:
-    """A commented # runtime: runsc line with a one-line note."""
+class TestAC006_RunscActive:
+    """runtime: runsc ACTIVE on the app service (flipped 2026-07-25 after the
+    attended install; was a commented line while the install was pending)."""
 
-    def test_runtime_runsc_commented(self, compose_raw):
-        """The file must contain a commented # runtime: runsc line."""
-        found = False
-        for line in compose_raw.splitlines():
-            stripped = line.strip()
-            if stripped == "# runtime: runsc":
-                found = True
-                break
-        assert found, "Missing '# runtime: runsc' comment in app service"
+    def test_runtime_runsc_active(self, compose_config):
+        """The app service must run under the runsc (gVisor) runtime."""
+        app = compose_config["services"]["app"]
+        assert app.get("runtime") == "runsc", (
+            "App service must declare runtime: runsc (the ruled sandbox runtime; "
+            "active since 2026-07-25)"
+        )
 
-    def test_runtime_runsc_note_mentions_rich(self, compose_raw):
-        """The comment block must include a note about Rich's op."""
-        # Find the line with "# runtime: runsc" and check nearby lines
-        lines = compose_raw.splitlines()
-        for i, line in enumerate(lines):
-            if "# runtime: runsc" in line:
-                # Check next line for the note
-                if i + 1 < len(lines):
-                    next_line = lines[i + 1]
-                    assert "Rich" in next_line or "rich" in next_line, (
-                        f"Missing Rich's op note after runsc comment: {next_line}"
-                    )
-                break
+    def test_runsc_dns_note_present(self, compose_raw):
+        """The file must document the gVisor embedded-DNS limitation that forces
+        the static-IP DATABASE_URL, so nobody 'simplifies' it back to a hostname."""
+        lowered = compose_raw.lower()
+        assert "runsc" in lowered and "dns" in lowered, (
+            "Missing the gVisor/embedded-DNS note explaining the static-IP db address"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -289,10 +283,17 @@ class TestAC007_AppEnvAndHealthcheck:
     """App DATABASE_URL, depends_on db service_healthy, healthcheck shape."""
 
     def test_database_url(self, compose_config):
-        """App DATABASE_URL must point at db:5432/test with asyncpg."""
+        """App DATABASE_URL must dial the db by its STATIC IP with asyncpg.
+
+        The db hostname cannot be used while the app runs under runsc: gVisor's
+        netstack cannot reach Docker's embedded DNS on this internal network.
+        The URL host must therefore equal the db service's pinned ipv4_address.
+        """
         app = compose_config["services"]["app"]
         env = app.get("environment", {})
-        expected = "postgresql+asyncpg://postgres:test@db:5432/test"
+        db = compose_config["services"]["db"]
+        db_ip = db["networks"]["backend"]["ipv4_address"]
+        expected = f"postgresql+asyncpg://postgres:test@{db_ip}:5432/test"
         assert env.get("DATABASE_URL") == expected
 
     def test_depends_on_db_healthy(self, compose_config):
@@ -303,7 +304,8 @@ class TestAC007_AppEnvAndHealthcheck:
         assert depends["db"].get("condition") == "service_healthy"
 
     def test_app_healthcheck_shape(self, compose_config):
-        """App healthcheck must mirror base file's curl-/health-database-connected shape."""
+        """App healthcheck mirrors the base curl-/health-database-connected
+        shape."""
         app = compose_config["services"]["app"]
         hc = app.get("healthcheck", {})
         test_cmd = hc.get("test", [])
@@ -350,4 +352,9 @@ class TestAC008_HeaderComments:
     def test_header_no_build_images(self, compose_raw):
         """Header must state the sandbox never builds images."""
         header = "\n".join(compose_raw.splitlines()[:20])
-        assert "build" not in header.lower() or "never builds" in header.lower() or "pre-pulled" in header.lower()
+        lowered = header.lower()
+        assert (
+            "build" not in lowered
+            or "never builds" in lowered
+            or "pre-pulled" in lowered
+        )

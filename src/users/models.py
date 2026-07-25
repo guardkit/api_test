@@ -12,7 +12,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from src.db.base import DeclarativeBase
 
 if TYPE_CHECKING:
-    pass
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class User(DeclarativeBase):
@@ -49,14 +49,12 @@ class User(DeclarativeBase):
     # Timestamps - DeclarativeBase provides these, but we override to add timezone
     created_at: Mapped[datetime] = mapped_column(
         nullable=False,
-        default=lambda: datetime.now(),
         server_default=func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
         nullable=False,
-        default=lambda: datetime.now(),
-        onupdate=func.now(),
         server_default=func.now(),
+        onupdate=func.now(),
     )
 
     def __repr__(self) -> str:
