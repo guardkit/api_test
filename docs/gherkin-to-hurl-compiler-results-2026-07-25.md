@@ -52,9 +52,12 @@ untouched; only the machine translation beneath it changed.
 - PROVEN: contract-grounded semantics (the hard part), the hurlfmt generator-bug gate, the
   repair-loop + retry design, and — from the manual pilot — the same `.hurl` running green over
   the wire and through the command socket (`behavioural_oracle.command`) with no Python.
-- PENDING (local-model speed only, not design): a single fully-green 11-scenario auto-compile
-  in one unattended pass — a final retry+repair run is in flight; result appended to the Status
-  Log. This gates nothing conceptually — the mechanism and its gates are proven.
+- PENDING — and the ROOT CAUSE is now precise (serving contention, not compiler design): the
+  unattended 11-scenario auto-compile timed out because the serving box currently holds the
+  **tutor set** (`gemma4-tutor`/`tutor-coach`/`embed`/audio — study-tutor), NOT `qwen36-workhorse`.
+  So every compiler call forced an on-demand model **swap** into the single serving slot and
+  back — swap-thrash, not model slowness. On an idle/resident workhorse seat it runs clean. The
+  productionisation note (dedicated/resident seat) is therefore load-bearing, not optional.
 
 ## Recommendation
 
@@ -70,4 +73,4 @@ that repo only once it earns it (repo-by-repo law). Rich's call on when.
 | compiler written (LLM + openapi-grounded) | done | 2026-07-25 |
 | first compile: semantics correct ($.items), hurlfmt caught a syntax bug (exit-2) | PROVEN | 2026-07-25 |
 | repair loop + prompt hardening + call retry added | done | 2026-07-25 |
-| final unattended full-green auto-compile | in flight (local-model speed) | 2026-07-25 |
+| final unattended auto-compile | timed out — ROOT CAUSE: tutor set held the serving slot, not the workhorse (swap-thrash, not design); needs a resident/idle workhorse seat | 2026-07-25 |
