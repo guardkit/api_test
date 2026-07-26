@@ -1,0 +1,36 @@
+# Assumptions manifest for users-count-endpoint.feature
+# Proposed by the factory coordinator — ALL PENDING Rich's review (nothing confirmed)
+
+feature: "Users Count Endpoint"
+generated: "2026-07-26"
+stack: "python"
+review_required: true
+
+assumptions:
+  - id: "ASSUM-001"
+    scenario: "The count degrades honestly when the database is unavailable"
+    assumption: "A data-bearing read returns 503 Service Unavailable with a body naming the database as the cause when the DB is down — it does NOT mirror /health's 200-with-degraded pattern (health reports its OWN status; /users/count would be inventing data)"
+    confidence: medium
+    basis: "src/health/router.py:34-46 is the only in-repo degradation precedent and it is a health surface, not a data surface; 503 is the honest contract for data that cannot be served"
+    human_response: "pending"
+
+  - id: "ASSUM-002"
+    scenario: "The count reflects the number of stored users"
+    assumption: "count = total rows in the users table under the repo's existing delete semantics (hard delete via the users CRUD); no soft-delete filter exists to apply"
+    confidence: medium
+    basis: "src/users/crud.py delete path removes the row; no deleted_at/soft-delete column in src/users/models.py"
+    human_response: "pending"
+
+  - id: "ASSUM-003"
+    scenario: "Requesting a user by id still works alongside the count route"
+    assumption: "GET /users/count is declared INSIDE src/users/router.py BEFORE the GET /users/{user_id} route, so the literal segment matches first and by-id keeps working; no separate package is created (contrast FEAT-UPT1's new-package shape — this feature extends an existing router, deliberately, as the more routine change)"
+    confidence: high
+    basis: "FastAPI matches routes in declaration order; /users/{user_id} would capture the literal 'count' and 422 on UUID parsing if declared first"
+    human_response: "pending"
+
+  - id: "ASSUM-004"
+    scenario: "The count reflects the number of stored users"
+    assumption: "The response body is exactly {\"count\": <non-negative integer>} — flat, one key, no pagination echo, no auth (the same no-auth posture as every existing surface in this repo)"
+    confidence: high
+    basis: "Smallest honest contract; mirrors the single-purpose shape of /uptime"
+    human_response: "pending"
