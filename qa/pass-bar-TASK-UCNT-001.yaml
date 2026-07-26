@@ -1,0 +1,38 @@
+# Pass-bar (guardkit qa kind: pass-bar) for TASK-UCNT-001 (GET /users/count).
+# The criteria ARE the gate: the count is the real stored-user total, tracks a
+# write, coexists with the by-id route, and degrades HONESTLY when the database
+# is down. auth_surface_bearing:false — the repo's standing no-auth posture. The
+# mandatory negative path is REAL here (unlike /uptime's immunity form): the
+# endpoint is data-bearing, so DB-down must yield 503 naming the cause — never a
+# raw 500, never an invented number.
+format_version: "2.0"
+task_id: TASK-UCNT-001
+registered_at:
+  sha: "ba1f201"
+  date: "2026-07-26"
+auth_surface_bearing: false
+preconditions:
+  - suite_green_vs_ledger
+criteria:
+  - id: C-UCNT-200
+    text: "GET /users/count returns HTTP 200 with the database up"
+    class: machine
+    evidence_kind: json
+  - id: C-UCNT-SHAPE
+    text: "response body is exactly {\"count\": <non-negative integer>} — one key, integer, >= 0; an empty store reports 0"
+    class: machine
+    evidence_kind: json
+  - id: C-UCNT-ROUNDTRIP
+    text: "creating a user then re-requesting the count shows the count incremented by exactly one (seeded-data round-trip)"
+    class: machine
+    evidence_kind: json
+  - id: C-UCNT-NOSHADOW
+    text: "GET /users/{user_id} for an existing user still returns that user's record (the count route does not shadow the by-id route)"
+    class: machine
+    evidence_kind: json
+  - id: C-UCNT-405
+    text: "POST to /users/count is rejected with HTTP 405"
+    class: machine
+    evidence_kind: json
+negative_paths:
+  - dependency_down_degradation
