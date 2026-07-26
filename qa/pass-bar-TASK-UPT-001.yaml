@@ -1,0 +1,31 @@
+# F1 · pass-bar (guardkit qa kind: pass-bar) for TASK-UPT-001 (GET /uptime).
+# The criteria ARE the gate: /uptime returns 200 with exactly the three keys and
+# honest monotonic semantics. auth_surface_bearing:false — read-only metadata,
+# same posture as /health and /version; no auth surface, no dependencies, so no
+# dependency negative path applies (nothing to degrade).
+format_version: "2.0"
+task_id: TASK-UPT-001
+registered_at:
+  sha: "77dadce"
+  date: "2026-07-26"
+auth_surface_bearing: false
+preconditions:
+  - suite_green_vs_ledger
+criteria:
+  - id: C-UPT-200
+    text: "GET /uptime returns HTTP 200"
+    class: machine
+    evidence_kind: json
+  - id: C-UPT-KEYS
+    text: "response body has exactly the keys service, started_at, uptime_seconds"
+    class: machine
+    evidence_kind: json
+  - id: C-UPT-STABLE
+    text: "started_at is ISO8601 UTC and identical across two sequential requests"
+    class: machine
+    evidence_kind: json
+  - id: C-UPT-MONO
+    text: "uptime_seconds is a non-negative float and strictly increases between two sequential requests"
+    class: machine
+    evidence_kind: json
+negative_paths: []
