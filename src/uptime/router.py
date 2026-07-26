@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime
 
 from fastapi import APIRouter
@@ -11,8 +12,12 @@ from src.uptime.schemas import UptimeResponse
 
 router = APIRouter()
 
-# Capture the module-level startup time when this router is first imported
+# Capture the module-level startup time when this router is first imported.
+# _startup_time is the wall-clock UTC timestamp (for started_at).
+# _start_monotonic is the monotonic clock snapshot (for uptime_seconds).
+# Using monotonic() ensures uptime_seconds never goes backwards.
 _startup_time: datetime = datetime.now(UTC)
+_start_monotonic: float = time.monotonic()
 
 
 @router.get(
@@ -31,8 +36,7 @@ async def get_uptime() -> UptimeResponse:
     Returns the current service uptime information including the service name,
     when it started, and how many seconds it has been running.
     """
-    now = datetime.now(UTC)
-    uptime_seconds = (now - _startup_time).total_seconds()
+    uptime_seconds = time.monotonic() - _start_monotonic
 
     return UptimeResponse(
         service=settings.app_name,
