@@ -1,8 +1,9 @@
 # F1 · pass-bar (guardkit qa kind: pass-bar) for TASK-UPT-001 (GET /uptime).
 # The criteria ARE the gate: /uptime returns 200 with exactly the three keys and
 # honest monotonic semantics. auth_surface_bearing:false — read-only metadata,
-# same posture as /health and /version; no auth surface, no dependencies, so no
-# dependency negative path applies (nothing to degrade).
+# same posture as /health and /version. The one mandatory negative path is real
+# here: /uptime has no DB dependency, so it must remain 200 and fully-shaped
+# while the database is down (degradation-immunity IS the degradation test).
 format_version: "2.0"
 task_id: TASK-UPT-001
 registered_at:
@@ -28,4 +29,5 @@ criteria:
     text: "uptime_seconds is a non-negative float and strictly increases between two sequential requests"
     class: machine
     evidence_kind: json
-negative_paths: []
+negative_paths:
+  - dependency_down_degradation
