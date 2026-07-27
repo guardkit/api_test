@@ -5,8 +5,8 @@ description: 'Expose the stored-user total at GET /users/count returning exactly
   the by-id route so neither shadows the other). Data-bearing: the count reads the
   real users table, DB-down degrades honestly to 503 naming the cause. The second
   forge end-to-end run''s demo feature: FEAT-UPT1-class size, one honest step more
-  real. Gherkin + assumptions in features/users-count-endpoint/ (assumptions PENDING
-  Rich''s review).'
+  real. Gherkin + assumptions in features/users-count-endpoint/ (all four assumptions
+  CONFIRMED by Rich 2026-07-27).'
 created: '2026-07-26T20:30:00.000000'
 status: planned
 complexity: 3

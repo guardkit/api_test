@@ -15,7 +15,6 @@ hardcoded stub cannot fake.
 **Scope:** one route + one response schema + tests. No new package (extends
 `src/users/router.py`); one small edit surface. No pagination, no filters, no auth.
 
-**Open for Rich's review:** the four assumptions in
-`users-count-endpoint_assumptions.yaml` — chiefly the 503-on-DB-down convention
-(ASSUM-001) and the hard-delete count semantics (ASSUM-002). All marked `pending`;
-nothing is confirmed until his word.
+**Approved:** Rich confirmed the spec and all four assumptions 2026-07-27
+("Happy with Step 1, spec-approved") — including the 503-on-DB-down convention
+(ASSUM-001) and the hard-delete count semantics (ASSUM-002).

@@ -1,7 +1,7 @@
-# Proposed by the factory coordinator (propose-review; AWAITING Rich's Gherkin review)
+# Proposed by the factory coordinator; APPROVED by Rich 2026-07-27 ("spec-approved")
 # Feature: Users Count Endpoint
 # Stack: python
-# Assumptions: 4 (see users-count-endpoint_assumptions.yaml — all pending review)
+# Assumptions: 4 (see users-count-endpoint_assumptions.yaml — all confirmed 2026-07-27)
 # Generated: 2026-07-26
 # Purpose: the SECOND forge e2e run's demo feature — FEAT-UPT1-class (single task,
 #   read-only) but data-bearing: it touches the real DB layer, so the mandatory
