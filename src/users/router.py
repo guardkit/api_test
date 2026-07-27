@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.dependencies import get_db
 from src.users import crud
 from src.users.exceptions import UserNotFoundError
+from pydantic import EmailStr
+
 from src.users.schemas import UserCountResponse, UserCreate, UserList, UserPublic, UserUpdate
 
 router = APIRouter(prefix="/users", redirect_slashes=False)
@@ -76,6 +78,41 @@ async def get_user_count(db: AsyncSession = Depends(get_db)) -> UserCountRespons
             detail=f"Database unavailable: {exc}",
         ) from exc
     return UserCountResponse(count=total)
+
+
+@router.get(
+    "/by-email",
+    response_model=UserPublic,
+    tags=["users"],
+    summary="Get user by email",
+    description="Retrieves a user by their exact email address.",
+    responses={
+        404: {"description": "User not found"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_user_by_email(
+    email: EmailStr, db: AsyncSession = Depends(get_db)
+) -> UserPublic:
+    """Get user by email.
+
+    Returns the user with the exact matching email address.
+    Returns 404 if no user has that email.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        user = await crud.get_user_by_email(db, email)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"User with email '{email}' not found",
+        )
+    return UserPublic.model_validate(user)
 
 
 @router.get(

@@ -379,3 +379,118 @@ class TestGetUserCount:
             assert "Connection refused" in data["detail"]
         finally:
             crud.count_users = original_count_users
+
+
+class TestGetUserByEmail:
+    """Tests for GET /users/by-email endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_by_email_found(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that looking up an existing email returns 200 with user data."""
+        user_in = UserCreate(email="byemail@example.com", full_name="By Email")
+        created = await crud.create_user(db_session, user_in)
+
+        response = await async_client.get("/users/by-email", params={"email": "byemail@example.com"})
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert data["email"] == "byemail@example.com"
+        assert data["full_name"] == "By Email"
+        assert data["id"] == created.id
+        assert data["is_active"] is True
+        assert "created_at" in data
+        assert "updated_at" in data
+
+    @pytest.mark.asyncio
+    async def test_by_email_multiple_users_exact_match(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that lookup returns exactly the matching user among several."""
+        for i in range(3):
+            await crud.create_user(
+                db_session,
+                UserCreate(email=f"multi{i}@example.com", full_name=f"Multi {i}"),
+            )
+
+        response = await async_client.get("/users/by-email", params={"email": "multi1@example.com"})
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert data["email"] == "multi1@example.com"
+        assert data["full_name"] == "Multi 1"
+
+    @pytest.mark.asyncio
+    async def test_by_email_not_found(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that an unknown email returns 404 with clear detail."""
+        response = await async_client.get("/users/by-email", params={"email": "unknown@example.com"})
+
+        assert response.status_code == HTTPStatus.NOT_FOUND
+        data = response.json()
+        assert "not found" in data["detail"].lower()
+        assert "unknown@example.com" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_by_email_malformed_returns_422(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that a malformed email returns 422 without hitting the database."""
+        response = await async_client.get("/users/by-email", params={"email": "not-an-email"})
+
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+    @pytest.mark.asyncio
+    async def test_by_email_db_unavailable(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that by-email returns 503 when database is unavailable."""
+        from unittest.mock import AsyncMock
+
+        from sqlalchemy.exc import SQLAlchemyError
+
+        original_get_by_email = crud.get_user_by_email
+        crud.get_user_by_email = AsyncMock(side_effect=SQLAlchemyError("Connection refused"))
+
+        try:
+            response = await async_client.get("/users/by-email", params={"email": "x@example.com"})
+            assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
+            data = response.json()
+            assert "Database unavailable" in data["detail"]
+            assert "Connection refused" in data["detail"]
+        finally:
+            crud.get_user_by_email = original_get_by_email
+
+    @pytest.mark.asyncio
+    async def test_by_email_case_sensitive(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that email lookup is exact match (case-sensitive)."""
+        await crud.create_user(
+            db_session,
+            UserCreate(email="CaseSensitive@example.com", full_name="Case Test"),
+        )
+
+        response_upper = await async_client.get("/users/by-email", params={"email": "CASESENSITIVE@EXAMPLE.COM"})
+        assert response_upper.status_code == HTTPStatus.NOT_FOUND
+
+        response_exact = await async_client.get("/users/by-email", params={"email": "CaseSensitive@example.com"})
+        assert response_exact.status_code == HTTPStatus.OK
+        assert response_exact.json()["full_name"] == "Case Test"
+
+    @pytest.mark.asyncio
+    async def test_by_id_still_works_after_by_email(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Regression guard: GET /users/{user_id} still works after adding by-email route."""
+        user_in = UserCreate(email="regression2@example.com", full_name="Regression 2")
+        created = await crud.create_user(db_session, user_in)
+
+        response = await async_client.get(f"/users/{created.id}")
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert data["email"] == "regression2@example.com"
+        assert data["full_name"] == "Regression 2"

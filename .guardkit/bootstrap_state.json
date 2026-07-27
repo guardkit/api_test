@@ -1,6 +1,6 @@
 {
-  "content_hash": "47ac4cec38926176ca1c012ed46fda050ef8ba5d844a40f9e57739e76dc09775",
+  "content_hash": "09b5f04d810f53f4f1cac50d122b4bc6bdff909693afe7a0337325251c0a0c58",
   "success": true,
-  "timestamp": "2026-07-26T12:32:52.944864",
-  "venv_python": "/tmp/forge-autobuild-worktrees/build-FEAT-UPT1-20260726112342/.guardkit/worktrees/FEAT-UPT1/.venv/bin/python"
+  "timestamp": "2026-07-27T17:23:26.477587",
+  "venv_python": "/tmp/forge-autobuild-worktrees/build-FEAT-UBEM-20260727162310/.guardkit/worktrees/FEAT-UBEM/.venv/bin/python"
 }
