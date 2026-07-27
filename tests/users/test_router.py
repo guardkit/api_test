@@ -360,7 +360,7 @@ class TestGetUserCount:
 
     @pytest.mark.asyncio
     async def test_count_db_unavailable(
-        self, async_client: AsyncClient, db_session: AsyncSession
+        self, async_client: AsyncClient, override_get_db: None
     ) -> None:
         """Test that count returns 503 when database is unavailable."""
         from unittest.mock import AsyncMock
