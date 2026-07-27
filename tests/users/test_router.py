@@ -258,3 +258,124 @@ class TestDeleteUser:
         assert response.status_code == HTTPStatus.NOT_FOUND
         data = response.json()
         assert "not found" in data["detail"]
+
+
+class TestGetUserCount:
+    """Tests for GET /users/count endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_count_empty(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test count returns 0 when database is empty."""
+        response = await async_client.get("/users/count")
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert data == {"count": 0}
+
+    @pytest.mark.asyncio
+    async def test_count_incremental(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that count increments after creating users."""
+        # Initial count should be 0
+        response = await async_client.get("/users/count")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["count"] == 0
+
+        # Create a user
+        await crud.create_user(
+            db_session,
+            UserCreate(email="increment@example.com", full_name="Increment"),
+        )
+
+        # Count should be 1
+        response = await async_client.get("/users/count")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["count"] == 1
+
+        # Create another user
+        await crud.create_user(
+            db_session,
+            UserCreate(email="increment2@example.com", full_name="Increment 2"),
+        )
+
+        # Count should be 2
+        response = await async_client.get("/users/count")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json()["count"] == 2
+
+    @pytest.mark.asyncio
+    async def test_count_method_not_allowed(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that POST to /users/count returns 405."""
+        response = await async_client.post("/users/count", json={"email": "x@x.com"})
+        assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+
+    @pytest.mark.asyncio
+    async def test_count_method_not_allowed_put_delete(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that PUT/DELETE to /users/count are rejected (405 or 422)."""
+        # PUT - FastAPI may return 422 for unmatched methods with body
+        response = await async_client.put("/users/count", json={"full_name": "X"})
+        assert response.status_code in (
+            HTTPStatus.METHOD_NOT_ALLOWED,
+            HTTPStatus.UNPROCESSABLE_ENTITY,
+        )
+
+        # DELETE - FastAPI may return 422 for unmatched methods
+        response = await async_client.delete("/users/count")
+        assert response.status_code in (
+            HTTPStatus.METHOD_NOT_ALLOWED,
+            HTTPStatus.UNPROCESSABLE_ENTITY,
+        )
+
+    @pytest.mark.asyncio
+    async def test_count_returns_non_negative(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that count is always a non-negative integer."""
+        response = await async_client.get("/users/count")
+        data = response.json()
+        assert isinstance(data["count"], int)
+        assert data["count"] >= 0
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_id_still_works(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Regression guard: GET /users/{user_id} still works after adding count route."""
+        user_in = UserCreate(email="regression@example.com", full_name="Regression")
+        created = await crud.create_user(db_session, user_in)
+
+        response = await async_client.get(f"/users/{created.id}")
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert data["email"] == "regression@example.com"
+        assert data["full_name"] == "Regression"
+
+    @pytest.mark.asyncio
+    async def test_count_db_unavailable(
+        self, async_client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Test that count returns 503 when database is unavailable."""
+        from unittest.mock import AsyncMock
+
+        from sqlalchemy.exc import SQLAlchemyError
+
+        # Mock crud.count_users to raise a DB error
+        original_count_users = crud.count_users
+        crud.count_users = AsyncMock(side_effect=SQLAlchemyError("Connection refused"))
+
+        try:
+            response = await async_client.get("/users/count")
+            assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
+            data = response.json()
+            assert "Database unavailable" in data["detail"]
+            assert "Connection refused" in data["detail"]
+        finally:
+            crud.count_users = original_count_users

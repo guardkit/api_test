@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.dependencies import get_db
 from src.users import crud
 from src.users.exceptions import UserNotFoundError
-from src.users.schemas import UserCreate, UserList, UserPublic, UserUpdate
+from src.users.schemas import UserCountResponse, UserCreate, UserList, UserPublic, UserUpdate
 
 router = APIRouter(prefix="/users", redirect_slashes=False)
 
@@ -49,6 +50,32 @@ async def list_users(
     users = await crud.get_users(db, skip=skip, limit=limit)
     total = await crud.count_users(db)
     return UserList(items=[UserPublic.model_validate(u) for u in users], total=total)
+
+
+@router.get(
+    "/count",
+    response_model=UserCountResponse,
+    tags=["users"],
+    summary="Get total user count",
+    description="Returns the total number of users stored in the database.",
+    responses={
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_user_count(db: AsyncSession = Depends(get_db)) -> UserCountResponse:
+    """Get total user count.
+
+    Returns the total number of users in the database.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        total = await crud.count_users(db)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return UserCountResponse(count=total)
 
 
 @router.get(

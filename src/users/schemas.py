@@ -83,6 +83,20 @@ class UserPublic(BaseModel):
         return v
 
 
+class UserCountResponse(BaseModel):
+    """Schema for user count responses."""
+
+    count: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"count": 42}
+            ]
+        }
+    )
+
+
 class UserList(BaseModel):
     """Schema for paginated user list responses."""
 
