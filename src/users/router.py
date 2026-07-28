@@ -156,6 +156,57 @@ async def update_user(
 
 
 @router.delete(
+    "/by-email",
+    status_code=204,
+    tags=["users"],
+    summary="Delete user by email",
+    description="Deletes a user by their exact email address. Returns 204 No Content on success.",
+    responses={
+        204: {"description": "User deleted successfully"},
+        404: {"description": "User not found"},
+        422: {"description": "Malformed email address"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def delete_user_by_email(
+    email: EmailStr, db: AsyncSession = Depends(get_db)
+) -> Response:
+    """Delete user by email.
+
+    Finds the user with the exact matching email address and deletes them.
+    Returns 204 on success, 404 if no user has that email, 503 if the database is unavailable.
+    """
+    try:
+        user = await crud.get_user_by_email(db, email)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"User with email '{email}' not found",
+        )
+
+    try:
+        deleted = await crud.delete_user(db, str(user.id))
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail=f"User with email '{email}' not found",
+        )
+    return Response(status_code=204)
+
+
+@router.delete(
     "/{user_id}",
     status_code=204,
     tags=["users"],

@@ -494,3 +494,147 @@ class TestGetUserByEmail:
         data = response.json()
         assert data["email"] == "regression2@example.com"
         assert data["full_name"] == "Regression 2"
+
+
+class TestDeleteUserByEmail:
+    """Tests for DELETE /users/by-email endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_by_email_delete_success(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that deleting by email returns 204 and the user is gone."""
+        user_in = UserCreate(email="deletebyemail@example.com", full_name="Delete By Email")
+        await crud.create_user(db_session, user_in)
+
+        response = await async_client.delete(
+            "/users/by-email", params={"email": "deletebyemail@example.com"}
+        )
+
+        assert response.status_code == HTTPStatus.NO_CONTENT
+        assert response.text == ""
+
+        # Subsequent GET by email returns 404
+        response = await async_client.get(
+            "/users/by-email", params={"email": "deletebyemail@example.com"}
+        )
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_by_email_delete_unknown_returns_404(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that deleting an unknown email returns 404 with clear detail."""
+        response = await async_client.delete(
+            "/users/by-email", params={"email": "nonexistent@example.com"}
+        )
+
+        assert response.status_code == HTTPStatus.NOT_FOUND
+        data = response.json()
+        assert "not found" in data["detail"].lower()
+        assert "nonexistent@example.com" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_by_email_delete_twice_returns_404_second_time(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that the second delete of the same email returns 404."""
+        user_in = UserCreate(email="deletetwice@example.com", full_name="Delete Twice")
+        await crud.create_user(db_session, user_in)
+
+        # First delete succeeds
+        response = await async_client.delete(
+            "/users/by-email", params={"email": "deletetwice@example.com"}
+        )
+        assert response.status_code == HTTPStatus.NO_CONTENT
+
+        # Second delete returns 404
+        response = await async_client.delete(
+            "/users/by-email", params={"email": "deletetwice@example.com"}
+        )
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_by_email_delete_malformed_returns_422(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that a malformed email returns 422 without touching the database."""
+        response = await async_client.delete(
+            "/users/by-email", params={"email": "not-an-email"}
+        )
+
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+    @pytest.mark.asyncio
+    async def test_by_email_delete_selective(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that deleting by email removes only the matching user."""
+        for i in range(3):
+            await crud.create_user(
+                db_session,
+                UserCreate(email=f"selective{i}@example.com", full_name=f"Selective {i}"),
+            )
+
+        # Delete the middle user by email
+        response = await async_client.delete(
+            "/users/by-email", params={"email": "selective1@example.com"}
+        )
+        assert response.status_code == HTTPStatus.NO_CONTENT
+
+        # Verify the deleted user is gone
+        response = await async_client.get(
+            "/users/by-email", params={"email": "selective1@example.com"}
+        )
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+        # Verify the other users are still retrievable
+        for i in [0, 2]:
+            response = await async_client.get(
+                "/users/by-email", params={"email": f"selective{i}@example.com"}
+            )
+            assert response.status_code == HTTPStatus.OK
+            data = response.json()
+            assert data["email"] == f"selective{i}@example.com"
+            assert data["full_name"] == f"Selective {i}"
+
+    @pytest.mark.asyncio
+    async def test_by_id_delete_still_works(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Regression guard: DELETE /users/{user_id} still returns 204 after adding by-email route."""
+        user_in = UserCreate(email="regression_delete@example.com", full_name="Regression Delete")
+        created = await crud.create_user(db_session, user_in)
+
+        response = await async_client.delete(f"/users/{created.id}")
+
+        assert response.status_code == HTTPStatus.NO_CONTENT
+
+        # Verify user is deleted
+        response = await async_client.get(f"/users/{created.id}")
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_by_email_delete_db_unavailable(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that by-email delete returns 503 when database is unavailable."""
+        from unittest.mock import AsyncMock
+
+        from sqlalchemy.exc import SQLAlchemyError
+
+        original_get = crud.get_user_by_email
+        original_delete = crud.delete_user
+        crud.get_user_by_email = AsyncMock(side_effect=SQLAlchemyError("Connection refused"))
+
+        try:
+            response = await async_client.delete(
+                "/users/by-email", params={"email": "x@example.com"}
+            )
+            assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
+            data = response.json()
+            assert "Database unavailable" in data["detail"]
+            assert "Connection refused" in data["detail"]
+        finally:
+            crud.get_user_by_email = original_get
+            crud.delete_user = original_delete

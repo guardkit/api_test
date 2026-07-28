@@ -1,5 +1,28 @@
 ---
 complexity: 2
+conformance:
+  ac_paths: true
+  rules:
+  - id: R-UDBE-ROUTE
+    paths:
+    - src/users/router.py
+    require_tokens:
+    - /by-email
+    - router.delete
+    type: token_coverage
+  - id: R-UDBE-TESTS
+    paths:
+    - src/users/router.py
+    require_test_tokens:
+      paths:
+      - tests/users/*.py
+      tokens:
+      - by-email
+      - '204'
+      - '404'
+      - '503'
+    require_tokens: []
+    type: token_coverage
 dependencies: []
 feature_id: FEAT-UDBE
 id: TASK-UDBE-001
@@ -8,20 +31,6 @@ status: design_approved
 task_type: feature
 title: Add DELETE /users/by-email endpoint
 wave: 1
-conformance:
-  ac_paths: true
-  rules:
-    - id: R-UDBE-ROUTE
-      type: token_coverage
-      paths: ["src/users/router.py"]
-      require_tokens: ["/by-email", "router.delete"]
-    - id: R-UDBE-TESTS
-      type: token_coverage
-      paths: ["src/users/router.py"]
-      require_tokens: []
-      require_test_tokens:
-        paths: ["tests/users/*.py"]
-        tokens: ["by-email", "204", "404", "503"]
 ---
 
 # Add DELETE /users/by-email endpoint
