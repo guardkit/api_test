@@ -1,0 +1,43 @@
+# Pass-bar (guardkit qa kind: pass-bar) for TASK-UDBE-001 (DELETE /users/by-email).
+# The criteria ARE the gate: the deletion is REAL (round-trip — a subsequent
+# lookup must miss), misses honestly (404, incl. the second delete), rejects
+# malformed input before the database (422), coexists with the by-id delete
+# route, and degrades honestly when the database is down (the /users/count
+# convention). auth_surface_bearing:false — the repo's standing no-auth posture.
+# The mandatory negative path is REAL: the endpoint is data-destructive, so
+# DB-down must yield 503 naming the cause.
+format_version: "2.0"
+task_id: TASK-UDBE-001
+registered_at:
+  sha: "937c9fa"
+  date: "2026-07-28"
+auth_surface_bearing: false
+preconditions:
+  - suite_green_vs_ledger
+criteria:
+  - id: C-UDBE-204
+    text: "DELETE /users/by-email?email=<existing address> returns HTTP 204 with an empty body"
+    class: machine
+    evidence_kind: json
+  - id: C-UDBE-ROUNDTRIP
+    text: "after the 204, GET /users/by-email for the same address returns HTTP 404 — the record is actually gone"
+    class: machine
+    evidence_kind: json
+  - id: C-UDBE-EXACT
+    text: "with several users stored, deleting one email removes exactly that user; the others remain retrievable"
+    class: machine
+    evidence_kind: json
+  - id: C-UDBE-404
+    text: "an unknown email returns HTTP 404 with a clear detail, and deleting the same email twice returns 404 the second time"
+    class: machine
+    evidence_kind: json
+  - id: C-UDBE-422
+    text: "a malformed email address returns HTTP 422 (pydantic EmailStr query validation) without querying the database"
+    class: machine
+    evidence_kind: json
+  - id: C-UDBE-NOSHADOW
+    text: "DELETE /users/{user_id} for an existing user still returns 204 (the by-email route does not shadow the by-id route in the DELETE group)"
+    class: machine
+    evidence_kind: json
+negative_paths:
+  - dependency_down_degradation
