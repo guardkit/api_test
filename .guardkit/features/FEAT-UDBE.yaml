@@ -16,7 +16,7 @@ estimated_tasks: 1
 tasks:
 - id: TASK-UDBE-001
   name: Add DELETE /users/by-email endpoint
-  file_path: tasks/design_approved/TASK-UDBE-001-delete-user-by-email.md
+  file_path: tasks/backlog/users-delete-by-email/TASK-UDBE-001-delete-user-by-email.md  # backlog-SHAPED by guardkit validation contract (shape-only check; loader resolves by task id — the file itself lives in tasks/design_approved/, the UBEM precedent)
   complexity: 2
   dependencies: []
   status: pending
