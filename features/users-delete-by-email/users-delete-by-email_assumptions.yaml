@@ -1,0 +1,39 @@
+# Assumptions for users-delete-by-email — ALL PENDING Rich's review.
+# States: pending | confirmed | rejected. Never fabricated as confirmed.
+review_required: true
+assumptions:
+  - id: ASSUM-001
+    scenario: "An existing user is deleted by their email"
+    assumption: >-
+      Success returns HTTP 204 with an empty body, mirroring the existing
+      DELETE /users/{user_id} convention exactly (Response(status_code=204)).
+    confidence: high
+    basis: "src/users/router.py:158-177 — the shipped by-id delete returns 204 No Content"
+    human_response: "pending"
+  - id: ASSUM-002
+    scenario: "Deleting by email removes exactly the matching user"
+    assumption: >-
+      The email match is EXACT as crud.get_user_by_email applies it today —
+      no case-normalization, no trimming. Same-but-differently-cased addresses
+      are different users.
+    confidence: high
+    basis: "src/users/crud.py:79 get_user_by_email — the FEAT-UBEM ASSUM-002 ruling inherited"
+    human_response: "pending"
+  - id: ASSUM-003
+    scenario: "Deleting the same email twice reports not found the second time"
+    assumption: >-
+      A delete that finds no user returns 404 (the absence reported honestly),
+      not an idempotent 204 — mirroring how the by-id delete treats an unknown
+      id today. The operation's EFFECT is idempotent; the status is truthful.
+    confidence: medium
+    basis: "src/users/router.py:173-176 — by-id delete raises UserNotFoundError when nothing was deleted"
+    human_response: "pending"
+  - id: ASSUM-004
+    scenario: "An existing user is deleted by their email"
+    assumption: >-
+      Deletion is the HARD delete crud.delete_user performs today — no
+      soft-delete, tombstone, or audit row. No auth on the route (the repo's
+      standing no-auth posture, auth_surface_bearing false).
+    confidence: high
+    basis: "src/users/crud.py:122 delete_user — physical row delete; repo has no auth surface"
+    human_response: "pending"
