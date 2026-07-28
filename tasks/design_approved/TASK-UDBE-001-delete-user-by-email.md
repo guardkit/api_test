@@ -4,7 +4,7 @@ dependencies: []
 feature_id: FEAT-UDBE
 id: TASK-UDBE-001
 implementation_mode: task-work
-status: backlog
+status: design_approved
 task_type: feature
 title: Add DELETE /users/by-email endpoint
 wave: 1

@@ -1,7 +1,7 @@
-# Proposed by the factory coordinator (propose-review; AWAITING Rich's Gherkin review)
+# APPROVED AS PROPOSED by Rich 2026-07-28 (interactive sit; all 4 assumptions confirmed, ASSUM-003 = 404 honest absence)
 # Feature: Delete User By Email
 # Stack: python
-# Assumptions: 4 (see users-delete-by-email_assumptions.yaml — all pending review)
+# Assumptions: 4 (see users-delete-by-email_assumptions.yaml — ALL CONFIRMED 2026-07-28)
 # Generated: 2026-07-28
 # Purpose: the next routine-sit feature — deliberately thin (pure reuse of two
 #   proven seams: crud.get_user_by_email + crud.delete_user). The realism rung it

@@ -1,6 +1,6 @@
 # Assumptions for users-delete-by-email — ALL PENDING Rich's review.
 # States: pending | confirmed | rejected. Never fabricated as confirmed.
-review_required: true
+review_required: false  # all four confirmed by Rich 2026-07-28; ASSUM-003 ruled: 404 honest absence
 assumptions:
   - id: ASSUM-001
     scenario: "An existing user is deleted by their email"
@@ -9,7 +9,7 @@ assumptions:
       DELETE /users/{user_id} convention exactly (Response(status_code=204)).
     confidence: high
     basis: "src/users/router.py:158-177 — the shipped by-id delete returns 204 No Content"
-    human_response: "pending"
+    human_response: "confirmed (Rich, 2026-07-28 — interactive sit)"
   - id: ASSUM-002
     scenario: "Deleting by email removes exactly the matching user"
     assumption: >-
@@ -18,7 +18,7 @@ assumptions:
       are different users.
     confidence: high
     basis: "src/users/crud.py:79 get_user_by_email — the FEAT-UBEM ASSUM-002 ruling inherited"
-    human_response: "pending"
+    human_response: "confirmed (Rich, 2026-07-28 — interactive sit)"
   - id: ASSUM-003
     scenario: "Deleting the same email twice reports not found the second time"
     assumption: >-
@@ -27,7 +27,7 @@ assumptions:
       id today. The operation's EFFECT is idempotent; the status is truthful.
     confidence: medium
     basis: "src/users/router.py:173-176 — by-id delete raises UserNotFoundError when nothing was deleted"
-    human_response: "pending"
+    human_response: "confirmed (Rich, 2026-07-28 — interactive sit)"
   - id: ASSUM-004
     scenario: "An existing user is deleted by their email"
     assumption: >-
@@ -36,4 +36,4 @@ assumptions:
       standing no-auth posture, auth_surface_bearing false).
     confidence: high
     basis: "src/users/crud.py:122 delete_user — physical row delete; repo has no auth surface"
-    human_response: "pending"
+    human_response: "confirmed (Rich, 2026-07-28 — interactive sit)"
