@@ -1,0 +1,32 @@
+id: FEAT-BPRF
+name: "THROWAWAY breach-proof: GET /users/exists"
+description: 'DELIBERATE THROWAWAY (Rich''s two-step caps ruling 2026-07-28, run 1):
+  a real-shaped thin feature queued under --profile breach-proof (wall-clock cap
+  120s) so the UBS-002 budget machinery''s breach semantics are watched end to end
+  for real: self-kill at the cap -> honest FAILED naming the cap+profile ->
+  whatever marker/gate behavior actually follows, recorded truthfully. The
+  feature content (GET /users/exists?email= -> {"exists": bool}) is NEVER MERGED;
+  the branch and these spec files are swept after the proof. No Gherkin
+  propose-review by design: the OUTPUT is discarded; the ADR-ARCH-019 gate tap
+  remains Rich''s control point.'
+created: '2026-07-28T15:00:00.000000'
+status: planned
+complexity: 2
+estimated_tasks: 1
+tasks:
+- id: TASK-BPRF-001
+  name: Add GET /users/exists endpoint (THROWAWAY)
+  file_path: tasks/backlog/breach-proof-throwaway/TASK-BPRF-001-users-exists-throwaway.md
+  complexity: 2
+  dependencies: []
+  status: pending
+  implementation_mode: task-work
+  estimated_minutes: 30
+  requires_infrastructure: []
+orchestration:
+  parallel_groups:
+  - - TASK-BPRF-001
+  estimated_duration_minutes: 30
+  recommended_parallel: 1
+preflight_strict: false
+evidence_repos: []
