@@ -1,6 +1,6 @@
-# Assumptions for time-endpoint — ALL PENDING Rich's review.
+# Assumptions for time-endpoint — ALL CONFIRMED by Rich 2026-07-31 (approved as proposed).
 # States: pending | confirmed | rejected. Never fabricated as confirmed.
-review_required: true
+review_required: false  # all three confirmed by Rich 2026-07-31 — approved as proposed
 assumptions:
   - id: ASSUM-001
     scenario: "Reading the current server time"
@@ -14,7 +14,7 @@ assumptions:
       The machine chain's green FEAT-2D61 spec used second-level precision;
       the Z form is the shorter, more common machine idiom. The exact byte
       shape is Rich's call.
-    human_response: pending
+    human_response: "confirmed (Rich, 2026-07-31 — interactive sit, approved as proposed)"
   - id: ASSUM-002
     scenario: "The time is fresh on every request"
     assumption: >-
@@ -26,7 +26,7 @@ assumptions:
       A clock endpoint that caches is dishonest by construction; the
       freshness scenario is the anti-stub tooth (an uptime-style constant
       or a hardcoded string cannot pass it).
-    human_response: pending
+    human_response: "confirmed (Rich, 2026-07-31 — interactive sit, approved as proposed)"
   - id: ASSUM-003
     scenario: "The endpoint is unaffected by database unavailability"
     assumption: >-
@@ -39,4 +39,4 @@ assumptions:
       The /version module precedent (no DB imports); the PassBar 2.0 law
       requires dependency_down_degradation in negative paths even for thin
       features — proven unaffectedness is its honest form here.
-    human_response: pending
+    human_response: "confirmed (Rich, 2026-07-31 — interactive sit, approved as proposed)"

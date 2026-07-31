@@ -4,7 +4,7 @@ dependencies: []
 feature_id: FEAT-TIME
 id: TASK-TIME-001
 implementation_mode: task-work
-status: backlog
+status: design_approved
 task_type: feature
 title: Add GET /time endpoint
 wave: 1

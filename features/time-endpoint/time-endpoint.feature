@@ -1,7 +1,7 @@
-# PROPOSED — awaiting Rich's review (assumptions PENDING in time-endpoint_assumptions.yaml)
+# APPROVED AS PROPOSED by Rich 2026-07-31 (interactive sit; all 3 assumptions confirmed)
 # Feature: Server Time Endpoint
 # Stack: python
-# Assumptions: 3 (see time-endpoint_assumptions.yaml — ALL PENDING)
+# Assumptions: 3 (see time-endpoint_assumptions.yaml — ALL CONFIRMED 2026-07-31)
 # Generated: 2026-07-31
 # Purpose: the routine-sit feature for 2026-07-31 — deliberately thin (a pure
 #   read-only GET with no database dependency, the /version weight class). The
