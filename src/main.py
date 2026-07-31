@@ -20,6 +20,7 @@ from src.stats.router import StatsCounterMiddleware
 from src.stats.router import router as stats_router
 from src.uptime.router import router as uptime_router
 from src.users.router import router as users_router
+from src.time.router import router as time_router
 from src.version.router import router as version_router
 
 
@@ -85,6 +86,10 @@ app = FastAPI(
             "description": "Service request statistics",
         },
         {
+            "name": "time",
+            "description": "Server time information",
+        },
+        {
             "name": "version",
             "description": "Version and build information",
         },
@@ -113,6 +118,9 @@ app.include_router(uptime_router, tags=["uptime"])
 
 # Include stats router (prefix already set in router.py)
 app.include_router(stats_router, tags=["stats"])
+
+# Include time router (prefix already set in router.py)
+app.include_router(time_router, tags=["time"])
 
 # Include version router (prefix already set in router.py)
 app.include_router(version_router, tags=["version"])
