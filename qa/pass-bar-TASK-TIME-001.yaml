@@ -1,0 +1,33 @@
+format_version: '2.0'
+task_id: TASK-TIME-001
+registered_at:
+  sha: 82707ca1b5514e6730bc93eb7a6a4ad83421713d
+  date: '2026-07-31'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: time-endpoint-AC-001
+  text: GET /time returns 200 with a JSON body of exactly two fields ("time", "service"), the time ISO-8601 UTC second-precision with trailing Z, the service "api_test"
+  class: machine
+  evidence_kind: json
+  runbook_ref: null
+- id: time-endpoint-AC-002
+  text: Two GET /time calls at least one second apart return strictly increasing timestamps (the value is computed per request, never cached or constant)
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+- id: time-endpoint-AC-003
+  text: POST, PUT and DELETE on /time each return 405
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+- id: time-endpoint-AC-004
+  text: The route imports nothing from src/db and returns 200 with no database available (the dependency-down class proven as unaffectedness)
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
