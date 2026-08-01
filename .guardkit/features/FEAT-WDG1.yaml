@@ -1,0 +1,22 @@
+id: FEAT-WDG1
+name: "Wedge rehearsal throwaway"
+description: "THROWAWAY (never merged): one trivial module + test, used to induce a wedge for the build monitor's stage-1 exit receipt. Swept after the rehearsal."
+created: "2026-08-01T08:20:00Z"
+status: planned
+complexity: 2
+estimated_tasks: 1
+evidence_repos: []
+tasks:
+  - id: TASK-WDG1-001
+    name: "Add the wedge-rehearsal marker module with a test"
+    file_path: "tasks/backlog/wedge-rehearsal/TASK-WDG1-001-add-marker-module.md"
+    complexity: 2
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 3
+orchestration:
+  parallel_groups:
+    - - TASK-WDG1-001
+  estimated_duration_minutes: 10
+  recommended_parallel: 1
