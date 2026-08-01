@@ -1,0 +1,15 @@
+format_version: '2.0'
+task_id: TASK-WDG1-001
+registered_at:
+  sha: 2276dd790c2ab47786a05f6fa9c0a2c357e8067a
+  date: '2026-08-01'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+criteria:
+- id: wedge-rehearsal-AC-001
+  text: src/wedge_note.py defines WEDGE_REHEARSAL = "2026-08-01" and a test asserts it
+  class: machine
+  evidence_kind: test
+  runbook_ref: null
+negative_paths: []
