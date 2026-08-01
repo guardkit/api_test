@@ -10,6 +10,7 @@ criteria:
 - id: wedge-rehearsal-AC-001
   text: src/wedge_note.py defines WEDGE_REHEARSAL = "2026-08-01" and a test asserts it
   class: machine
-  evidence_kind: test
+  evidence_kind: log
   runbook_ref: null
-negative_paths: []
+negative_paths:
+- dependency_down_degradation
