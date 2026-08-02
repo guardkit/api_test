@@ -44,3 +44,6 @@ build/
 # Machine-local build junk (register 2a5; belt to guardkit's checkpoint exclusions)
 .cache/
 .guardkit/bootstrap_state.json
+*.env
+!*.env.example
+!*.env.sample
