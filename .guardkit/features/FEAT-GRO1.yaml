@@ -1,0 +1,23 @@
+id: FEAT-GRO1
+name: "Whoami Endpoint"
+description: "Add a read-only /whoami endpoint returning the static service identity, mirroring the version/time module pattern"
+created: "2026-08-03T18:50:00Z"
+status: planned
+complexity: 3
+estimated_tasks: 1
+
+tasks:
+  - id: TASK-GRO1-001
+    name: "Add GET /whoami endpoint with tests"
+    file_path: "tasks/backlog/whoami-endpoint/TASK-GRO1-001-add-whoami-endpoint.md"
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+orchestration:
+  parallel_groups:
+    - - TASK-GRO1-001
+  estimated_duration_minutes: 30
+  recommended_parallel: 1
