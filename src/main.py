@@ -17,6 +17,7 @@ from src.core.middleware import (
 from src.db.session import dispose_engine, init_engine
 from src.health.router import router as health_router
 from src.users.router import router as users_router
+from src.whoami.router import router as whoami_router
 
 
 @asynccontextmanager
@@ -69,6 +70,10 @@ app = FastAPI(
             "name": "users",
             "description": "User management endpoints",
         },
+        {
+            "name": "whoami",
+            "description": "Service identification endpoints",
+        },
     ],
     swagger_ui_parameters={
         "defaultModelsExpandDepth": -1,
@@ -84,6 +89,9 @@ app.add_middleware(APIVersionHeaderMiddleware)
 
 # Include health router with empty prefix so endpoint is at /health
 app.include_router(health_router)
+
+# Include whoami router with empty prefix so endpoint is at /whoami
+app.include_router(whoami_router, tags=["whoami"])
 
 # Include users router (prefix already set in router.py)
 app.include_router(users_router, tags=["users"])

@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
 
     # Basic app info
-    app_name: str = "api"
+    app_name: str = "api_test"
     app_env: str = "development"
     app_version: str = "0.1.0"
     debug: bool = False
