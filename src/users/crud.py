@@ -116,6 +116,7 @@ async def update_user(
     db.add(user)
     await db.flush()
     await db.refresh(user)
+    await db.commit()
     return user
 
 
@@ -135,6 +136,7 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
 
     await db.delete(user)
     await db.flush()
+    await db.commit()
     return True
 
 
