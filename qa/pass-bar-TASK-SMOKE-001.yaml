@@ -1,0 +1,22 @@
+format_version: '2.0'
+task_id: TASK-SMOKE-001
+registered_at:
+  sha: 974464501c9c66b6488f756c8d6796da83ced922
+  date: '2026-07-25'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+criteria:
+- id: smoke-stack-AC-001
+  text: The standalone smoke compose file parses cleanly via config-only validation with exactly two services, two internal-only networks, zero published ports, and no docker socket mount
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+- id: smoke-stack-AC-002
+  text: The app service declares the full hardening block (non-root user, all capabilities dropped, no-new-privileges, read-only rootfs with tmpfs /tmp, memory and pids limits) and uses the pre-built image with no build key
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

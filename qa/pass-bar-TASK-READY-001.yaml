@@ -1,0 +1,18 @@
+format_version: '2.0'
+task_id: TASK-READY-001
+registered_at:
+  sha: 94f4738b9cbb12f8dfa76eaeaa37d48ad7d44fab
+  date: '2026-07-18'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: ready-endpoint-AC-001
+  text: A GET request to the ready endpoint succeeds with the expected response
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

@@ -1,0 +1,173 @@
+{
+  "format_version": "1.0",
+  "run_id": "FEAT-AE43-local-20260712T145754Z",
+  "feature_id": "FEAT-AE43",
+  "target_env": "local",
+  "started": "2026-07-12T14:57:54.557571+00:00",
+  "finished": "2026-07-12T14:57:54.685881+00:00",
+  "preflight": {
+    "checks": [
+      {
+        "name": "health:script",
+        "category": "instrument",
+        "ok": true,
+        "detail": "gate script present at qa/gates/health_gate.py"
+      },
+      {
+        "name": "health:instrument-declared",
+        "category": "instrument",
+        "ok": true,
+        "detail": "declared preflight ['tool_imports', 'base_url_reachable'] not live-verified (no InstrumentSelfCheck configured \u2014 attended / B8)"
+      },
+      {
+        "name": "health:negative-paths",
+        "category": "instrument",
+        "ok": true,
+        "detail": "all 1 required negative path(s) declared (auth_surface_bearing=False)"
+      },
+      {
+        "name": "stats:script",
+        "category": "instrument",
+        "ok": true,
+        "detail": "gate script present at qa/gates/stats_gate.py"
+      },
+      {
+        "name": "stats:instrument-declared",
+        "category": "instrument",
+        "ok": true,
+        "detail": "declared preflight ['tool_imports', 'base_url_reachable'] not live-verified (no InstrumentSelfCheck configured \u2014 attended / B8)"
+      },
+      {
+        "name": "stats:negative-paths",
+        "category": "instrument",
+        "ok": true,
+        "detail": "all 1 required negative path(s) declared (auth_surface_bearing=False)"
+      },
+      {
+        "name": "f16-checklist[0]",
+        "category": "environment",
+        "ok": true,
+        "detail": "F16 perishable readiness: GET http://localhost:8901/health -> 200 (API-only app: no broker/tokens/models to warm)"
+      }
+    ],
+    "instrument_ok": true
+  },
+  "gates": [
+    {
+      "gate_id": "health",
+      "exit_code": 0,
+      "assertions": [
+        {
+          "id": "health::status",
+          "status": "pass",
+          "observed": "200",
+          "expected": "200",
+          "evidence_ref": "qa/gates/evidence/health_latest.json"
+        },
+        {
+          "id": "health::header::x-correlation-id",
+          "status": "pass",
+          "observed": "present",
+          "expected": "response header x-correlation-id present",
+          "evidence_ref": "qa/gates/evidence/health_latest.json"
+        },
+        {
+          "id": "health::header::x-api-version",
+          "status": "pass",
+          "observed": "present",
+          "expected": "response header x-api-version present",
+          "evidence_ref": "qa/gates/evidence/health_latest.json"
+        },
+        {
+          "id": "health::db_connected",
+          "status": "pass",
+          "observed": "'connected'",
+          "expected": "database == 'connected'",
+          "evidence_ref": "qa/gates/evidence/health_latest.json"
+        }
+      ]
+    },
+    {
+      "gate_id": "stats",
+      "exit_code": 0,
+      "assertions": [
+        {
+          "id": "stats::status",
+          "status": "pass",
+          "observed": "200",
+          "expected": "200",
+          "evidence_ref": "qa/gates/evidence/stats_latest.json"
+        },
+        {
+          "id": "stats::header::x-correlation-id",
+          "status": "pass",
+          "observed": "present",
+          "expected": "response header x-correlation-id present",
+          "evidence_ref": "qa/gates/evidence/stats_latest.json"
+        },
+        {
+          "id": "stats::header::x-api-version",
+          "status": "pass",
+          "observed": "present",
+          "expected": "response header x-api-version present",
+          "evidence_ref": "qa/gates/evidence/stats_latest.json"
+        },
+        {
+          "id": "stats::body_json",
+          "status": "pass",
+          "observed": "JSON object",
+          "expected": "JSON object body",
+          "evidence_ref": "qa/gates/evidence/stats_latest.json"
+        },
+        {
+          "id": "stats::exact_fields",
+          "status": "pass",
+          "observed": "first_request_at,requests_served,service",
+          "expected": "exactly: first_request_at,requests_served,service",
+          "evidence_ref": "qa/gates/evidence/stats_latest.json"
+        },
+        {
+          "id": "stats::service_str",
+          "status": "pass",
+          "observed": "'api'",
+          "expected": "service is a non-empty string",
+          "evidence_ref": "qa/gates/evidence/stats_latest.json"
+        },
+        {
+          "id": "stats::count_int",
+          "status": "pass",
+          "observed": "4, 5",
+          "expected": "requests_served is an integer",
+          "evidence_ref": "qa/gates/evidence/stats_latest.json"
+        },
+        {
+          "id": "stats::count_increases",
+          "status": "pass",
+          "observed": "4 -> 5",
+          "expected": "requests_served strictly increases across two calls",
+          "evidence_ref": "qa/gates/evidence/stats_latest.json"
+        },
+        {
+          "id": "stats::first_at_stable_iso",
+          "status": "pass",
+          "observed": "'2026-07-12T14:57:52.958536+00:00', '2026-07-12T14:57:52.958536+00:00'",
+          "expected": "first_request_at non-null, stable across calls, UTC ISO-8601",
+          "evidence_ref": "qa/gates/evidence/stats_latest.json"
+        },
+        {
+          "id": "stats::post_rejected",
+          "status": "pass",
+          "observed": "405",
+          "expected": "405 (statistics are read-only)",
+          "evidence_ref": "qa/gates/evidence/stats_latest.json"
+        }
+      ]
+    }
+  ],
+  "sweep": null,
+  "poller_outcomes": [],
+  "evidence_index_ref": "qa/gates/evidence/FEAT-AE43-local-20260712T145754Z/EVIDENCE.yaml",
+  "dispositions_ref": null,
+  "attempts_ledger_ref": null,
+  "verdict": "pass"
+}

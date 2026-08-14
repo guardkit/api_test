@@ -1,0 +1,42 @@
+# api_test compose front door (Factory-2 S2).
+# Brings its OWN postgres on the compose-internal network with NO host port bind
+# (5432/5433 are NOT published) — the standing api-test-pg-factory1 suite DB on
+# host :5433 is left completely untouched. The app publishes host :8901.
+#
+#   docker compose up -d --build     # cold start -> app healthy
+#   docker compose down              # (add -v to drop the db volume)
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test
+    # No `ports:` — reachable only from the app service over the compose network.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d test"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  app:
+    build: .
+    environment:
+      # DATABASE_URL points at the compose db service (internal DNS name `db`),
+      # not the host — the suite DB on :5433 is never contacted.
+      DATABASE_URL: "postgresql+asyncpg://postgres:test@db:5432/test"
+    ports:
+      - "8901:8901"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "curl -fsS http://localhost:8901/health | grep -q '\"database\":\"connected\"'"
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s

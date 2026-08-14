@@ -1,0 +1,35 @@
+{
+  "url": "http://localhost:8902/stats",
+  "first": {
+    "status": 200,
+    "headers": {
+      "date": "Fri, 31 Jul 2026 14:45:06 GMT",
+      "server": "uvicorn",
+      "content-length": "92",
+      "content-type": "application/json",
+      "x-correlation-id": "a8ed35d5-90b2-4ce2-b9e9-68855966345d",
+      "x-api-version": "0.1.0",
+      "connection": "close"
+    },
+    "body": "{\"service\":\"api\",\"requests_served\":45,\"first_request_at\":\"2026-07-31T14:43:09.821925+00:00\"}",
+    "error": null
+  },
+  "second": {
+    "status": 200,
+    "headers": {
+      "date": "Fri, 31 Jul 2026 14:45:06 GMT",
+      "server": "uvicorn",
+      "content-length": "92",
+      "content-type": "application/json",
+      "x-correlation-id": "2f32051c-11e3-438c-b9dd-9f17da70b770",
+      "x-api-version": "0.1.0",
+      "connection": "close"
+    },
+    "body": "{\"service\":\"api\",\"requests_served\":46,\"first_request_at\":\"2026-07-31T14:43:09.821925+00:00\"}",
+    "error": null
+  },
+  "post": {
+    "status": 405,
+    "error": null
+  }
+}

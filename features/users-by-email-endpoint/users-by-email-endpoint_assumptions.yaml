@@ -1,0 +1,36 @@
+# Assumptions manifest for users-by-email-endpoint.feature
+# Proposed by the factory coordinator — ALL PENDING Rich's review (nothing confirmed)
+
+feature: "User Lookup By Email"
+generated: "2026-07-27"
+stack: "python"
+review_required: true
+
+assumptions:
+  - id: "ASSUM-001"
+    scenario: "An existing user is found by their email"
+    assumption: "The route REUSES the existing crud.get_user_by_email query verbatim (it already exists — the create path's duplicate check uses it); the feature adds routing + response semantics ONLY, no new query code"
+    confidence: high
+    basis: "src/users/crud.py:79 get_user_by_email(db, email) -> User | None already shipped and tested via the create-duplicate path"
+    human_response: "pending"
+
+  - id: "ASSUM-002"
+    scenario: "An existing user is found by their email"
+    assumption: "Lookup is EXACT MATCH on the stored value — whatever equality crud.get_user_by_email applies today; NO case-normalization is added by this feature (if case-insensitive lookup is wanted, that is a separate ruling on the storage convention, not this route)"
+    confidence: medium
+    basis: "The model stores email as-is (unique, indexed, not nullable — models.py:23,40); adding normalization at the route would diverge from the create path's equality"
+    human_response: "pending"
+
+  - id: "ASSUM-003"
+    scenario: "An unknown email returns not-found"
+    assumption: "No match = 404 with a clear detail (a specific-resource lookup mirrors GET /users/{user_id}'s contract) — NOT an empty 200"
+    confidence: high
+    basis: "The by-id route's existing not-found shape; a lookup names one resource, unlike a list/filter"
+    human_response: "pending"
+
+  - id: "ASSUM-004"
+    scenario: "Requesting a user by id still works alongside the by-email route"
+    assumption: "The email rides a QUERY PARAMETER (GET /users/by-email?email=<EmailStr>, pydantic-validated so malformed input 422s before any query) rather than a path segment (emails in paths = encoding pain); the literal by-email route is declared INSIDE src/users/router.py BEFORE the /{user_id} route (the FEAT-UCNT route-order precedent)"
+    confidence: high
+    basis: "FastAPI declaration-order matching; EmailStr query validation gives the 422 for free; the /users/count precedent for literal-before-pattern ordering"
+    human_response: "pending"

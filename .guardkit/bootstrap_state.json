@@ -1,5 +1,6 @@
 {
-  "content_hash": "38ac2fc27d1a1f6ef60c958ffce589d503946162b214078dc9c18d721fbee73a",
+  "content_hash": "09b5f04d810f53f4f1cac50d122b4bc6bdff909693afe7a0337325251c0a0c58",
   "success": true,
-  "timestamp": "2026-02-27T07:56:30.003969"
+  "timestamp": "2026-07-27T17:23:26.477587",
+  "venv_python": "/tmp/forge-autobuild-worktrees/build-FEAT-UBEM-20260727162310/.guardkit/worktrees/FEAT-UBEM/.venv/bin/python"
 }

@@ -1,0 +1,82 @@
+feature: ready-endpoint
+capability: CheckReadiness
+invocation:
+  method: GET
+  path: /ready
+assertions:
+- id: A-OUTCOME-METHODNOTALLOWED
+  rule: R2
+  dcl_source: outcome MethodNotAllowed; when always MethodNotAllowed
+  flags:
+  - J1
+  - J2
+  disposition: RUN
+  predicate:
+    check: status_equals
+    expected: 200
+- id: A-OUTCOME-READY
+  rule: R2
+  dcl_source: outcome Ready; when always Ready
+  flags:
+  - J1
+  - J2
+  disposition: RUN
+  predicate:
+    check: status_equals
+    expected: 200
+- id: A-CW-POST
+  rule: R10
+  dcl_source: 'closed-world over the intent set: only [''GET''] declared on /ready'
+  flags:
+  - J1
+  disposition: RUN
+  predicate:
+    check: status_in_range
+    low: 400
+    high: 499
+  request:
+    method: POST
+    path: /ready
+    body: '{}'
+- id: A-CW-PUT
+  rule: R10
+  dcl_source: 'closed-world over the intent set: only [''GET''] declared on /ready'
+  flags:
+  - J1
+  disposition: RUN
+  predicate:
+    check: status_in_range
+    low: 400
+    high: 499
+  request:
+    method: PUT
+    path: /ready
+    body: '{}'
+- id: A-CW-PATCH
+  rule: R10
+  dcl_source: 'closed-world over the intent set: only [''GET''] declared on /ready'
+  flags:
+  - J1
+  disposition: RUN
+  predicate:
+    check: status_in_range
+    low: 400
+    high: 499
+  request:
+    method: PATCH
+    path: /ready
+    body: '{}'
+- id: A-CW-DELETE
+  rule: R10
+  dcl_source: 'closed-world over the intent set: only [''GET''] declared on /ready'
+  flags:
+  - J1
+  disposition: RUN
+  predicate:
+    check: status_in_range
+    low: 400
+    high: 499
+  request:
+    method: DELETE
+    path: /ready
+    body: '{}'

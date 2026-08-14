@@ -1,0 +1,24 @@
+# api_test CANDIDATE overlay (deploy execution-surface design §3, S2).
+#
+# Layered ON TOP of docker-compose.yml for the candidate leg ONLY:
+#   docker compose -p apitest-f2-cand \
+#     -f docker-compose.yml -f deploy/docker-compose.candidate.yml up -d --build
+#
+# It changes exactly ONE thing: the app's HOST port publish.
+#
+# db: intentionally NOT overridden. The `-p apitest-f2-cand` project already gives
+# the candidate its OWN compose network and its OWN project-scoped `db` container +
+# tmpfs volume, and the base file publishes NO host port for db — so the candidate
+# db is fully isolated from the live apitest-f2 db with zero extra config here.
+#
+# ports: !override  -- REPLACES the base list rather than the Compose default of
+# CONCATENATING short-syntax `ports` across `-f` files. Without !override the base
+# "8901:8901" would ALSO be published by the candidate project and collide with the
+# LIVE apitest-f2 bind on host :8901 -> candidate `up` fails EADDRINUSE. The app
+# still LISTENS on 8901 inside the container (its intra-container healthcheck is
+# unchanged); only the host publish moves to the candidate port.
+# Requires Compose >= v2.24.4 (the !override / !reset merge tags).
+services:
+  app:
+    ports: !override
+      - "${CANDIDATE_PORT:-8902}:8901"

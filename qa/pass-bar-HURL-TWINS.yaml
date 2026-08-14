@@ -1,0 +1,42 @@
+# Pass-bar (guardkit qa kind: pass-bar) for the HURL-TWINS gate — the pilot
+# bench of Rich's Q1/Q3 ruling (2026-08-14, options card 2062dd8): every Hurl
+# twin under qa/twins/ is the executable double of ONE approved Gherkin
+# scenario, and the bar is total — every twin assertion green = pass. A single
+# red twin assertion fails the gate; there is no partial credit, because each
+# twin IS a ruled specification behaviour. auth_surface_bearing:false — the
+# repo's standing no-auth posture. The delete twins are data-destructive
+# round-trips (create THROUGH the API, delete, honest 404), so
+# dependency_down_degradation is carried by the parent feature's own pass-bar
+# (TASK-UDBE-001); this pilot bar names no additional negative path beyond the
+# honest-absence 404 already inside twin 9.4.
+format_version: "2.0"
+task_id: PILOT-HURL
+registered_at:
+  sha: "97f6ed4"
+  date: "2026-08-14"
+auth_surface_bearing: false
+preconditions:
+  - suite_green_vs_ledger
+criteria:
+  - id: C-HT-TIME-61
+    text: "twin of spec 6.1 (time-endpoint / Reading the current server time, APPROVED 2026-07-31): GET /time is 200 application/json with exactly {time, service}, service == api_test, time ISO-8601 UTC second-precision trailing Z — every twin assertion green"
+    class: machine
+    evidence_kind: json
+  - id: C-HT-TIME-62
+    text: "twin of spec 6.2 (time-endpoint / The time is fresh on every request, APPROVED 2026-07-31): two GETs >= 1s apart both parse ISO-8601-Z and the second timestamp is strictly later — every twin assertion green"
+    class: machine
+    evidence_kind: json
+  - id: C-HT-UPT-22
+    text: "twin of spec 2.2 (uptime-endpoint / Uptime increases between consecutive requests, approved-by-curation): second uptime_seconds strictly greater, started_at identical — every twin assertion green"
+    class: machine
+    evidence_kind: json
+  - id: C-HT-UDBE-91
+    text: "twin of spec 9.1 (users-delete-by-email / An existing user is deleted by their email, APPROVED 2026-07-28): create-through-API 201, DELETE by email 204, subsequent lookup honestly 404 — every twin assertion green"
+    class: machine
+    evidence_kind: json
+  - id: C-HT-UDBE-94
+    text: "twin of spec 9.4 (users-delete-by-email / Deleting the same email twice reports not found the second time, APPROVED 2026-07-28, ASSUM-003 honest absence): 201, 204, second DELETE 404 — every twin assertion green"
+    class: machine
+    evidence_kind: json
+negative_paths:
+  - dependency_down_degradation

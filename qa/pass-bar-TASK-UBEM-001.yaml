@@ -1,0 +1,38 @@
+# Pass-bar (guardkit qa kind: pass-bar) for TASK-UBEM-001 (GET /users/by-email).
+# The criteria ARE the gate: the lookup returns the real stored record, misses
+# honestly (404), rejects malformed input before the database (422), coexists
+# with the by-id route, and degrades honestly when the database is down (the
+# /users/count convention). auth_surface_bearing:false — the repo's standing
+# no-auth posture. The mandatory negative path is REAL: the endpoint is
+# data-bearing, so DB-down must yield 503 naming the cause.
+format_version: "2.0"
+task_id: TASK-UBEM-001
+registered_at:
+  sha: "1b5f62a"
+  date: "2026-07-27"
+auth_surface_bearing: false
+preconditions:
+  - suite_green_vs_ledger
+criteria:
+  - id: C-UBEM-200
+    text: "GET /users/by-email?email=<existing address> returns HTTP 200 with that user's UserPublic record (id + email)"
+    class: machine
+    evidence_kind: json
+  - id: C-UBEM-EXACT
+    text: "with several users stored, the lookup returns exactly the user whose stored email matches the query"
+    class: machine
+    evidence_kind: json
+  - id: C-UBEM-404
+    text: "an unknown email returns HTTP 404 with a clear detail"
+    class: machine
+    evidence_kind: json
+  - id: C-UBEM-422
+    text: "a malformed email address returns HTTP 422 (pydantic EmailStr query validation) without querying the database"
+    class: machine
+    evidence_kind: json
+  - id: C-UBEM-NOSHADOW
+    text: "GET /users/{user_id} for an existing user still returns that user's record (the by-email route does not shadow the by-id route)"
+    class: machine
+    evidence_kind: json
+negative_paths:
+  - dependency_down_degradation

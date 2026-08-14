@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#
+# Fake `curl` for the deploy.sh dry-run harness. Records each call to
+# $FAKE_CURL_LOG. When $FAKE_CURL_HEALTHY=1 it returns a healthy /health body
+# (contains "database":"connected") with exit 0; otherwise it fails like a
+# connection error (exit 7) so wait_for_health's timeout path is exercised.
+set -u
+
+LOG="${FAKE_CURL_LOG:?FAKE_CURL_LOG unset}"
+printf 'curl %s\n' "$*" >>"${LOG}"
+
+if [[ "${FAKE_CURL_HEALTHY:-1}" == "1" ]]; then
+  printf '{"status":"ok","database":"connected"}'
+  exit 0
+fi
+exit 7 # curl: (7) Failed to connect

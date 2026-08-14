@@ -1,0 +1,33 @@
+# F1 · pass-bar (guardkit qa kind: pass-bar) for the HEALTH gate.
+# The criteria ARE the gate: GET /health returns 200 with database:connected and
+# the two response headers. auth_surface_bearing:false — /health exposes no auth
+# surface, so only dependency_down_degradation is a required negative path (the
+# health endpoint honestly degrades to status:degraded / database:unavailable
+# when its DB dependency is down).
+format_version: "2.0"
+task_id: TASK-HEALTH-GATE
+registered_at:
+  sha: "e5ff1c8"
+  date: "2026-07-12"
+auth_surface_bearing: false
+preconditions:
+  - suite_green_vs_ledger
+criteria:
+  - id: C-HEALTH-200
+    text: "GET /health returns HTTP 200"
+    class: machine
+    evidence_kind: json
+  - id: C-HEALTH-DB
+    text: "response body reports database:connected"
+    class: machine
+    evidence_kind: json
+  - id: C-HEALTH-CID
+    text: "response carries an X-Correlation-ID header"
+    class: machine
+    evidence_kind: json
+  - id: C-HEALTH-VER
+    text: "response carries an X-API-Version header"
+    class: machine
+    evidence_kind: json
+negative_paths:
+  - dependency_down_degradation

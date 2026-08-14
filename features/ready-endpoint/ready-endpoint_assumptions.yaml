@@ -1,0 +1,21 @@
+feature: Ready Endpoint
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A POST request to the ready endpoint is rejected
+  assumption: Only POST requests to /ready return 405; other methods like PUT, DELETE,
+    PATCH are not specified
+  confidence: low
+  basis: 'Open question in input: ''Should other HTTP methods (PUT, DELETE, PATCH)
+    also return 405, or is the restriction specific to POST?'' — no answer provided'
+  human_response: deferred
+- id: ASSUM-002
+  scenario: A GET request to the ready endpoint succeeds with the expected response
+  assumption: The 'ready' state is determined solely by the service process being
+    alive, without checking external dependencies like databases or caches
+  confidence: low
+  basis: Input states confidence=medium for this assumption; headless mode forces
+    low confidence and deferred human response
+  human_response: deferred

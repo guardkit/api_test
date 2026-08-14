@@ -1,0 +1,32 @@
+id: FEAT-UDBE
+name: "DELETE /users/by-email endpoint"
+description: 'Delete a user by email at DELETE /users/by-email?email=<EmailStr> ->
+  204 empty | 404 no match (incl. second delete) | 422 malformed address | 503
+  DB-down naming the cause (the /users/count convention). REUSES
+  crud.get_user_by_email + crud.delete_user (no new query code); literal route
+  declared before the by-id route in the DELETE group (the route-order
+  precedent). The next routine-sit feature — deliberately thin; ALSO carries the
+  factory''s FIRST conformance: block (FEAT-SCG proof-of-life). Gherkin +
+  assumptions in features/users-delete-by-email/ (assumptions PENDING Rich''s
+  review).'
+created: '2026-07-28T00:00:00.000000'
+status: planned
+complexity: 2
+estimated_tasks: 1
+tasks:
+- id: TASK-UDBE-001
+  name: Add DELETE /users/by-email endpoint
+  file_path: tasks/backlog/users-delete-by-email/TASK-UDBE-001-delete-user-by-email.md
+  complexity: 2
+  dependencies: []
+  status: pending
+  implementation_mode: task-work
+  estimated_minutes: 30
+  requires_infrastructure: []
+orchestration:
+  parallel_groups:
+  - - TASK-UDBE-001
+  estimated_duration_minutes: 30
+  recommended_parallel: 1
+preflight_strict: false
+evidence_repos: []

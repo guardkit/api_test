@@ -1,0 +1,42 @@
+# Assumptions for time-endpoint — ALL CONFIRMED by Rich 2026-07-31 (approved as proposed).
+# States: pending | confirmed | rejected. Never fabricated as confirmed.
+review_required: false  # all three confirmed by Rich 2026-07-31 — approved as proposed
+assumptions:
+  - id: ASSUM-001
+    scenario: "Reading the current server time"
+    assumption: >-
+      The "time" value is second-precision ISO-8601 UTC with a trailing "Z"
+      designator (e.g. "2026-07-31T12:34:56Z") — no milliseconds, no
+      "+00:00" offset form. Consumers wanting finer precision are out of
+      scope for this feature.
+    confidence: high
+    basis: >-
+      The machine chain's green FEAT-2D61 spec used second-level precision;
+      the Z form is the shorter, more common machine idiom. The exact byte
+      shape is Rich's call.
+    human_response: "confirmed (Rich, 2026-07-31 — interactive sit, approved as proposed)"
+  - id: ASSUM-002
+    scenario: "The time is fresh on every request"
+    assumption: >-
+      Every response computes the time at request handling — no caching
+      headers are added and no Cache-Control surface is introduced. Two
+      requests a second apart MUST differ.
+    confidence: high
+    basis: >-
+      A clock endpoint that caches is dishonest by construction; the
+      freshness scenario is the anti-stub tooth (an uptime-style constant
+      or a hardcoded string cannot pass it).
+    human_response: "confirmed (Rich, 2026-07-31 — interactive sit, approved as proposed)"
+  - id: ASSUM-003
+    scenario: "The endpoint is unaffected by database unavailability"
+    assumption: >-
+      GET /time imports nothing from src/db and holds no session dependency;
+      database-down behavior is proven as an UNAFFECTED 200, not a 503. This
+      satisfies the pass-bar law's dependency-down class honestly for a
+      dependency-free surface.
+    confidence: high
+    basis: >-
+      The /version module precedent (no DB imports); the PassBar 2.0 law
+      requires dependency_down_degradation in negative paths even for thin
+      features — proven unaffectedness is its honest form here.
+    human_response: "confirmed (Rich, 2026-07-31 — interactive sit, approved as proposed)"

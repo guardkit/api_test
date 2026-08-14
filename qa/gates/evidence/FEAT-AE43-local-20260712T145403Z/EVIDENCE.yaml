@@ -1,0 +1,85 @@
+format_version: '1.0'
+entries:
+- artifact: qa/gates/evidence/health_latest.json
+  checkpoint_or_assertion_id: health::status
+  description: 'health/health::status [pass]: expected ''200'', observed ''200'''
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/health_latest.json
+  checkpoint_or_assertion_id: health::header::x-correlation-id
+  description: 'health/health::header::x-correlation-id [pass]: expected ''response
+    header x-correlation-id present'', observed ''present'''
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/health_latest.json
+  checkpoint_or_assertion_id: health::header::x-api-version
+  description: 'health/health::header::x-api-version [pass]: expected ''response header
+    x-api-version present'', observed ''present'''
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/health_latest.json
+  checkpoint_or_assertion_id: health::db_connected
+  description: 'health/health::db_connected [pass]: expected "database == ''connected''",
+    observed "''connected''"'
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/stats_latest.json
+  checkpoint_or_assertion_id: stats::status
+  description: 'stats/stats::status [pass]: expected ''200'', observed ''200'''
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/stats_latest.json
+  checkpoint_or_assertion_id: stats::header::x-correlation-id
+  description: 'stats/stats::header::x-correlation-id [pass]: expected ''response
+    header x-correlation-id present'', observed ''present'''
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/stats_latest.json
+  checkpoint_or_assertion_id: stats::header::x-api-version
+  description: 'stats/stats::header::x-api-version [pass]: expected ''response header
+    x-api-version present'', observed ''present'''
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/stats_latest.json
+  checkpoint_or_assertion_id: stats::body_json
+  description: 'stats/stats::body_json [pass]: expected ''JSON object body'', observed
+    ''JSON object'''
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/stats_latest.json
+  checkpoint_or_assertion_id: stats::exact_fields
+  description: 'stats/stats::exact_fields [pass]: expected ''exactly: first_request_at,requests_served,service'',
+    observed ''first_request_at,requests_served,service'''
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/stats_latest.json
+  checkpoint_or_assertion_id: stats::service_str
+  description: 'stats/stats::service_str [pass]: expected ''service is a non-empty
+    string'', observed "''api''"'
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/stats_latest.json
+  checkpoint_or_assertion_id: stats::count_int
+  description: 'stats/stats::count_int [pass]: expected ''requests_served is an integer'',
+    observed ''7, 8'''
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/stats_latest.json
+  checkpoint_or_assertion_id: stats::count_increases
+  description: 'stats/stats::count_increases [pass]: expected ''requests_served strictly
+    increases across two calls'', observed ''7 -> 8'''
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/stats_latest.json
+  checkpoint_or_assertion_id: stats::first_at_stable_iso
+  description: 'stats/stats::first_at_stable_iso [pass]: expected ''first_request_at
+    non-null, stable across calls, UTC ISO-8601'', observed "''2026-07-12T14:53:52.179682+00:00'',
+    ''2026-07-12T14:53:52.179682+00:00''"'
+  inspected_by: null
+  verdict: null
+- artifact: qa/gates/evidence/stats_latest.json
+  checkpoint_or_assertion_id: stats::post_rejected
+  description: 'stats/stats::post_rejected [pass]: expected ''405 (statistics are
+    read-only)'', observed ''405'''
+  inspected_by: null
+  verdict: null

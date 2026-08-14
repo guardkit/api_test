@@ -1,0 +1,22 @@
+# F7 deploy-record structured instance (narrative: deploy-record-2026-07-12.md)
+format_version: "1.0"
+header:
+  env: "local-compose (apitest-f2, app :8901, own internal postgres)"
+  date: "2026-07-12"
+  deployer: "Factory-2 coordinator session (headless outer-loop pass, cid 2dfb4ef5)"
+  runbook_ref: "docker-compose.yml (docker compose -p apitest-f2 up -d --build)"
+  deploy_profile_ref: "deploy/profile.yaml"
+claims:
+  - runtime_claim: "Cold compose build+start of merge 42ba0dd reaches healthy; GET /health 200 with database:connected and both standard headers"
+    evidence_artifact: "qa/gates/evidence/FEAT-AE43-local-20260712T145403Z/health-probe-body.json + health gate section of qa/gates/history/FEAT-AE43-local-20260712T145403Z.json"
+    committed_at: "2026-07-12"
+  - runtime_claim: "GET /stats live per pass-bar-TASK-STAT-001: exact three fields; requests_served strictly increased (7->8); first_request_at non-null, stable, UTC ISO-8601; POST /stats -> 405"
+    evidence_artifact: "qa/gates/history/FEAT-AE43-local-20260712T145403Z.json (verdict: pass, exit 0) + qa/gates/evidence/stats_latest.json"
+    committed_at: "2026-07-12"
+addenda:
+  - date: "2026-07-12"
+    note: "Live-gate executed via qa/gates/local_live_gate.py (repo F16-provider driver around the unmodified guardkit LiveGateRunner) — plain 'guardkit qa live-gate' wires no F16 provider and short-circuits environment_fail (cli/qa.py:168 / preflight.py:315); guardkit follow-up filed in the Factory-2 record."
+  - date: "2026-07-12"
+    note: "Resting state: apitest-f2 compose stack left UP as the deployment of record; suite Postgres api-test-pg-factory1 (:5433) separate and untouched. This run's gate evidence force-added past the qa/gates .gitignore (F7 committed-artifact rule wins for the verdict of record)."
+  - date: "2026-07-12"
+    note: "VERDICT OF RECORD superseded by the clean-tree rerun: 42ba0dd was incomplete (main.py unstaged by the coordinator's stash/pop cycle — caught in own review, completed as a58bf31, pushed 0/0); stack rebuilt from the committed tree and the live-gate re-run — run FEAT-AE43-local-20260712T145754Z, verdict pass, 14/14 assertions, binding the verdict to a58bf31."

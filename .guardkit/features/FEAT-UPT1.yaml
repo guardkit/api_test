@@ -1,0 +1,26 @@
+id: FEAT-UPT1
+name: "GET /uptime endpoint"
+description: 'Expose service uptime at GET /uptime returning service, started_at and
+  uptime_seconds. Mirrors the src/version/ shape and posture (read-only metadata, no
+  auth). The 2026-07-26 forge end-to-end rehearsal feature: small, real, self-contained.'
+created: '2026-07-26T10:45:00.000000'
+status: planned
+complexity: 3
+estimated_tasks: 1
+tasks:
+- id: TASK-UPT-001
+  name: Add GET /uptime endpoint
+  file_path: tasks/backlog/uptime-endpoint/TASK-UPT-001-add-uptime-endpoint.md
+  complexity: 3
+  dependencies: []
+  status: pending
+  implementation_mode: task-work
+  estimated_minutes: 35
+  requires_infrastructure: []
+orchestration:
+  parallel_groups:
+  - - TASK-UPT-001
+  estimated_duration_minutes: 35
+  recommended_parallel: 1
+preflight_strict: false
+evidence_repos: []

@@ -4,13 +4,16 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.dependencies import get_db
 from src.users import crud
 from src.users.exceptions import UserNotFoundError
-from src.users.schemas import UserCreate, UserList, UserPublic, UserUpdate
+from pydantic import EmailStr
+
+from src.users.schemas import UserCountResponse, UserCreate, UserList, UserPublic, UserUpdate
 
 router = APIRouter(prefix="/users", redirect_slashes=False)
 
@@ -52,6 +55,67 @@ async def list_users(
 
 
 @router.get(
+    "/count",
+    response_model=UserCountResponse,
+    tags=["users"],
+    summary="Get total user count",
+    description="Returns the total number of users stored in the database.",
+    responses={
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_user_count(db: AsyncSession = Depends(get_db)) -> UserCountResponse:
+    """Get total user count.
+
+    Returns the total number of users in the database.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        total = await crud.count_users(db)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return UserCountResponse(count=total)
+
+
+@router.get(
+    "/by-email",
+    response_model=UserPublic,
+    tags=["users"],
+    summary="Get user by email",
+    description="Retrieves a user by their exact email address.",
+    responses={
+        404: {"description": "User not found"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_user_by_email(
+    email: EmailStr, db: AsyncSession = Depends(get_db)
+) -> UserPublic:
+    """Get user by email.
+
+    Returns the user with the exact matching email address.
+    Returns 404 if no user has that email.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        user = await crud.get_user_by_email(db, email)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"User with email '{email}' not found",
+        )
+    return UserPublic.model_validate(user)
+
+
+@router.get(
     "/{user_id}",
     response_model=UserPublic,
     tags=["users"],
@@ -89,6 +153,57 @@ async def update_user(
     if user is None:
         raise UserNotFoundError(user_id=str(user_id))
     return UserPublic.model_validate(user)
+
+
+@router.delete(
+    "/by-email",
+    status_code=204,
+    tags=["users"],
+    summary="Delete user by email",
+    description="Deletes a user by their exact email address. Returns 204 No Content on success.",
+    responses={
+        204: {"description": "User deleted successfully"},
+        404: {"description": "User not found"},
+        422: {"description": "Malformed email address"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def delete_user_by_email(
+    email: EmailStr, db: AsyncSession = Depends(get_db)
+) -> Response:
+    """Delete user by email.
+
+    Finds the user with the exact matching email address and deletes them.
+    Returns 204 on success, 404 if no user has that email, 503 if the database is unavailable.
+    """
+    try:
+        user = await crud.get_user_by_email(db, email)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"User with email '{email}' not found",
+        )
+
+    try:
+        deleted = await crud.delete_user(db, str(user.id))
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail=f"User with email '{email}' not found",
+        )
+    return Response(status_code=204)
 
 
 @router.delete(

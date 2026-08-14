@@ -1,0 +1,28 @@
+format_version: '1.0'
+feature: ready-endpoint
+capability: CheckReadiness
+source_dcl: features/ready-endpoint/ready-endpoint.dcl
+source_dcl_sha256: 0295c81772a3a4c1e13c0f33965039291465f76c739eb6e8a6dc770954d685be
+checker:
+  ok: true
+  error_count: 0
+  warning_count: 0
+binding_sha256: 2be285dd14d9adc7afd0280967f9f1d41e345149c4e0b8d868caa9affb6b2519
+rules_fired:
+  R2: 2
+  R10: 4
+judgment_flags:
+- J1
+- J2
+assertions:
+  run:
+  - A-OUTCOME-METHODNOTALLOWED
+  - A-OUTCOME-READY
+  - A-CW-POST
+  - A-CW-PUT
+  - A-CW-PATCH
+  - A-CW-DELETE
+  skip: []
+tool:
+  name: guardkit-dcl-deriver
+  checker_pin: russelleast/Capability-Language@4f9fbe56

@@ -1,0 +1,47 @@
+# F2 · known-failure ledger (guardkit qa kind: known-failures)
+# The DOCUMENTED expected suite outcome + the pre-existing, triaged failures.
+# Every suite run is compared against THIS ledger (LPA-09), not against "all
+# green": an un-ledgered failure fails the gate; an unexpectedly-passing ledger
+# entry is a stale-ledger finding. Zero net-new vs this ledger is the bar.
+#
+# Suite of record (unchanged, points at the standing api-test-pg-factory1 DB):
+#   DATABASE_URL="postgresql+asyncpg://postgres:test@localhost:5433/test" \
+#     .venv/bin/python -m pytest -q --forked
+# Observed baseline 2026-07-12 @ e5ff1c8: 170 passed, 2 failed (the two below).
+format_version: "1.0"
+suite_id: api_test-pytest-suite
+framework: pytest
+language: python
+expected:
+  passed: 170
+known_failures:
+  - test_id: "tests/test_middleware.py::TestMiddlewareIntegration::test_correlation_id_passed_through_response"
+    reason: >-
+      Cross-test event-loop teardown artifact, NOT a product defect. The module
+      -global async SQLAlchemy engine (src/db/session.py) pools asyncpg
+      connections that outlive the Starlette TestClient portal's event loop;
+      when a later TestClient run tears its loop down, a pooled connection's
+      callback fires against the closed loop ("RuntimeError: Event loop is
+      closed"). Amplified by environment drift from unpinned dependency floors.
+      The test passes in isolation.
+    env_condition: "local pytest suite via TestClient (--forked); passes when run in isolation"
+    since:
+      date: "2026-07-12"
+      sha: "e5ff1c8"
+    owner: "richwoollcott"
+    review_by: "2026-08-12"
+    tracking_ref: "api_test NullPool harness fix (factory-2 handoff §4 park list)"
+  - test_id: "tests/test_middleware.py::TestMiddlewareIntegration::test_multiple_requests_get_different_correlation_ids"
+    reason: >-
+      Same mechanism as the sibling entry: the module-global async engine pools
+      asyncpg connections across TestClient portal event loops, so a pooled
+      connection's teardown callback fires against an already-closed loop
+      ("RuntimeError: Event loop is closed"). Environment drift from unpinned
+      floors makes it manifest. The test passes in isolation.
+    env_condition: "local pytest suite via TestClient (--forked); passes when run in isolation"
+    since:
+      date: "2026-07-12"
+      sha: "e5ff1c8"
+    owner: "richwoollcott"
+    review_by: "2026-08-12"
+    tracking_ref: "api_test NullPool harness fix (factory-2 handoff §4 park list)"
