@@ -13,6 +13,27 @@ created: '2026-07-31T12:30:00.000000'
 status: planned
 complexity: 2
 estimated_tasks: 1
+# ROUTING LAW (card Q8/A.2, ruled 2026-08-14; guardkit verifier_stamp.py) — DATA ONLY,
+# stamped 2026-08-15: every approved scenario in feature_files carries a verifier: from
+# the closed vocabulary. Enforcement is NOT flipped here (no routing_law: key; the repo
+# flip is held behind the specialist pin-move drive). Homes: hurl = wire twin (test_ref
+# on the five Gherkin-backed twins names the frozen .hurl; the sixth twin, users-put,
+# has no .feature yet); probe:process = database-
+# unavailable / restart / fresh-start / smoke harness-meta; toolchain = exact-count-on-
+# known-state pinned by test_ref to a real node in tests/.
+feature_files:
+  - features/time-endpoint/time-endpoint.feature
+scenarios:
+  "Reading the current server time":
+    verifier: hurl
+    test_ref: qa/twins/time-endpoint/reading-current-server-time.hurl
+  "The time is fresh on every request":
+    verifier: hurl
+    test_ref: qa/twins/time-endpoint/time-fresh-every-request.hurl
+  "Write methods are rejected":
+    verifier: hurl
+  "The endpoint is unaffected by database unavailability":
+    verifier: probe:process
 tasks:
 - id: TASK-TIME-001
   name: Add GET /time endpoint

@@ -7,6 +7,28 @@ created: '2026-07-12T08:02:19.551644'
 status: completed
 complexity: 3
 estimated_tasks: 1
+# ROUTING LAW (card Q8/A.2, ruled 2026-08-14; guardkit verifier_stamp.py) — DATA ONLY,
+# stamped 2026-08-15: every approved scenario in feature_files carries a verifier: from
+# the closed vocabulary. Enforcement is NOT flipped here (no routing_law: key; the repo
+# flip is held behind the specialist pin-move drive). Homes: hurl = wire twin (test_ref
+# on the five Gherkin-backed twins names the frozen .hurl; the sixth twin, users-put,
+# has no .feature yet); probe:process = database-
+# unavailable / restart / fresh-start / smoke harness-meta; toolchain = exact-count-on-
+# known-state pinned by test_ref to a real node in tests/.
+feature_files:
+  - features/uptime-endpoint/uptime-endpoint.feature
+scenarios:
+  "Requesting uptime returns the service identity and running time":
+    verifier: hurl
+  "Uptime increases between consecutive requests":
+    verifier: hurl
+    test_ref: qa/twins/uptime-endpoint/uptime-increases.hurl
+  "Uptime immediately after startup is non-negative":
+    verifier: probe:process
+  "Attempting to modify the uptime resource is rejected":
+    verifier: hurl
+  "Uptime remains available when the database is unavailable":
+    verifier: probe:process
 tasks:
 - id: TASK-UPT-001
   name: Add GET /uptime endpoint

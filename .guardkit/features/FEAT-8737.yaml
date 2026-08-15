@@ -9,6 +9,41 @@ created: '2026-07-25T11:30:10.171777'
 status: completed
 complexity: 5
 estimated_tasks: 3
+# ROUTING LAW (card Q8/A.2, ruled 2026-08-14; guardkit verifier_stamp.py) — DATA ONLY,
+# stamped 2026-08-15: every approved scenario in feature_files carries a verifier: from
+# the closed vocabulary. Enforcement is NOT flipped here (no routing_law: key; the repo
+# flip is held behind the specialist pin-move drive). Homes: hurl = wire twin (test_ref
+# on the five Gherkin-backed twins names the frozen .hurl; the sixth twin, users-put,
+# has no .feature yet); probe:process = database-
+# unavailable / restart / fresh-start / smoke harness-meta; toolchain = exact-count-on-
+# known-state pinned by test_ref to a real node in tests/.
+feature_files:
+  - features/runtime-smoke/runtime-smoke.feature
+scenarios:
+  "Data seeded directly into the database is visible through the running service":
+    verifier: probe:process
+  "A user created through the service reads back with identical details":
+    verifier: hurl
+  "A fully passing smoke run produces a passing verdict and a clean teardown":
+    verifier: probe:process
+  "The smoke completes within the oracle time budget":
+    verifier: probe:process
+  "The listing reflects exactly the records present in the fresh database":
+    verifier: probe:process
+  "Looking up a user that was never created is reported as not found":
+    verifier: hurl
+  "Creating a user with an email already in use is rejected as a conflict":
+    verifier: hurl
+  "A malformed user submission is rejected as invalid":
+    verifier: hurl
+  "A service that returns canned data fails the smoke":
+    verifier: probe:process
+  "A failed run still leaves nothing behind":
+    verifier: probe:process
+  "The smoke never touches the live deployment":
+    verifier: probe:process
+  "The sandboxed application has no route to the outside world":
+    verifier: probe:process
 tasks:
 - id: TASK-SMOKE-001
   name: Create sandboxed smoke compose stack

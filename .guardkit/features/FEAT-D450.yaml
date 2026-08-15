@@ -6,6 +6,21 @@ status: planned
 complexity: 3
 estimated_tasks: 3
 
+# ROUTING LAW (card Q8/A.2, ruled 2026-08-14; guardkit verifier_stamp.py) — DATA ONLY,
+# stamped 2026-08-15: every approved scenario in feature_files carries a verifier: from
+# the closed vocabulary. Enforcement is NOT flipped here (no routing_law: key; the repo
+# flip is held behind the specialist pin-move drive). Homes: hurl = wire twin (test_ref
+# on the five Gherkin-backed twins names the frozen .hurl; the sixth twin, users-put,
+# has no .feature yet); probe:process = database-
+# unavailable / restart / fresh-start / smoke harness-meta; toolchain = exact-count-on-
+# known-state pinned by test_ref to a real node in tests/.
+feature_files:
+  - features/ready-endpoint/ready-endpoint.feature
+scenarios:
+  "A GET request to the ready endpoint succeeds with the expected response":
+    verifier: hurl
+  "A POST request to the ready endpoint is rejected":
+    verifier: hurl
 tasks:
   - id: TASK-READY-001
     name: "Create ready endpoint route"

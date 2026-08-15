@@ -13,6 +13,33 @@ created: '2026-07-28T00:00:00.000000'
 status: planned
 complexity: 2
 estimated_tasks: 1
+# ROUTING LAW (card Q8/A.2, ruled 2026-08-14; guardkit verifier_stamp.py) — DATA ONLY,
+# stamped 2026-08-15: every approved scenario in feature_files carries a verifier: from
+# the closed vocabulary. Enforcement is NOT flipped here (no routing_law: key; the repo
+# flip is held behind the specialist pin-move drive). Homes: hurl = wire twin (test_ref
+# on the five Gherkin-backed twins names the frozen .hurl; the sixth twin, users-put,
+# has no .feature yet); probe:process = database-
+# unavailable / restart / fresh-start / smoke harness-meta; toolchain = exact-count-on-
+# known-state pinned by test_ref to a real node in tests/.
+feature_files:
+  - features/users-delete-by-email/users-delete-by-email.feature
+scenarios:
+  "An existing user is deleted by their email":
+    verifier: hurl
+    test_ref: qa/twins/users-delete-by-email/delete-existing-user.hurl
+  "Deleting by email removes exactly the matching user":
+    verifier: hurl
+  "Deleting an unknown email reports not found":
+    verifier: hurl
+  "Deleting the same email twice reports not found the second time":
+    verifier: hurl
+    test_ref: qa/twins/users-delete-by-email/double-delete-honest-404.hurl
+  "A malformed email address is rejected as invalid":
+    verifier: hurl
+  "Deleting by id still works alongside the by-email route":
+    verifier: hurl
+  "Deletion degrades honestly when the database is down":
+    verifier: probe:process
 tasks:
 - id: TASK-UDBE-001
   name: Add DELETE /users/by-email endpoint

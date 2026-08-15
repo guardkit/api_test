@@ -7,6 +7,33 @@ created: '2026-07-12T14:55:49.153681'
 status: completed
 complexity: 4
 estimated_tasks: 1
+# ROUTING LAW (card Q8/A.2, ruled 2026-08-14; guardkit verifier_stamp.py) — DATA ONLY,
+# stamped 2026-08-15: every approved scenario in feature_files carries a verifier: from
+# the closed vocabulary. Enforcement is NOT flipped here (no routing_law: key; the repo
+# flip is held behind the specialist pin-move drive). Homes: hurl = wire twin (test_ref
+# on the five Gherkin-backed twins names the frozen .hurl; the sixth twin, users-put,
+# has no .feature yet); probe:process = database-
+# unavailable / restart / fresh-start / smoke harness-meta; toolchain = exact-count-on-
+# known-state pinned by test_ref to a real node in tests/.
+feature_files:
+  - features/stats-endpoint/stats-endpoint.feature
+scenarios:
+  "Requesting statistics returns the service identity and request activity":
+    verifier: hurl
+  "The served-request count increases as requests are handled":
+    verifier: hurl
+  "The first-request time is stable once set":
+    verifier: hurl
+  "A freshly started service counts the statistics request itself":
+    verifier: probe:process
+  "The served-request count never decreases while the service is running":
+    verifier: hurl
+  "Modifying the statistics is not allowed":
+    verifier: hurl
+  "Statistics remain available when the database is unavailable":
+    verifier: probe:process
+  "A service restart begins a fresh count":
+    verifier: probe:process
 tasks:
 - id: TASK-STAT-001
   name: Add GET /stats endpoint with in-process request counter
