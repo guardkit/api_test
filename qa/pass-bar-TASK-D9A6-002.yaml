@@ -1,0 +1,18 @@
+format_version: '2.0'
+task_id: TASK-D9A6-002
+registered_at:
+  sha: ec6fde29e3915e5b2970007609a54a8f667d5eb9
+  date: '2026-08-15'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: api-test-ready-endpoint-AC-001
+  text: The ready endpoint returns success when the service is ready
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
