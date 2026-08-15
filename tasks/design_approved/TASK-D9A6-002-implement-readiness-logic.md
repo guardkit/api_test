@@ -1,14 +1,15 @@
 ---
-id: TASK-D9A6-002
-title: Implement readiness logic
-task_type: feature
-parent_review: TASK-REV-D9A6
-feature_id: FEAT-D9A6
-wave: 2
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-D9A6-001
+- TASK-D9A6-001
+feature_id: FEAT-D9A6
+id: TASK-D9A6-002
+implementation_mode: task-work
+parent_review: TASK-REV-D9A6
+status: design_approved
+task_type: feature
+title: Implement readiness logic
+wave: 2
 ---
 
 # Implement readiness logic
