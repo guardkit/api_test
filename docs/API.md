@@ -75,6 +75,84 @@ curl -X GET http://localhost:8000/version
 
 ---
 
+### Readiness Check
+
+#### GET /ready
+
+Returns whether the service is ready to accept requests. This endpoint is intended
+for Kubernetes readiness probes and load balancer health checks. Returns HTTP 200
+when the service is ready and HTTP 503 when the service is not ready.
+
+**Tags**: `health`
+
+**Authentication**: None required
+
+**Response Schemas**:
+
+**200 OK** — Service is ready
+
+```json
+{
+  "status": "ready",
+  "service": "string"
+}
+```
+
+**503 Service Unavailable** — Service is not ready
+
+```json
+{
+  "status": "not_ready",
+  "service": "string"
+}
+```
+
+**Field Descriptions**:
+- `status` (string): Service readiness status. One of `"ready"` or `"not_ready"`.
+- `service` (string): The name of the service (from the `app_name` configuration setting).
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/ready
+```
+
+**Example Response (200 OK)**:
+```json
+{
+  "status": "ready",
+  "service": "api"
+}
+```
+
+**Example Response (503 Service Unavailable)**:
+```json
+{
+  "status": "not_ready",
+  "service": "api"
+}
+```
+
+**Status Codes**:
+- `200 OK`: Service is ready to accept requests
+- `503 Service Unavailable`: Service is not ready (e.g., during startup or maintenance)
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported)
+
+**Use Cases**:
+- Kubernetes readiness probes to determine when a pod can receive traffic
+- Load balancer health checks to exclude unhealthy instances from rotation
+- Orchestrator startup detection to ensure the service is fully initialized
+- Monitoring systems to track service availability over time
+
+**Implementation Notes**:
+- The readiness state is managed by a module-level flag in `src/health/readiness.py`
+- By default, the service starts in the ready state (`_ready = True`)
+- Use `set_not_ready()` and `set_ready()` to change the state programmatically
+- This is a lightweight, synchronous check suitable for frequent probe intervals
+- This endpoint does not require authentication and is publicly accessible
+- Only the GET HTTP method is supported; other methods return 405
+
+---
+
 ## Common Response Formats
 
 ### Success Response

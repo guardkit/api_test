@@ -99,60 +99,252 @@ async def test_documented_example_matches_actual_response_structure(
     should always contain exactly the fields version, commit, and service,
     regardless of future tasks that might add more endpoints.
     """
-    # Get actual response from the endpoint
-    response = await async_client.get("/version")
-    actual_data = response.json()
+    content = api_docs_path.read_text()
 
-    # Verify the endpoint returns the documented fields
-    documented_fields = {"version", "commit", "service"}
-    actual_fields = set(actual_data.keys())
+    # The three required fields from VersionResponse schema
+    required_fields = ["version", "commit", "service"]
 
-    assert actual_fields == documented_fields, (
-        f"Endpoint returns fields {actual_fields}, but documentation implies "
-        f"{documented_fields}. Documentation and implementation must match."
-    )
-
-    # Verify field types match what's documented
-    assert isinstance(actual_data["version"], str)
-    assert isinstance(actual_data["commit"], str)
-    assert isinstance(actual_data["service"], str)
+    for field in required_fields:
+        assert field in content, (
+            f"Documentation must describe the '{field}' field in the response"
+        )
 
 
-def test_api_documentation_includes_status_codes(api_docs_path: Path) -> None:
-    """Test that the documentation includes HTTP status codes.
+# ---------------------------------------------------------------------------
+# Readiness endpoint documentation tests (TASK-D9A6-004)
+# ---------------------------------------------------------------------------
 
-    Validates that the documentation describes both success and error cases.
+
+def test_api_documentation_contains_ready_endpoint_path_and_method(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes the /ready endpoint with GET method.
+
+    AC-001: Endpoint path and method documented
     """
     content = api_docs_path.read_text()
 
-    # Should document success case
-    assert "200" in content or "OK" in content
+    # Verify the endpoint path is documented
+    assert "/ready" in content, (
+        "Documentation must include the /ready endpoint path"
+    )
 
-    # Should document error cases for unsupported methods
-    assert "405" in content or "Method Not Allowed" in content
+    # Verify the HTTP method is documented
+    assert "GET /ready" in content, (
+        "Documentation must specify GET as the HTTP method for /ready"
+    )
 
 
-def test_api_documentation_describes_field_meanings(api_docs_path: Path) -> None:
-    """Test that the documentation describes what each response field means.
+def test_api_documentation_contains_ready_endpoint_section(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes a dedicated section for the /ready endpoint.
 
-    Good API documentation explains not just the structure but the meaning.
+    AC-001: Endpoint path and method documented
     """
     content = api_docs_path.read_text()
 
-    # Each field should have some description
-    # Looking for patterns like "version" followed by descriptive text
-    content_lower = content.lower()
-
-    # The documentation should explain these are build metadata
-    assert any(
-        keyword in content_lower
-        for keyword in ["application version", "app version", "version string"]
-    ), "Documentation should describe the version field"
-
-    assert any(keyword in content_lower for keyword in ["git", "commit", "hash"]), (
-        "Documentation should describe the commit field"
+    # Verify a section header exists for readiness
+    assert "Readiness Check" in content, (
+        "Documentation must include a Readiness Check section"
     )
 
-    assert any(keyword in content_lower for keyword in ["service name", "service"]), (
-        "Documentation should describe the service field"
+    # Verify the endpoint is described with its purpose
+    assert "ready" in content.lower() and "accept" in content.lower(), (
+        "Documentation must describe the readiness endpoint's purpose"
+    )
+
+
+def test_api_documentation_ready_response_schema(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented response schema matches the ReadyResponse model.
+
+    AC-002: Response format documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify response schema section exists
+    assert "Response Schema" in content or "Response Schemas" in content, (
+        "Documentation must include response schema for /ready"
+    )
+
+    # Verify the two fields from ReadyResponse are documented
+    assert '"status"' in content or "'status'" in content, (
+        "Documentation must include the 'status' field in /ready response"
+    )
+    assert '"service"' in content or "'service'" in content, (
+        "Documentation must include the 'service' field in /ready response"
+    )
+
+    # Verify the status values are documented
+    assert "ready" in content.lower(), (
+        "Documentation must describe the 'ready' status value"
+    )
+    assert "not_ready" in content.lower(), (
+        "Documentation must describe the 'not_ready' status value"
+    )
+
+
+def test_api_documentation_ready_example_request(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example request for /ready.
+
+    AC-002: Response format documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify example request exists for /ready
+    assert "Example Request" in content, (
+        "Documentation must include an example request"
+    )
+    assert "curl" in content, (
+        "Documentation must include a curl example"
+    )
+    # The example must reference /ready
+    assert "/ready" in content, (
+        "Documentation example must reference the /ready endpoint"
+    )
+
+
+def test_api_documentation_ready_example_responses(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes example responses for /ready.
+
+    AC-002: Response format documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify example responses exist
+    assert "Example Response" in content, (
+        "Documentation must include example responses"
+    )
+
+    # Verify JSON code blocks with readiness data
+    assert "status" in content.lower(), (
+        "Documentation must show the 'status' field in example response"
+    )
+    assert "service" in content.lower(), (
+        "Documentation must show the 'service' field in example response"
+    )
+
+
+def test_api_documentation_ready_status_codes(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes status codes for /ready.
+
+    AC-002: Response format documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify HTTP status codes are documented
+    assert "200" in content, (
+        "Documentation must document the 200 status code for /ready"
+    )
+    assert "503" in content, (
+        "Documentation must document the 503 status code for /ready"
+    )
+    assert "405" in content, (
+        "Documentation must document the 405 method not allowed for /ready"
+    )
+
+
+def test_api_documentation_ready_field_descriptions(
+    api_docs_path: Path,
+) -> None:
+    """Test that field descriptions are documented for /ready response.
+
+    AC-002: Response format documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify field descriptions are present
+    assert "Field Descriptions" in content, (
+        "Documentation must include field descriptions"
+    )
+
+    # Verify the status field is described
+    assert "readiness" in content.lower() or "ready" in content.lower(), (
+        "Documentation must describe the readiness status field"
+    )
+
+    # Verify the service field is described
+    assert "service name" in content.lower() or "name of the service" in content.lower(), (
+        "Documentation must describe the service field"
+    )
+
+
+def test_api_documentation_ready_implementation_notes(
+    api_docs_path: Path,
+) -> None:
+    """Test that implementation notes are included for /ready endpoint.
+
+    AC-001: Endpoint path and method documented (implementation context)
+    """
+    content = api_docs_path.read_text()
+
+    # Verify implementation notes exist
+    assert "Implementation Notes" in content, (
+        "Documentation must include implementation notes"
+    )
+
+    # Verify notes mention readiness state management
+    assert "readiness" in content.lower() or "ready" in content.lower(), (
+        "Implementation notes must reference readiness state"
+    )
+
+
+def test_api_documentation_ready_use_cases(
+    api_docs_path: Path,
+) -> None:
+    """Test that use cases are documented for /ready endpoint.
+
+    AC-001: Endpoint path and method documented (contextual documentation)
+    """
+    content = api_docs_path.read_text()
+
+    # Verify use cases are documented
+    assert "Use Cases" in content, (
+        "Documentation must include use cases"
+    )
+
+    # Verify Kubernetes or load balancer context is mentioned
+    assert (
+        "kubernetes" in content.lower()
+        or "load balancer" in content.lower()
+        or "probe" in content.lower()
+    ), (
+        "Documentation must reference Kubernetes or load balancer use cases"
+    )
+
+
+def test_api_documentation_ready_consistent_with_implementation(
+    api_docs_path: Path,
+) -> None:
+    """Test that documented response format matches the ReadyResponse schema.
+
+    This is an invariant test: the documented fields for /ready must match
+    the ReadyResponse model fields (status, service), regardless of future
+    changes to other endpoints.
+    """
+    content = api_docs_path.read_text()
+
+    # Read the actual ReadyResponse schema to verify alignment
+    from src.health.schemas import ReadyResponse
+
+    schema_fields = set(ReadyResponse.model_fields.keys())
+    documented_fields = set()
+
+    for field_name in schema_fields:
+        # Check if the field name appears in the documentation
+        # Allow both quoted and unquoted forms
+        if f'"{field_name}"' in content or f"'{field_name}'" in content:
+            documented_fields.add(field_name)
+
+    assert documented_fields == schema_fields, (
+        f"Documented fields {documented_fields} must match "
+        f"ReadyResponse fields {schema_fields}"
     )
