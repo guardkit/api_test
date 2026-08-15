@@ -6,18 +6,10 @@
 # OFF. Env override: GUARDKIT_QA_ENFORCE_TIER1.
 qa:
   enforce_tier1: true
-  # DCL adoption (Phase D / D3): this repo is on the `dcl` spec track. guardkit's
-  # verification seam derives + runs the `.dcl` capability's outside-in assertions
-  # in addition to the Gherkin chain (which is retained, intact). Kill switch:
-  # delete this line or set `gherkin` to restore the default. Env override:
-  # GUARDKIT_SPEC_TRACK.
-  spec_track: dcl
-
-# W2b brief-harvest capture (DCL machine-authoring lane, Done-bar receipt
-# 2026-07-18). Reversible one-line kill: set false or delete the block.
-# Zero verdict impact by construction (swallow-to-log; no seat calls).
-dcl:
-  capture: true
+  # 2026-08-15: the `spec_track: dcl` opt-in and the `dcl.capture` block that
+  # lived here were REMOVED — the DCL track was deleted outright from guardkit
+  # (card Q11, ruled 2026-08-15; guardkit b138d92c) and from the forge planning
+  # driver the same day. Gherkin is the only track; nothing reads either key.
 
 # QAV shadow mode (2026-07-25, design: ai-transition docs/qav-shadow-mode-design-2026-07-25.md).
 # Log-only second opinion beside every coach verdict — never blocks, absent-not-fail,
