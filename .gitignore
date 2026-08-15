@@ -43,6 +43,12 @@ build/
 
 # Machine-local build junk (register 2a5; belt to guardkit's checkpoint exclusions)
 .cache/
+
+# Factory residue that rode the ddd-demo merge — stripped 08-15 (ruled), never recommit
+.docker/
+.local/
+conversation_history/
+large_tool_results/
 .guardkit/bootstrap_state.json
 *.env
 !*.env.example
