@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
 from src.db.dependencies import get_db
+from src.health.readiness import is_ready
 from src.health.schemas import HealthResponse, ReadyResponse
 
 router = APIRouter()
@@ -62,12 +63,17 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> HealthResponse:
     ),
     responses={
         200: {"description": "Service is ready"},
+        503: {"description": "Service is not ready"},
     },
 )
-async def readiness_check() -> ReadyResponse:
+async def readiness_check(response: Response) -> ReadyResponse:
     """Readiness check endpoint.
 
     Returns a simple status indicating the service is ready to accept requests.
-    This is a lightweight check suitable for Kubernetes readiness probes.
+    Returns 200 when ready, 503 when not ready. This is a lightweight check
+    suitable for Kubernetes readiness probes.
     """
-    return ReadyResponse(status="ready", service=settings.app_name)
+    if is_ready():
+        return ReadyResponse(status="ready", service=settings.app_name)
+    response.status_code = 503
+    return ReadyResponse(status="not_ready", service=settings.app_name)

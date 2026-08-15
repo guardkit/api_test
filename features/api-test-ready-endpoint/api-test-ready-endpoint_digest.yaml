@@ -1,0 +1,28 @@
+feature: api-test-ready-endpoint
+generated: "2026-07-09T14:32:00Z"
+scenarios:
+  - title: "The ready endpoint returns success when the service is ready"
+    tags: ["@key-example", "@smoke"]
+    sentence: "Requesting the ready endpoint while the service is operational returns a success indication."
+  - title: "The ready endpoint returns failure when the service is not ready"
+    tags: ["@negative"]
+    sentence: "Requesting the ready endpoint while the service is not ready returns a failure indication."
+  - title: "The ready endpoint responds within an acceptable time"
+    tags: ["@boundary"]
+    sentence: "The ready endpoint responds promptly, imposing no meaningful latency on the caller."
+  - title: "The ready endpoint is accessible at the standard path"
+    tags: ["@boundary"]
+    sentence: "The ready endpoint is reachable at the expected URL path."
+  - title: "The ready endpoint rejects non-GET methods"
+    tags: ["@negative"]
+    sentence: "Sending a non-GET request to the ready endpoint is rejected or handled gracefully."
+  - title: "The endpoint reflects readiness state changes"
+    tags: ["@edge-case"]
+    sentence: "When the service transitions from not-ready to ready, subsequent requests to the endpoint reflect the new ready state."
+assumptions:
+  - id: ASSUM-001
+    text: "The ready endpoint path is /ready"
+    basis: "Common cloud-native convention; not stated in the input. Alternatives considered: /health/ready, /readiness."
+  - id: ASSUM-002
+    text: "The response body is minimal or empty"
+    basis: "Input suggests lightweight response; no structured health report required. Alternatives considered: JSON status object, plain text message."
