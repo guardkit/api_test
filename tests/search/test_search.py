@@ -6,8 +6,10 @@ from http import HTTPStatus
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.search.schemas import SearchResponse
+from src.users.models import User
 
 
 class TestSearchEndpoint:
@@ -16,49 +18,34 @@ class TestSearchEndpoint:
     @pytest.mark.asyncio
     async def test_search_returns_200_ok(
         self,
+        override_get_db: None,
         async_client: AsyncClient,
     ) -> None:
-        """Test that GET /search returns 200 OK.
-
-        This is an invariant test: the /search endpoint must always return
-        200 OK for valid requests with a name query parameter, regardless
-        of other features or configuration changes.
-        """
+        """Test that GET /search returns 200 OK."""
         response = await async_client.get("/search", params={"name": "test"})
-
         assert response.status_code == HTTPStatus.OK
 
     @pytest.mark.asyncio
     async def test_search_accepts_name_query_parameter(
         self,
+        override_get_db: None,
         async_client: AsyncClient,
     ) -> None:
-        """Test that the search endpoint accepts a name query parameter.
-
-        This is an invariant test: the /search endpoint must always accept
-        the name query parameter, as it is the core search input.
-        """
+        """Test that the search endpoint accepts a name query parameter."""
         response = await async_client.get("/search", params={"name": "myquery"})
-
         assert response.status_code == HTTPStatus.OK
-
         body = response.json()
         assert body["query"] == "myquery"
 
     @pytest.mark.asyncio
     async def test_search_returns_valid_response_model(
         self,
+        override_get_db: None,
         async_client: AsyncClient,
     ) -> None:
-        """Test that the search endpoint returns a valid SearchResponse.
-
-        This is an invariant test: the /search endpoint must always return
-        a response matching the SearchResponse schema (query, results, total).
-        """
+        """Test that the search endpoint returns a valid SearchResponse."""
         response = await async_client.get("/search", params={"name": "test"})
-
         body = response.json()
-
         assert "query" in body
         assert "results" in body
         assert "total" in body
@@ -69,16 +56,11 @@ class TestSearchEndpoint:
     @pytest.mark.asyncio
     async def test_search_returns_empty_results_by_default(
         self,
+        override_get_db: None,
         async_client: AsyncClient,
     ) -> None:
-        """Test that the search endpoint returns empty results by default.
-
-        This is an invariant test: the /search endpoint must always return
-        an empty results list and zero total count when no implementation
-        of search logic is present.
-        """
+        """Test that the search endpoint returns empty results by default."""
         response = await async_client.get("/search", params={"name": "anything"})
-
         body = response.json()
         assert body["results"] == []
         assert body["total"] == 0
@@ -88,14 +70,96 @@ class TestSearchEndpoint:
         self,
         async_client: AsyncClient,
     ) -> None:
-        """Test that POST /search returns 405 Method Not Allowed.
-
-        This is an invariant test: the /search endpoint must never accept
-        POST requests, as it is a read-only query endpoint.
-        """
+        """Test that POST /search returns 405 Method Not Allowed."""
         response = await async_client.post("/search", json={"name": "test"})
-
         assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
+
+
+class TestSearchLogic:
+    """Tests for search logic behavior."""
+
+    @pytest.mark.asyncio
+    async def test_search_case_insensitive(
+        self,
+        override_get_db: None,
+        db_session: AsyncSession,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that search matches names case-insensitively."""
+        user1 = User(email="alice@test.com", full_name="Alice Smith")
+        user2 = User(email="bob@test.com", full_name="Bob Jones")
+        db_session.add(user1)
+        db_session.add(user2)
+        await db_session.commit()
+
+        response = await async_client.get("/search", params={"name": "alice"})
+        body = response.json()
+        assert body["total"] == 1
+        assert "Alice Smith" in body["results"]
+
+        response = await async_client.get("/search", params={"name": "ALICE"})
+        body = response.json()
+        assert body["total"] == 1
+        assert "Alice Smith" in body["results"]
+
+    @pytest.mark.asyncio
+    async def test_search_empty_query_returns_all(
+        self,
+        override_get_db: None,
+        db_session: AsyncSession,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that empty query returns all users."""
+        user = User(email="test@test.com", full_name="Test User")
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await async_client.get("/search", params={"name": ""})
+        body = response.json()
+        assert body["total"] == 1
+        assert "Test User" in body["results"]
+
+    @pytest.mark.asyncio
+    async def test_search_whitespace_query_returns_all(
+        self,
+        override_get_db: None,
+        db_session: AsyncSession,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that whitespace-only query returns all users."""
+        user = User(email="test@test.com", full_name="Test User")
+        db_session.add(user)
+        await db_session.commit()
+
+        response = await async_client.get("/search", params={"name": "   "})
+        body = response.json()
+        assert body["total"] == 1
+        assert "Test User" in body["results"]
+
+    @pytest.mark.asyncio
+    async def test_search_special_characters_literal(
+        self,
+        override_get_db: None,
+        db_session: AsyncSession,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that special characters are treated literally."""
+        user1 = User(email="test1@test.com", full_name="100% Complete")
+        user2 = User(email="test2@test.com", full_name="Normal User")
+        db_session.add(user1)
+        db_session.add(user2)
+        await db_session.commit()
+
+        response = await async_client.get("/search", params={"name": "100%"})
+        body = response.json()
+        assert body["total"] == 1
+        assert "100% Complete" in body["results"]
+
+        # "%" matches "100% Complete" - proves % is treated literally
+        response = await async_client.get("/search", params={"name": "%"})
+        body = response.json()
+        assert body["total"] == 1
+        assert "100% Complete" in body["results"]
 
 
 class TestSearchSchema:

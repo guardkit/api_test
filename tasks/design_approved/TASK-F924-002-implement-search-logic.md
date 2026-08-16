@@ -1,14 +1,15 @@
 ---
-id: TASK-F924-002
-title: Implement search logic with substring matching
-task_type: feature
-parent_review: TASK-REV-F904
-feature_id: FEAT-F904
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-F924-001
+- TASK-F924-001
+feature_id: FEAT-F904
+id: TASK-F924-002
+implementation_mode: task-work
+parent_review: TASK-REV-F904
+status: design_approved
+task_type: feature
+title: Implement search logic with substring matching
+wave: 2
 ---
 
 ## Description
