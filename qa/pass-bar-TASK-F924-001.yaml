@@ -1,0 +1,23 @@
+format_version: '2.0'
+task_id: TASK-F924-001
+registered_at:
+  sha: 3a87232a62d6a9262153d5af04ec7ca97f6c5664
+  date: '2026-08-16'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: user-search-AC-001
+  text: Searching for a partial name returns matching users
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+- id: user-search-AC-002
+  text: Searching with lowercase matches uppercase names
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

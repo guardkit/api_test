@@ -1,0 +1,40 @@
+feature: user-search
+generated: "2026-07-09T14:32:00Z"
+scenarios:
+  - title: "Searching for a partial name returns matching users"
+    tags: ["@key-example", "@smoke"]
+    sentence: "Requesting a search with a partial name substring returns a list containing only users whose names include that substring."
+  - title: "Searching with lowercase matches uppercase names"
+    tags: ["@key-example"]
+    sentence: "A search query in lowercase matches user names that begin with uppercase letters."
+  - title: "Searching with an empty name returns all users"
+    tags: ["@boundary"]
+    sentence: "Providing an empty search query returns the complete list of users in the store."
+  - title: "Searching with a single character returns all users containing that character"
+    tags: ["@boundary"]
+    sentence: "A single-character search query returns all users whose names contain that character."
+  - title: "Searching for a name with no matches returns an empty list"
+    tags: ["@negative"]
+    sentence: "A search query that matches no users returns an empty list."
+  - title: "Searching with special characters returns exact literal matches"
+    tags: ["@negative"]
+    sentence: "A search query containing special characters returns only users whose names contain those exact characters."
+  - title: "Searching with only whitespace returns all users"
+    tags: ["@negative"]
+    sentence: "A search query containing only whitespace is treated as an empty search and returns all users."
+  - title: "Requesting search without a name parameter returns an error"
+    tags: ["@negative"]
+    sentence: "Omitting the name query parameter from a search request causes the request to fail with an error."
+assumptions:
+  - id: ASSUM-001
+    text: "An empty search query returns all users in the store"
+    basis: "Common search API default (LIKE '%%'), but not explicitly stated in input"
+  - id: ASSUM-002
+    text: "Special characters in the search query are treated as literal characters"
+    basis: "Input did not specify SQL injection handling or special char escaping"
+  - id: ASSUM-003
+    text: "A query containing only whitespace is treated as an empty search"
+    basis: "Input did not specify whitespace trimming logic"
+  - id: ASSUM-004
+    text: "Omitting the name query parameter returns an error"
+    basis: "Input did not specify default behaviour for missing parameter"

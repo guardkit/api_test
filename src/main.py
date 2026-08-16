@@ -16,11 +16,12 @@ from src.core.middleware import (
 )
 from src.db.session import dispose_engine, init_engine
 from src.health.router import router as health_router
+from src.search.router import router as search_router
 from src.stats.router import StatsCounterMiddleware
 from src.stats.router import router as stats_router
+from src.time.router import router as time_router
 from src.uptime.router import router as uptime_router
 from src.users.router import router as users_router
-from src.time.router import router as time_router
 from src.version.router import router as version_router
 from src.whoami.router import router as whoami_router
 
@@ -98,6 +99,10 @@ app = FastAPI(
             "name": "version",
             "description": "Version and build information",
         },
+        {
+            "name": "search",
+            "description": "Search endpoints",
+        },
     ],
     swagger_ui_parameters={
         "defaultModelsExpandDepth": -1,
@@ -132,3 +137,6 @@ app.include_router(time_router, tags=["time"])
 
 # Include version router (prefix already set in router.py)
 app.include_router(version_router, tags=["version"])
+
+# Include search router (prefix already set in router.py)
+app.include_router(search_router, tags=["search"])
