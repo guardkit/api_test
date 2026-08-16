@@ -74,6 +74,54 @@ class TestSearchEndpoint:
         response = await async_client.post("/search", json={"name": "test"})
         assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
 
+    @pytest.mark.asyncio
+    async def test_search_returns_400_when_name_missing(
+        self,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that GET /search returns 400 when name parameter is missing."""
+        response = await async_client.get("/search")
+        assert response.status_code == 400
+        body = response.json()
+        assert "detail" in body
+
+    @pytest.mark.asyncio
+    async def test_search_error_message_indicates_name_required(
+        self,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that the error message indicates the name parameter is required."""
+        response = await async_client.get("/search")
+        assert response.status_code == 400
+        body = response.json()
+        detail = body.get("detail", "")
+        assert "name" in detail.lower()
+        assert "required" in detail.lower()
+
+    @pytest.mark.asyncio
+    async def test_search_with_empty_name_returns_200(
+        self,
+        override_get_db: None,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that GET /search with empty name (but present) returns 200 OK."""
+        response = await async_client.get("/search", params={"name": ""})
+        assert response.status_code == HTTPStatus.OK
+        body = response.json()
+        assert body["query"] == ""
+
+    @pytest.mark.asyncio
+    async def test_search_with_whitespace_name_returns_200(
+        self,
+        override_get_db: None,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that GET /search with whitespace-only name (present) returns 200 OK."""
+        response = await async_client.get("/search", params={"name": "   "})
+        assert response.status_code == HTTPStatus.OK
+        body = response.json()
+        assert body["query"] == "   "
+
 
 class TestSearchLogic:
     """Tests for search logic behavior."""
