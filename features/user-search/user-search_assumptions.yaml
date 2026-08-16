@@ -1,0 +1,29 @@
+feature: User Search Endpoint
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: Searching with an empty name returns all users
+  assumption: An empty search query returns all users in the store
+  confidence: low
+  basis: Common search API default (LIKE '%%'), but not explicitly stated in input
+  human_response: deferred
+- id: ASSUM-002
+  scenario: Searching with special characters returns exact literal matches
+  assumption: Special characters in the search query are treated as literal characters
+  confidence: low
+  basis: Input did not specify SQL injection handling or special char escaping
+  human_response: deferred
+- id: ASSUM-003
+  scenario: Searching with only whitespace returns all users
+  assumption: A query containing only whitespace is treated as an empty search
+  confidence: low
+  basis: Input did not specify whitespace trimming logic
+  human_response: deferred
+- id: ASSUM-004
+  scenario: Requesting search without a name parameter returns an error
+  assumption: Omitting the name query parameter returns an error
+  confidence: low
+  basis: Input did not specify default behaviour for missing parameter
+  human_response: deferred
