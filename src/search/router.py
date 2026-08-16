@@ -13,7 +13,7 @@ from src.users.models import User
 router = APIRouter(tags=["search"], redirect_slashes=False)
 
 
-async def validate_name_param(name: str | None = Query(default=None)) -> str:
+async def _validate_name_param(name: str | None = Query(default=None)) -> str:
     """Validate that the `name` query parameter is provided.
 
     Args:
@@ -48,7 +48,7 @@ async def validate_name_param(name: str | None = Query(default=None)) -> str:
     },
 )
 async def search(
-    validated_name: str = Depends(validate_name_param),
+    validated_name: str = Depends(_validate_name_param),
     db: AsyncSession = Depends(get_db),
 ) -> SearchResponse:
     """Search endpoint.
