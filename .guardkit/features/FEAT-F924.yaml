@@ -1,0 +1,84 @@
+id: FEAT-F924
+name: User Search Endpoint
+description: Add endpoint for searching users by name substring
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 4
+
+tasks:
+  - id: TASK-F924-001
+    name: Create search endpoint infrastructure
+    file_path: tasks/backlog/user-search/TASK-F924-001-create-search-infrastructure.md
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-F924-002
+    name: Implement search logic with substring matching
+    file_path: tasks/backlog/user-search/TASK-F924-002-implement-search-logic.md
+    complexity: 5
+    dependencies:
+      - TASK-F924-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-F924-003
+    name: Add error handling for missing parameter
+    file_path: tasks/backlog/user-search/TASK-F924-003-add-error-handling.md
+    complexity: 3
+    dependencies:
+      - TASK-F924-002
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-F924-004
+    name: Add integration tests
+    file_path: tasks/backlog/user-search/TASK-F924-004-add-integration-tests.md
+    complexity: 4
+    dependencies:
+      - TASK-F924-003
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+orchestration:
+  parallel_groups:
+    - - TASK-F924-001
+    - - TASK-F924-002
+    - - TASK-F924-003
+    - - TASK-F924-004
+  estimated_duration_flags: 165
+  recommended_parallel: 1
+
+smoke_gates:
+  after_wave: 4
+  command: |
+    set -e
+    pytest tests/users -x
+  expected_exit: 0
+  timeout: 120
+
+feature_files:
+  - features/user-search/user-search.feature
+scenarios:
+  "Searching for a partial name returns matching users":
+    verifier: hurl
+  "Searching with lowercase matches uppercase names":
+    verifier: hurl
+  "Searching with an empty name returns all users":
+    verifier: hurl
+  "Searching with a single character returns all users containing that character":
+    verifier: hurl
+  "Searching for a name with no matches returns an empty list":
+    verifier: hurl
+  "Searching with special characters returns exact literal matches":
+    verifier: hurl
+  "Searching with only whitespace returns all users":
+    verifier: hurl
+  "Requesting search without a name parameter returns an error":
+    verifier: hurl
