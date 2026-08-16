@@ -1,14 +1,15 @@
 ---
-id: TASK-F924-004
-title: Add integration tests
-task_type: testing
-parent_review: TASK-REV-F904
-feature_id: FEAT-F904
-wave: 4
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-F924-003
+- TASK-F924-003
+feature_id: FEAT-F904
+id: TASK-F924-004
+implementation_mode: task-work
+parent_review: TASK-REV-F904
+status: design_approved
+task_type: testing
+title: Add integration tests
+wave: 4
 ---
 
 ## Description
