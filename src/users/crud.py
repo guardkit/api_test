@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -150,5 +151,36 @@ async def count_users(db: AsyncSession) -> int:
         Total number of users in the database.
     """
     stmt = select(func.count()).select_from(User)
+    result = await db.execute(stmt)
+    return result.scalar_one() or 0
+
+
+async def count_users_today(db: AsyncSession) -> int:
+    """Count users created on the current day.
+
+    Uses date-only comparison so that users created at any time
+    during the current calendar day are included.
+
+    Args:
+        db: The async database session.
+
+    Returns:
+        Number of users created today.
+    """
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+
+    # Build start-of-today and start-of-tomorrow as timezone-aware datetimes
+    start_today = datetime(today.year, today.month, today.day, tzinfo=UTC)
+    start_tomorrow = datetime(
+        tomorrow.year, tomorrow.month, tomorrow.day, tzinfo=UTC
+    )
+
+    stmt = (
+        select(func.count())
+        .select_from(User)
+        .where(User.created_at >= start_today)
+        .where(User.created_at < start_tomorrow)
+    )
     result = await db.execute(stmt)
     return result.scalar_one() or 0
