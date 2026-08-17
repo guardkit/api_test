@@ -1,15 +1,15 @@
 ---
-id: TASK-6D13-002
-title: Implement data store query
-task_type: feature
-parent_review: TASK-REV-6D13
-feature_id: FEAT-6D13
-wave: 2
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-6D13-001
-status: pending
+- TASK-6D13-001
+feature_id: FEAT-6D13
+id: TASK-6D13-002
+implementation_mode: task-work
+parent_review: TASK-REV-6D13
+status: design_approved
+task_type: feature
+title: Implement data store query
+wave: 2
 ---
 
 ## Description
