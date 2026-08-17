@@ -1,0 +1,29 @@
+format_version: '2.0'
+task_id: TASK-6D13-003
+registered_at:
+  sha: 0d3ee294a631fa4ba571a41f1745a27c31fd397f
+  date: '2026-08-17'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: todays-user-count-AC-001
+  text: Requesting today's user count returns the correct total
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+- id: todays-user-count-AC-002
+  text: Requesting today's user count when no users were created today returns zero
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+- id: todays-user-count-AC-003
+  text: Requesting today's user count when all users were created today returns the
+    total
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
