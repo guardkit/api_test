@@ -1,0 +1,37 @@
+feature: Today's User Count Endpoint
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: Users created at the very start of today are included in the count
+  assumption: Today is defined as the interval from 00:00:00.000 UTC to 23:59:59.999
+    UTC inclusive
+  confidence: low
+  basis: Inferred from 'today' semantics; not explicitly stated which boundary inclusivity
+    to use
+  human_response: deferred
+- id: ASSUM-002
+  scenario: Requesting the count fails gracefully when the data store is unavailable
+  assumption: The endpoint returns HTTP 503 Service Unavailable when the data store
+    is unreachable
+  confidence: low
+  basis: Inferred from common API convention for downstream dependency failures; not
+    stated in input
+  human_response: deferred
+- id: ASSUM-003
+  scenario: Requesting the count with an invalid request format is rejected
+  assumption: The endpoint expects a well-formed HTTP GET request; any malformed request
+    is rejected with a 400-level status
+  confidence: low
+  basis: Inferred from standard REST API behavior; not stated in input
+  human_response: deferred
+- id: ASSUM-004
+  scenario: Users created just before midnight UTC are counted correctly relative
+    to the server timezone
+  assumption: The server timezone is UTC and 'today' is strictly the current UTC calendar
+    day
+  confidence: low
+  basis: Input mentions UTC as default but does not confirm it is the enforced timezone
+    for this endpoint
+  human_response: deferred
