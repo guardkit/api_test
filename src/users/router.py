@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response
@@ -17,6 +18,7 @@ from src.users.schemas import (
     UserCreate,
     UserList,
     UserPublic,
+    UserSummaryResponse,
     UserUpdate,
 )
 
@@ -98,6 +100,72 @@ async def get_user_count(db: AsyncSession = Depends(get_db)) -> UserCountRespons
 async def get_users_count_today(
     db: AsyncSession = Depends(get_db),
 ) -> UserCountResponse:
+    """Get today's user count.
+
+    Returns the number of users created on the current calendar day.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        total = await crud.count_users_today(db)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return UserCountResponse(count=total)
+
+
+@router.get(
+    "/{user_id}/summary",
+    response_model=UserSummaryResponse,
+    tags=["users"],
+    summary="Get user summary",
+    description=(
+        "Returns a summary of user profile information "
+        "including account metadata."
+    ),
+    responses={
+        404: {"description": "User not found"},
+    },
+)
+async def get_user_summary(
+    user_id: UUID, db: AsyncSession = Depends(get_db)
+) -> UserSummaryResponse:
+    """Get a user summary with profile metadata.
+
+    Returns user summary data including username, display name, profile metadata,
+    days since account creation, and active status.
+
+    Args:
+        user_id: The UUID of the user to retrieve.
+        db: The async database session.
+
+    Returns:
+        UserSummaryResponse with user profile summary data.
+
+    Raises:
+        UserNotFoundError: If the user does not exist.
+    """
+    user = await crud.get_user(db, str(user_id))
+    if user is None:
+        raise UserNotFoundError(user_id=str(user_id))
+
+    days_since_created = (date.today() - user.created_at.date()).days
+
+    profile_metadata: dict[str, str] = {
+        "email": user.email,
+        "status": "active" if user.is_active else "inactive",
+    }
+
+    display_name = user.full_name or user.email.split("@")[0]
+
+    return UserSummaryResponse(
+        username=user.email,
+        display_name=display_name,
+        profile_metadata=profile_metadata,
+        days_since_created=days_since_created,
+        is_active=user.is_active,
+    )
     """Get the count of users created today.
 
     Returns the number of users created on the current calendar day.

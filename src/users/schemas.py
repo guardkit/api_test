@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 
@@ -92,6 +93,33 @@ class UserCountResponse(BaseModel):
         json_schema_extra={
             "examples": [
                 {"count": 42}
+            ]
+        }
+    )
+
+
+class UserSummaryResponse(BaseModel):
+    """Schema for user summary responses."""
+
+    username: str
+    display_name: str | None
+    profile_metadata: dict[str, str]
+    days_since_created: int
+    is_active: bool
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "username": "john.doe@example.com",
+                    "display_name": "John Doe",
+                    "profile_metadata": {
+                        "email": "john.doe@example.com",
+                        "status": "active",
+                    },
+                    "days_since_created": 365,
+                    "is_active": True,
+                }
             ]
         }
     )
