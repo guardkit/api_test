@@ -1,0 +1,28 @@
+feature: Recent Users Endpoint
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: Requesting recent users without a limit returns the default number of
+    newest users
+  assumption: The default limit is 10 users when the limit parameter is omitted
+  confidence: low
+  basis: Common API default; stated as 'e.g., 10' in input but not confirmed as the
+    definitive value
+  human_response: deferred
+- id: ASSUM-002
+  scenario: Requesting recent users at the maximum allowed limit returns that many
+    users
+  assumption: The maximum allowed limit value is 100 users
+  confidence: low
+  basis: Not stated in the input; inferred as a reasonable system maximum to prevent
+    performance issues
+  human_response: deferred
+- id: ASSUM-003
+  scenario: Requesting recent users without a limit returns the default number of
+    newest users
+  assumption: The response contains full user objects with standard fields
+  confidence: low
+  basis: Input says 'list of user objects' but does not specify which fields are included
+  human_response: deferred

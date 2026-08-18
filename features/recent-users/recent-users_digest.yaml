@@ -1,0 +1,40 @@
+feature: recent-users
+generated: "2026-07-09T14:32:00Z"
+scenarios:
+  - title: "Requesting recent users without a limit returns the default number of newest users"
+    tags: ["@key-example", "@smoke"]
+    sentence: "Requesting the recent users list without specifying a limit returns the default number of users ordered from newest to oldest."
+  - title: "Requesting recent users with a valid explicit limit returns that many newest users"
+    tags: ["@key-example"]
+    sentence: "Requesting the recent users list with a valid explicit limit returns exactly that many users ordered from newest to oldest."
+  - title: "Requesting recent users at the maximum allowed limit returns that many users"
+    tags: ["@boundary"]
+    sentence: "Requesting the recent users list with a limit equal to the system maximum returns exactly that many users ordered from newest to oldest."
+  - title: "Requesting recent users with a limit exceeding the maximum is rejected"
+    tags: ["@boundary", "@negative"]
+    sentence: "Requesting the recent users list with a limit above the system maximum is rejected with an error indicating the limit is too high."
+  - title: "Requesting recent users with a limit of 1 returns a single newest user"
+    tags: ["@boundary"]
+    sentence: "Requesting the recent users list with a limit of 1 returns a single user object representing the most recently added user."
+  - title: "Requesting recent users with a limit of zero is rejected"
+    tags: ["@boundary", "@negative"]
+    sentence: "Requesting the recent users list with a limit of zero is rejected with an error indicating the limit must be positive."
+  - title: "Requesting recent users with a negative limit is rejected"
+    tags: ["@negative"]
+    sentence: "Requesting the recent users list with a negative limit is rejected with an error indicating the limit must be positive."
+  - title: "Requesting recent users with a non-integer limit is rejected"
+    tags: ["@negative"]
+    sentence: "Requesting the recent users list with a non-integer limit is rejected with an error indicating the limit must be an integer."
+  - title: "Requesting recent users from an empty store returns an empty list"
+    tags: ["@key-example"]
+    sentence: "Requesting the recent users list when no users exist returns an empty list rather than an error."
+assumptions:
+  - id: ASSUM-001
+    text: "The default limit is 10 users when the limit parameter is omitted"
+    basis: "Common API default; stated as 'e.g., 10' in input but not confirmed as the definitive value"
+  - id: ASSUM-002
+    text: "The maximum allowed limit value is 100 users"
+    basis: "Not stated in the input; inferred as a reasonable system maximum to prevent performance issues"
+  - id: ASSUM-003
+    text: "The response contains full user objects with standard fields"
+    basis: "Input says 'list of user objects' but does not specify which fields are included"
