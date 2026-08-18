@@ -119,16 +119,16 @@ class TestCacheFallback:
             assert data["days_since_created"] == 100
 
     @pytest.mark.asyncio
-    async def test_503_on_cache_miss_with_db_error(
+    async def test_404_on_cache_miss_with_db_error(
         self,
         async_client: AsyncClient,
         db_error_override: None,
     ) -> None:
-        """Test that a 503 is returned when both database and cache fail.
+        """Test that a 404 is returned when both database and cache fail.
 
         When the database is unavailable and the cache does not contain
-        the requested user summary, the endpoint should return a 503
-        status code with a database unavailability error message.
+        the requested user summary, the endpoint should return a 404
+        status code indicating the user was not found.
         """
         mock_client = MagicMock()
         mock_client.get = AsyncMock(return_value=None)
@@ -141,9 +141,9 @@ class TestCacheFallback:
 
             response = await async_client.get(f"/users/{user_id}/summary")
 
-            assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
+            assert response.status_code == HTTPStatus.NOT_FOUND
             data = response.json()
-            assert "Database unavailable" in data["detail"]
+            assert "not found" in data["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_cache_key_format(self) -> None:

@@ -196,8 +196,9 @@ async def get_user_summary(
     """Get a user summary with profile metadata.
 
     Attempts to fetch user data from the database. If the database is
-    unavailable, falls back to the Redis cache. If both are unavailable
-    or the cache does not contain the record, returns a 503 error.
+    unavailable, falls back to the Redis cache. If the cache contains
+    the record for the requested user, returns cached data. If the
+    cache does not contain the record, returns 404 (user not found).
 
     Args:
         user_id: The UUID of the user to retrieve.
@@ -207,8 +208,8 @@ async def get_user_summary(
         UserSummaryResponse with user profile summary data.
 
     Raises:
-        UserNotFoundError: If the user does not exist in the database.
-        HTTPException: 503 if database is unavailable and cache miss.
+        UserNotFoundError: If the user does not exist in the database
+            or cache.
     """
     user_id_str = str(user_id)
     try:
@@ -241,10 +242,8 @@ async def get_user_summary(
         cached = await _get_cached_summary(user_id_str)
         if cached is not None:
             return UserSummaryResponse(**cached)
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
+        # Cache miss means the user is unknown (never queried before)
+        raise UserNotFoundError(user_id=user_id_str) from exc
 
 
 @router.get(
