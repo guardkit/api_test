@@ -1,0 +1,30 @@
+format_version: '2.0'
+task_id: TASK-0CAC-002
+registered_at:
+  sha: 9a9589e9ee5af3d91c8cf9a8ecb03d00882fec94
+  date: '2026-08-18'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: recent-users-AC-001
+  text: Requesting recent users without a limit returns the default number of newest
+    users
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+- id: recent-users-AC-002
+  text: Requesting recent users with a valid explicit limit returns that many newest
+    users
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+- id: recent-users-AC-003
+  text: Requesting recent users from an empty store returns an empty list
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
