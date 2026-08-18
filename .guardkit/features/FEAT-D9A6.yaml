@@ -54,3 +54,18 @@ orchestration:
     - - TASK-D9A6-004
   estimated_duration_minutes: 165
   recommended_parallel: 2
+feature_files:
+  - features/api-test-ready-endpoint/api-test-ready-endpoint.feature
+scenarios:
+  "The ready endpoint returns success when the service is ready":
+    verifier: "hurl"
+  "The ready endpoint returns failure when the service is not ready":
+    verifier: "hurl"
+  "The ready endpoint responds within an acceptable time":
+    verifier: "hurl"
+  "The ready endpoint is accessible at the standard path":
+    verifier: "hurl"
+  "The ready endpoint rejects non-GET methods":
+    verifier: "hurl"
+  "The endpoint reflects readiness state changes":
+    verifier: "hurl"

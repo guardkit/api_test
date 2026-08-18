@@ -106,3 +106,7 @@ execution:
   last_updated: '2026-02-24T19:02:21.414377'
   archived_at: null
   archived_to: null
+
+# routing_law: off — legacy feature with no approved Gherkin (pre-dates the routing law);
+# set 2026-08-18 at the api_test enforcement flip so the plan load stays honest, not blocked.
+routing_law: off

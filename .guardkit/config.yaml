@@ -29,3 +29,16 @@ autobuild:
       endpoint: http://localhost:9000/v1/chat/completions
       model: qav-shadow
       timeout_seconds: 60
+
+# THE ROUTING LAW — ENFORCED on api_test (the first repo), Rich's ruling
+# 2026-08-18 after two consecutive self-stamped machine-chain plans under the
+# verbatim templates (drives 15: 8/8, 17: 6/6). Every approved scenario must
+# carry a `verifier:` stamp from the closed vocabulary (toolchain, hurl, exam,
+# probe:bus, probe:process, flutter, playwright, operator) — unstamped = loud
+# plan-load failure, never a fallback home; the stamp normalizer writes stamps
+# by rule at plan-commit and the specialist repairs title slips; a scenario no
+# rule can decide is refused BY NAME on a card. Feature-level `routing_law:`
+# in a feature YAML wins over this key (the 7 legacy no-Gherkin features carry
+# `off`). Reversible: set to off. Card of record:
+# ai-transition docs/bdd-replacement-options-card-2026-08-09.md (Q8/A.2).
+routing_law: enforced
