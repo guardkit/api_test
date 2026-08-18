@@ -1,0 +1,28 @@
+feature: User Summary Endpoint
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A known user's summary is returned with derived fields
+  assumption: The 'public record' consists of username, display name, and profile
+    metadata fields
+  confidence: low
+  basis: Common public profile convention; not stated in the input which specific
+    fields constitute the public record
+  human_response: deferred
+- id: ASSUM-002
+  scenario: A known user's summary is returned with derived fields
+  assumption: The 'active' status is a stored boolean field in the user record
+  confidence: low
+  basis: Input mentions 'active status' but does not specify whether it is a stored
+    boolean, a date comparison, or another computation
+  human_response: deferred
+- id: ASSUM-003
+  scenario: A known user's summary is returned with derived fields
+  assumption: The 'days since created' is calculated as the integer number of days
+    between the user's creation date and the current server date
+  confidence: low
+  basis: Input mentions 'how many days ago they were created' but does not specify
+    timezone handling or whether fractional days are rounded
+  human_response: deferred

@@ -1,0 +1,31 @@
+feature: user-summary-endpoint
+generated: "2026-07-09T14:32:00Z"
+scenarios:
+  - title: "A known user's summary is returned with derived fields"
+    tags: ["@key-example", "@smoke"]
+    sentence: "Requesting the summary for a known user returns the user's public record along with the number of days since creation and the active status."
+  - title: "An unknown user ID returns not found"
+    tags: ["@negative"]
+    sentence: "Requesting the summary for a user ID that does not exist returns a not found response indicating the user does not exist."
+  - title: "Database unavailable but cached record exists returns summary from cache"
+    tags: ["@boundary"]
+    sentence: "When the database is unavailable but a cached record exists for the user, the summary is returned from the cache with all derived fields."
+  - title: "Database unavailable and no cached record fails naming the database"
+    tags: ["@boundary", "@negative"]
+    sentence: "When the database is unavailable and no cached record exists, the request fails with an error that explicitly names the database as the cause."
+  - title: "Unknown user ID with database unavailable still returns not found"
+    tags: ["@edge-case"]
+    sentence: "When the database is unavailable and the user ID does not exist, the request still returns a not found response."
+  - title: "Unknown user ID with cached record for different user returns not found"
+    tags: ["@edge-case"]
+    sentence: "When the database is unavailable and a cached record exists for a different user, requesting an unknown user ID still returns a not found response."
+assumptions:
+  - id: ASSUM-001
+    text: "The 'public record' consists of username, display name, and profile metadata fields"
+    basis: "Common public profile convention; not stated in the input which specific fields constitute the public record"
+  - id: ASSUM-002
+    text: "The 'active' status is a stored boolean field in the user record"
+    basis: "Input mentions 'active status' but does not specify whether it is a stored boolean, a date comparison, or another computation"
+  - id: ASSUM-003
+    text: "The 'days since created' is calculated as the integer number of days between the user's creation date and the current server date"
+    basis: "Input mentions 'how many days ago they were created' but does not specify timezone handling or whether fractional days are rounded"

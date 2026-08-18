@@ -1,0 +1,18 @@
+format_version: '2.0'
+task_id: TASK-22B6-001
+registered_at:
+  sha: fa866d3bf0054185a11fa56480c3d2234d4d40e7
+  date: '2026-08-18'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: user-summary-endpoint-AC-001
+  text: A known user's summary is returned with derived fields
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

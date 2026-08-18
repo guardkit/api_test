@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
+import logging
 from uuid import UUID
 
+import redis.asyncio
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import EmailStr
 from sqlalchemy.exc import SQLAlchemyError
@@ -11,14 +14,73 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.dependencies import get_db
 from src.users import crud
+from src.users.calculations import calculate_days_since_created
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
     UserCountResponse,
     UserCreate,
     UserList,
     UserPublic,
+    UserSummaryResponse,
     UserUpdate,
 )
+
+logger = logging.getLogger(__name__)
+
+CACHE_TTL = 300  # 5 minutes
+REDIS_URL = "redis://localhost:6379/0"
+
+
+def _cache_key(user_id: str) -> str:
+    """Generate a cache key for a user summary.
+
+    Args:
+        user_id: The user UUID string.
+
+    Returns:
+        A cache key string following the pattern user:summary:{user_id}.
+    """
+    return f"user:summary:{user_id}"
+
+
+async def _get_cached_summary(user_id: str) -> dict | None:
+    """Retrieve a cached user summary from Redis.
+
+    Args:
+        user_id: The user UUID string.
+
+    Returns:
+        The cached summary dict, or None if not found or on error.
+    """
+    try:
+        client = redis.asyncio.from_url(REDIS_URL, decode_responses=True)
+        data = await client.get(_cache_key(user_id))
+        await client.close()
+        if data is not None:
+            return json.loads(data)
+    except Exception:
+        logger.debug("Cache read failed for user %s", user_id)
+    return None
+
+
+async def _set_cached_summary(user_id: str, summary: dict) -> None:
+    """Store a user summary in Redis cache.
+
+    Args:
+        user_id: The user UUID string.
+        summary: The summary dict to cache.
+    """
+    try:
+        client = redis.asyncio.from_url(REDIS_URL, decode_responses=True)
+        await client.set(
+            _cache_key(user_id),
+            json.dumps(summary),
+            ex=CACHE_TTL,
+        )
+        await client.close()
+    except Exception:
+        logger.debug("Cache write failed for user %s", user_id)
+
 
 router = APIRouter(prefix="/users", redirect_slashes=False)
 
@@ -98,7 +160,7 @@ async def get_user_count(db: AsyncSession = Depends(get_db)) -> UserCountRespons
 async def get_users_count_today(
     db: AsyncSession = Depends(get_db),
 ) -> UserCountResponse:
-    """Get the count of users created today.
+    """Get today's user count.
 
     Returns the number of users created on the current calendar day.
     Returns 503 if the database is unavailable.
@@ -111,6 +173,77 @@ async def get_users_count_today(
             detail=f"Database unavailable: {exc}",
         ) from exc
     return UserCountResponse(count=total)
+
+
+@router.get(
+    "/{user_id}/summary",
+    response_model=UserSummaryResponse,
+    tags=["users"],
+    summary="Get user summary",
+    description=(
+        "Returns a summary of user profile information "
+        "including account metadata. Falls back to cache when the database "
+        "is unavailable."
+    ),
+    responses={
+        404: {"description": "User not found"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_user_summary(
+    user_id: UUID, db: AsyncSession = Depends(get_db)
+) -> UserSummaryResponse:
+    """Get a user summary with profile metadata.
+
+    Attempts to fetch user data from the database. If the database is
+    unavailable, falls back to the Redis cache. If the cache contains
+    the record for the requested user, returns cached data. If the
+    cache does not contain the record, returns 404 (user not found).
+
+    Args:
+        user_id: The UUID of the user to retrieve.
+        db: The async database session.
+
+    Returns:
+        UserSummaryResponse with user profile summary data.
+
+    Raises:
+        UserNotFoundError: If the user does not exist in the database
+            or cache.
+    """
+    user_id_str = str(user_id)
+    try:
+        user = await crud.get_user(db, user_id_str)
+        if user is None:
+            raise UserNotFoundError(user_id=user_id_str)
+
+        days_since_created = calculate_days_since_created(user.created_at)
+
+        profile_metadata: dict[str, str] = {
+            "email": user.email,
+            "status": "active" if user.is_active else "inactive",
+        }
+
+        display_name = user.full_name or user.email.split("@")[0]
+
+        summary = UserSummaryResponse(
+            username=user.email,
+            display_name=display_name,
+            profile_metadata=profile_metadata,
+            days_since_created=days_since_created,
+            is_active=user.is_active,
+        )
+        # Cache the result for future requests
+        await _set_cached_summary(user_id_str, summary.model_dump())
+        return summary
+    except SQLAlchemyError as exc:
+        logger.warning("Database unavailable for user summary: %s", exc)
+        # Fall back to cache
+        cached = await _get_cached_summary(user_id_str)
+        if cached is not None:
+            return UserSummaryResponse(**cached)
+        # Cache miss means the user is unknown (never queried before)
+        raise UserNotFoundError(user_id=user_id_str) from exc
 
 
 @router.get(
@@ -193,7 +326,10 @@ async def update_user(
     status_code=204,
     tags=["users"],
     summary="Delete user by email",
-    description="Deletes a user by their exact email address. Returns 204 No Content on success.",
+    description=(
+        "Deletes a user by their exact email address. "
+        "Returns 204 No Content on success."
+    ),
     responses={
         204: {"description": "User deleted successfully"},
         404: {"description": "User not found"},
@@ -207,7 +343,8 @@ async def delete_user_by_email(
     """Delete user by email.
 
     Finds the user with the exact matching email address and deletes them.
-    Returns 204 on success, 404 if no user has that email, 503 if the database is unavailable.
+    Returns 204 on success, 404 if no user has that email,
+    503 if the database is unavailable.
     """
     try:
         user = await crud.get_user_by_email(db, email)
