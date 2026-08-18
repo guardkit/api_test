@@ -348,6 +348,7 @@ async def get_recent_users(
         ) from exc
     try:
         users = await crud.get_recent_users(db, limit=limit)
+        total = await crud.count_users(db)
     except SQLAlchemyError as exc:
         raise HTTPException(
             status_code=503,
@@ -355,7 +356,7 @@ async def get_recent_users(
         ) from exc
     return RecentUsersResponse(
         users=[UserPublic.model_validate(u) for u in users],
-        total=len(users),
+        total=total,
     )
 
 

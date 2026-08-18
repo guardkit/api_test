@@ -1,15 +1,15 @@
 ---
-id: TASK-0CAC-003
-title: Add pagination and ordering logic
-task_type: feature
-parent_review: TASK-REV-0CAC
-feature_id: FEAT-0CAC
-wave: 2
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-0CAC-002
-status: pending
+- TASK-0CAC-002
+feature_id: FEAT-0CAC
+id: TASK-0CAC-003
+implementation_mode: task-work
+parent_review: TASK-REV-0CAC
+status: design_approved
+task_type: feature
+title: Add pagination and ordering logic
+wave: 2
 ---
 
 # Add pagination and ordering logic

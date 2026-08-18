@@ -36,9 +36,7 @@ class TestRecentUsersEndpoint:
         for i in range(15):
             await crud.create_user(
                 db_session,
-                UserCreate(
-                    email=f"user{i}@example.com", full_name=f"User {i}"
-                ),
+                UserCreate(email=f"user{i}@example.com", full_name=f"User {i}"),
             )
         await db_session.commit()
 
@@ -46,7 +44,7 @@ class TestRecentUsersEndpoint:
 
         assert response.status_code == HTTPStatus.OK
         data = response.json()
-        assert data["total"] == 10
+        assert data["total"] == 15
         assert len(data["users"]) == 10
 
     @pytest.mark.asyncio
@@ -58,9 +56,7 @@ class TestRecentUsersEndpoint:
         for i in range(5):
             await crud.create_user(
                 db_session,
-                UserCreate(
-                    email=f"user{i}@example.com", full_name=f"User {i}"
-                ),
+                UserCreate(email=f"user{i}@example.com", full_name=f"User {i}"),
             )
         await db_session.commit()
 
@@ -68,7 +64,7 @@ class TestRecentUsersEndpoint:
 
         assert response.status_code == HTTPStatus.OK
         data = response.json()
-        assert data["total"] == 3
+        assert data["total"] == 5
         assert len(data["users"]) == 3
 
     @pytest.mark.asyncio
@@ -100,6 +96,93 @@ class TestRecentUsersEndpoint:
         assert timestamps == sorted(timestamps, reverse=True)
 
     @pytest.mark.asyncio
+    async def test_recent_users_total_count_when_limit_exceeds_store(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that total reflects actual store count when limit > number of users.
+
+        This verifies pagination correctness: the 'total' field should represent
+        the total number of users in the store, not just the number returned.
+        """
+        # Create 3 users
+        for i in range(3):
+            await crud.create_user(
+                db_session,
+                UserCreate(
+                    email=f"total_user{i}@example.com", full_name=f"Total User {i}"
+                ),
+            )
+        await db_session.commit()
+
+        # Request more than exist; total should still reflect actual store count
+        response = await async_client.get("/recent-users?limit=10")
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert data["total"] == 3
+        assert len(data["users"]) == 3
+
+    @pytest.mark.asyncio
+    async def test_recent_users_total_count_when_limit_truncates(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that total reflects actual store count when limit < number of users.
+
+        When fewer results are returned due to a limit, 'total' must still
+        report the full store count (not the truncated count).
+        """
+        # Create 12 users
+        for i in range(12):
+            await crud.create_user(
+                db_session,
+                UserCreate(
+                    email=f"trunc_user{i}@example.com", full_name=f"Trunc User {i}"
+                ),
+            )
+        await db_session.commit()
+
+        # Request only 5 but total should reflect all 12
+        response = await async_client.get("/recent-users?limit=5")
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert data["total"] == 12
+        assert len(data["users"]) == 5
+
+    @pytest.mark.asyncio
+    async def test_recent_users_newest_first_ordering(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that the most recently created user appears first.
+
+        Creates 5 users with intentional delays and verifies the first
+        element in the response is the newest (highest created_at).
+        """
+        import asyncio
+
+        for i in range(5):
+            await crud.create_user(
+                db_session,
+                UserCreate(
+                    email=f"order_user{i}@example.com", full_name=f"Order User {i}"
+                ),
+            )
+            if i < 4:
+                await asyncio.sleep(0.05)
+        await db_session.commit()
+
+        response = await async_client.get("/recent-users?limit=5")
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert len(data["users"]) == 5
+        # The first user should have the latest created_at
+        timestamps = [user["created_at"] for user in data["users"]]
+        assert timestamps[0] == max(timestamps)
+        # All timestamps should be strictly descending
+        assert timestamps == sorted(timestamps, reverse=True)
+
+    @pytest.mark.asyncio
     async def test_recent_users_limit_capped_at_100(
         self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
     ) -> None:
@@ -108,9 +191,7 @@ class TestRecentUsersEndpoint:
         for i in range(200):
             await crud.create_user(
                 db_session,
-                UserCreate(
-                    email=f"cap_user{i}@example.com", full_name=f"Cap User {i}"
-                ),
+                UserCreate(email=f"cap_user{i}@example.com", full_name=f"Cap User {i}"),
             )
         await db_session.commit()
 
@@ -127,9 +208,7 @@ class TestRecentUsersEndpoint:
         """Test that response contains required user fields."""
         await crud.create_user(
             db_session,
-            UserCreate(
-                email="format_test@example.com", full_name="Format Test"
-            ),
+            UserCreate(email="format_test@example.com", full_name="Format Test"),
         )
         await db_session.commit()
 
