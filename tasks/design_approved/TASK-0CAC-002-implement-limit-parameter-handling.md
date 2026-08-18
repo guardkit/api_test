@@ -1,15 +1,15 @@
 ---
-id: TASK-0CAC-002
-title: Implement limit parameter handling
-task_type: feature
-parent_review: TASK-REV-0CAC
-feature_id: FEAT-0CAC
-wave: 2
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-0CAC-001
-status: pending
+- TASK-0CAC-001
+feature_id: FEAT-0CAC
+id: TASK-0CAC-002
+implementation_mode: task-work
+parent_review: TASK-REV-0CAC
+status: design_approved
+task_type: feature
+title: Implement limit parameter handling
+wave: 2
 ---
 
 # Implement limit parameter handling

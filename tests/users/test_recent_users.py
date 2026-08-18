@@ -103,7 +103,7 @@ class TestRecentUsersEndpoint:
     async def test_recent_users_limit_capped_at_100(
         self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
     ) -> None:
-        """Test that limit is capped at 100."""
+        """Test that limit exceeding 100 returns 400."""
         # Create 200 users
         for i in range(200):
             await crud.create_user(
@@ -116,10 +116,9 @@ class TestRecentUsersEndpoint:
 
         response = await async_client.get("/recent-users?limit=200")
 
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.BAD_REQUEST
         data = response.json()
-        assert data["total"] == 100
-        assert len(data["users"]) == 100
+        assert "limit must not exceed 100" in data["detail"]
 
     @pytest.mark.asyncio
     async def test_recent_users_response_format(

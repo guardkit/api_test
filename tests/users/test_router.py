@@ -10,7 +10,6 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.users import crud
-from src.users.models import User
 from src.users.schemas import UserCreate
 
 
@@ -638,3 +637,113 @@ class TestDeleteUserByEmail:
         finally:
             crud.get_user_by_email = original_get
             crud.delete_user = original_delete
+
+
+class TestLimitValidation:
+    """Tests for limit parameter validation."""
+
+    @pytest.mark.asyncio
+    async def test_list_users_valid_limit(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that valid limit values are accepted."""
+        for limit_val in ["1", "50", "100"]:
+            response = await async_client.get(f"/users?limit={limit_val}")
+            assert response.status_code == HTTPStatus.OK
+
+    @pytest.mark.asyncio
+    async def test_list_users_non_integer_limit(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that non-integer limit values return 400."""
+        response = await async_client.get("/users?limit=abc")
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        data = response.json()
+        assert "limit must be a positive integer" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_list_users_zero_limit(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that zero limit returns 400."""
+        response = await async_client.get("/users?limit=0")
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        data = response.json()
+        assert "limit must be a positive integer" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_list_users_negative_limit(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that negative limit values return 400."""
+        response = await async_client.get("/users?limit=-5")
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        data = response.json()
+        assert "limit must be a positive integer" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_list_users_exceeds_max_limit(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that limit exceeding 100 returns 400."""
+        response = await async_client.get("/users?limit=101")
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        data = response.json()
+        assert "limit must not exceed 100" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_recent_users_non_integer_limit(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that non-integer limit on recent-users returns 400."""
+        response = await async_client.get("/recent-users?limit=abc")
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        data = response.json()
+        assert "limit must be a positive integer" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_recent_users_zero_limit(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that zero limit on recent-users returns 400."""
+        response = await async_client.get("/recent-users?limit=0")
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        data = response.json()
+        assert "limit must be a positive integer" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_recent_users_negative_limit(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that negative limit on recent-users returns 400."""
+        response = await async_client.get("/recent-users?limit=-1")
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        data = response.json()
+        assert "limit must be a positive integer" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_recent_users_exceeds_max_limit(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that limit exceeding 100 on recent-users returns 400."""
+        response = await async_client.get("/recent-users?limit=200")
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+        data = response.json()
+        assert "limit must not exceed 100" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_recent_users_valid_limit(
+        self, async_client: AsyncClient, override_get_db: None
+    ) -> None:
+        """Test that valid limit values on recent-users are accepted."""
+        for limit_val in ["1", "10", "100"]:
+            response = await async_client.get(f"/recent-users?limit={limit_val}")
+            assert response.status_code == HTTPStatus.OK

@@ -25,6 +25,7 @@ from src.users.schemas import (
     UserSummaryResponse,
     UserUpdate,
 )
+from src.users.validators import validate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -114,9 +115,16 @@ async def create_user(
     description="Returns a paginated list of users.",
 )
 async def list_users(
-    skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
+    skip: int = 0, limit: str = "100", db: AsyncSession = Depends(get_db)
 ) -> UserList:
     """List users with optional pagination."""
+    try:
+        limit = validate_limit(limit)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
     users = await crud.get_users(db, skip=skip, limit=limit)
     total = await crud.count_users(db)
     return UserList(items=[UserPublic.model_validate(u) for u in users], total=total)
@@ -317,7 +325,7 @@ recent_router = APIRouter(prefix="/recent-users", redirect_slashes=False)
     },
 )
 async def get_recent_users(
-    limit: int = 10, db: AsyncSession = Depends(get_db)
+    limit: str = "10", db: AsyncSession = Depends(get_db)
 ) -> RecentUsersResponse:
     """Get recent users in descending order of creation timestamp.
 
@@ -327,11 +335,17 @@ async def get_recent_users(
 
     Returns:
         RecentUsersResponse with users ordered by created_at descending.
+
+    Raises:
+        HTTPException: 400 if limit is not a valid positive integer.
     """
-    if limit < 1:
-        limit = 1
-    if limit > 100:
-        limit = 100
+    try:
+        limit = validate_limit(limit)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
     try:
         users = await crud.get_recent_users(db, limit=limit)
     except SQLAlchemyError as exc:
