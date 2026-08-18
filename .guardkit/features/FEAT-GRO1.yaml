@@ -24,4 +24,4 @@ orchestration:
 
 # routing_law: off — legacy feature with no approved Gherkin (pre-dates the routing law);
 # set 2026-08-18 at the api_test enforcement flip so the plan load stays honest, not blocked.
-routing_law: off
+routing_law: "off"
