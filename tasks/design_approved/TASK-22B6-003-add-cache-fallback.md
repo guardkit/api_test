@@ -1,14 +1,15 @@
 ---
-id: TASK-22B6-003
-title: Add cache fallback logic
-task_type: feature
-parent_review: TASK-REV-22B
-feature_id: FEAT-22B6
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-22B6-001
+- TASK-22B6-001
+feature_id: FEAT-22B6
+id: TASK-22B6-003
+implementation_mode: task-work
+parent_review: TASK-REV-22B
+status: design_approved
+task_type: feature
+title: Add cache fallback logic
+wave: 2
 ---
 
 ## Acceptance Criteria

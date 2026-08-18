@@ -102,10 +102,10 @@ class UserSummaryResponse(BaseModel):
     """Schema for user summary responses."""
 
     username: str
-    display_name: str | None
+    display_name: str
     profile_metadata: dict[str, str]
     days_since_created: int
-    is_active: bool
+    is_active: bool = True
 
     model_config = ConfigDict(
         json_schema_extra={

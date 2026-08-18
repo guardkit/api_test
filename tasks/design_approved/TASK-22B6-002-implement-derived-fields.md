@@ -1,14 +1,15 @@
 ---
-id: TASK-22B6-002
-title: Implement derived field calculation
-task_type: feature
-parent_review: TASK-REV-22B
-feature_id: FEAT-22B6
-wave: 2
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-22B6-001
+- TASK-22B6-001
+feature_id: FEAT-22B6
+id: TASK-22B6-002
+implementation_mode: task-work
+parent_review: TASK-REV-22B
+status: design_approved
+task_type: feature
+title: Implement derived field calculation
+wave: 2
 ---
 
 ## Acceptance Criteria
