@@ -1,0 +1,78 @@
+id: FEAT-0CAC
+name: "Recent Users Endpoint"
+description: "Implements the /recent-users endpoint with limit handling and newest-first ordering"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 4
+
+tasks:
+  - id: TASK-0CAC-001
+    name: "Create recent-users endpoint"
+    file_path: "tasks/backlog/recent-users/TASK-0CAC-001-create-recent-users-endpoint.md"
+    complexity: 5
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-0CAC-002
+    name: "Implement limit parameter handling"
+    file_path: "tasks/backlog/recent-users/TASK-0CAC-002-implement-limit-parameter-handling.md"
+    complexity: 4
+    dependencies:
+      - TASK-0CAC-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-0CAC-003
+    name: "Add pagination and ordering logic"
+    file_path: "tasks/backlog/recent-users/TASK-0CAC-003-add-pagination-and-ordering-logic.md"
+    complexity: 4
+    dependencies:
+      - TASK-0CAC-002
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-0CAC-004
+    name: "Add acceptance tests"
+    file_path: "tasks/backlog/recent-users/TASK-0CAC-004-add-acceptance-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-0CAC-003
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+orchestration:
+  parallel_groups:
+    - [TASK-0CAC-001]
+    - [TASK-0CAC-002]
+    - [TASK-0CAC-003]
+    - [TASK-0CAC-004]
+# feature_files: declared by forge at plan-commit — the committed spec
+# .feature of this planning run (the 008 plan-writer omitted the key);
+# the routing law's scenario universe is explicit, never inferred.
+feature_files:
+  - "features/recent-users/recent-users.feature"
+scenarios:
+  "Requesting recent users without a limit returns the default number of newest users":
+    verifier: "hurl"
+  "Requesting recent users with a valid explicit limit returns that many newest users":
+    verifier: "hurl"
+  "Requesting recent users at the maximum allowed limit returns that many users":
+    verifier: "hurl"
+  "Requesting recent users with a limit exceeding the maximum is rejected":
+    verifier: "hurl"
+  "Requesting recent users with a limit of 1 returns a single newest user":
+    verifier: "hurl"
+  "Requesting recent users with a limit of zero is rejected":
+    verifier: "hurl"
+  "Requesting recent users with a negative limit is rejected":
+    verifier: "hurl"
+  "Requesting recent users with a non-integer limit is rejected":
+    verifier: "hurl"
+  "Requesting recent users from an empty store returns an empty list":
+    verifier: "hurl"
