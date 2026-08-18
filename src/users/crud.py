@@ -184,3 +184,20 @@ async def count_users_today(db: AsyncSession) -> int:
     )
     result = await db.execute(stmt)
     return result.scalar_one() or 0
+
+
+async def get_recent_users(
+    db: AsyncSession, limit: int = 10
+) -> Sequence[User]:
+    """Get the most recently created users in descending order.
+
+    Args:
+        db: The async database session.
+        limit: Maximum number of users to return (default 10).
+
+    Returns:
+        Sequence of User objects ordered by created_at descending.
+    """
+    stmt = select(User).order_by(User.created_at.desc()).limit(limit)
+    result = await db.execute(stmt)
+    return result.scalars().all()

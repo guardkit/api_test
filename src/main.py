@@ -21,6 +21,7 @@ from src.stats.router import StatsCounterMiddleware
 from src.stats.router import router as stats_router
 from src.time.router import router as time_router
 from src.uptime.router import router as uptime_router
+from src.users.router import recent_router
 from src.users.router import router as users_router
 from src.version.router import router as version_router
 from src.whoami.router import router as whoami_router
@@ -125,6 +126,9 @@ app.include_router(whoami_router, tags=["whoami"])
 
 # Include users router (prefix already set in router.py)
 app.include_router(users_router, tags=["users"])
+
+# Include recent-users router (prefix already set in router.py)
+app.include_router(recent_router, tags=["users"])
 
 # Include uptime router (prefix already set in router.py)
 app.include_router(uptime_router, tags=["uptime"])

@@ -17,6 +17,7 @@ from src.users import crud
 from src.users.calculations import calculate_days_since_created
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
+    RecentUsersResponse,
     UserCountResponse,
     UserCreate,
     UserList,
@@ -24,6 +25,7 @@ from src.users.schemas import (
     UserSummaryResponse,
     UserUpdate,
 )
+from src.users.validators import validate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -113,9 +115,16 @@ async def create_user(
     description="Returns a paginated list of users.",
 )
 async def list_users(
-    skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
+    skip: int = 0, limit: str = "100", db: AsyncSession = Depends(get_db)
 ) -> UserList:
     """List users with optional pagination."""
+    try:
+        limit = validate_limit(limit)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
     users = await crud.get_users(db, skip=skip, limit=limit)
     total = await crud.count_users(db)
     return UserList(items=[UserPublic.model_validate(u) for u in users], total=total)
@@ -297,6 +306,58 @@ async def get_user(user_id: UUID, db: AsyncSession = Depends(get_db)) -> UserPub
     if user is None:
         raise UserNotFoundError(user_id=str(user_id))
     return UserPublic.model_validate(user)
+
+
+recent_router = APIRouter(prefix="/recent-users", redirect_slashes=False)
+
+
+@recent_router.get(
+    "",
+    response_model=RecentUsersResponse,
+    tags=["users"],
+    summary="Get recent users",
+    description=(
+        "Returns the most recently created users in descending order "
+        "of creation timestamp."
+    ),
+    responses={
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_recent_users(
+    limit: str = "10", db: AsyncSession = Depends(get_db)
+) -> RecentUsersResponse:
+    """Get recent users in descending order of creation timestamp.
+
+    Args:
+        limit: Maximum number of users to return (default 10, max 100).
+        db: The async database session.
+
+    Returns:
+        RecentUsersResponse with users ordered by created_at descending.
+
+    Raises:
+        HTTPException: 400 if limit is not a valid positive integer.
+    """
+    try:
+        limit = validate_limit(limit)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+    try:
+        users = await crud.get_recent_users(db, limit=limit)
+        total = await crud.count_users(db)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return RecentUsersResponse(
+        users=[UserPublic.model_validate(u) for u in users],
+        total=total,
+    )
 
 
 @router.put(
