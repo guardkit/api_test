@@ -17,6 +17,7 @@ from src.users import crud
 from src.users.calculations import calculate_days_since_created
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
+    RecentUsersResponse,
     UserCountResponse,
     UserCreate,
     UserList,
@@ -297,6 +298,51 @@ async def get_user(user_id: UUID, db: AsyncSession = Depends(get_db)) -> UserPub
     if user is None:
         raise UserNotFoundError(user_id=str(user_id))
     return UserPublic.model_validate(user)
+
+
+recent_router = APIRouter(prefix="/recent-users", redirect_slashes=False)
+
+
+@recent_router.get(
+    "",
+    response_model=RecentUsersResponse,
+    tags=["users"],
+    summary="Get recent users",
+    description=(
+        "Returns the most recently created users in descending order "
+        "of creation timestamp."
+    ),
+    responses={
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_recent_users(
+    limit: int = 10, db: AsyncSession = Depends(get_db)
+) -> RecentUsersResponse:
+    """Get recent users in descending order of creation timestamp.
+
+    Args:
+        limit: Maximum number of users to return (default 10, max 100).
+        db: The async database session.
+
+    Returns:
+        RecentUsersResponse with users ordered by created_at descending.
+    """
+    if limit < 1:
+        limit = 1
+    if limit > 100:
+        limit = 100
+    try:
+        users = await crud.get_recent_users(db, limit=limit)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return RecentUsersResponse(
+        users=[UserPublic.model_validate(u) for u in users],
+        total=len(users),
+    )
 
 
 @router.put(

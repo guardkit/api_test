@@ -150,3 +150,30 @@ class UserList(BaseModel):
             ]
         }
     )
+
+
+class RecentUsersResponse(BaseModel):
+    """Schema for recent users responses."""
+
+    users: list[UserPublic]
+    total: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "users": [
+                        {
+                            "id": "550e8400-e29b-41d4-a716-446655440000",
+                            "email": "john.doe@example.com",
+                            "full_name": "John Doe",
+                            "is_active": True,
+                            "created_at": "2024-01-01T00:00:00Z",
+                            "updated_at": "2024-01-01T00:00:00Z",
+                        }
+                    ],
+                    "total": 1,
+                }
+            ]
+        }
+    )
