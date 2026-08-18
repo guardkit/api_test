@@ -1,0 +1,40 @@
+feature: todays-user-count
+generated: "2026-07-09T14:32:00Z"
+scenarios:
+  - title: "Requesting today's user count returns the correct total"
+    tags: ["@key-example", "@smoke"]
+    sentence: "Asking the service for the number of users created today returns the exact count of users whose creation timestamp falls within the current day."
+  - title: "Requesting today's user count when no users were created today returns zero"
+    tags: ["@boundary", "@key-example"]
+    sentence: "When no users were created today, the count endpoint returns zero rather than an error or null."
+  - title: "Requesting today's user count when all users were created today returns the total"
+    tags: ["@boundary", "@key-example"]
+    sentence: "When every user in the store was created today, the count endpoint returns the total number of users."
+  - title: "Users created at the very start of today are included in the count"
+    tags: ["@boundary"]
+    sentence: "A user created at the very first moment of today is counted in today's total."
+  - title: "Users created at the very end of yesterday are not included in the count"
+    tags: ["@boundary", "@negative"]
+    sentence: "A user created at the very last moment of yesterday is excluded from today's count."
+  - title: "Requesting the count fails gracefully when the data store is unavailable"
+    tags: ["@negative", "@edge-case"]
+    sentence: "When the user data store cannot be reached, the endpoint fails with a service unavailable indication rather than crashing."
+  - title: "Requesting the count with an invalid request format is rejected"
+    tags: ["@negative"]
+    sentence: "A malformed request to the count endpoint is rejected as invalid."
+  - title: "Users created just before midnight UTC are counted correctly relative to the server timezone"
+    tags: ["@edge-case"]
+    sentence: "A user created one second before midnight UTC is excluded from today's count when the server timezone is UTC."
+assumptions:
+  - id: ASSUM-001
+    text: "Today is defined as the interval from 00:00:00.000 UTC to 23:59:59.999 UTC inclusive"
+    basis: "Inferred from 'today' semantics; not explicitly stated which boundary inclusivity to use"
+  - id: ASSUM-002
+    text: "The endpoint returns HTTP 503 Service Unavailable when the data store is unreachable"
+    basis: "Inferred from common API convention for downstream dependency failures; not stated in input"
+  - id: ASSUM-003
+    text: "The endpoint expects a well-formed HTTP GET request; any malformed request is rejected with a 400-level status"
+    basis: "Inferred from standard REST API behavior; not stated in input"
+  - id: ASSUM-004
+    text: "The server timezone is UTC and 'today' is strictly the current UTC calendar day"
+    basis: "Input mentions UTC as default but does not confirm it is the enforced timezone for this endpoint"

@@ -1,0 +1,94 @@
+id: FEAT-6D13
+name: "Today's User Count Endpoint"
+description: "Endpoint returning total users created on the current day"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-6D13-001
+    name: "Create user count endpoint"
+    file_path: "tasks/backlog/todays-user-count/TASK-6D13-001-create-user-count-endpoint.md"
+    complexity: 5
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-6D13-002
+    name: "Implement data store query"
+    file_path: "tasks/backlog/todays-user-count/TASK-6D13-002-implement-data-store-query.md"
+    complexity: 4
+    dependencies:
+      - TASK-6D13-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-6D13-003
+    name: "Add boundary condition tests"
+    file_path: "tasks/backlog/todays-user-count/TASK-6D13-003-add-boundary-condition-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-6D13-002
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-6D13-004
+    name: "Add error handling tests"
+    file_path: "tasks/backlog/todays-user-count/TASK-6D13-004-add-error-handling-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-6D13-003
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-6D13-005
+    name: "Add documentation"
+    file_path: "tasks/backlog/todays-user-count/TASK-6D13-005-add-documentation.md"
+    complexity: 2
+    dependencies:
+      - TASK-6D13-004
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 20
+
+orchestration:
+  parallel_groups:
+    - - TASK-6D13-001
+    - - TASK-6D13-002
+    - - TASK-6D13-003
+    - - TASK-6D13-004
+    - - TASK-6D13-005
+  estimated_duration_minutes: 185
+  recommended_parallel: 1
+
+feature_files:
+  - features/todays-user-count/todays-user-count.feature
+scenarios:
+  "Requesting today's user count returns the correct total":
+    verifier: toolchain
+  "Requesting today's user count when no users were created today returns zero":
+    verifier: toolchain
+  "Requesting today's user count when all users were created today returns the total":
+    verifier: toolchain
+  "Users created at the very start of today are included in the count":
+    verifier: toolchain
+  "Users created at the very end of yesterday are not included in the count":
+    verifier: toolchain
+  "Requesting the count fails gracefully when the data store is unavailable":
+    verifier: toolchain
+  "Requesting the count with an invalid request format is rejected":
+    verifier: toolchain
+  "Users created just before midnight UTC are counted correctly relative to the server timezone":
+    verifier: toolchain
+
+smoke_gates:
+  after_wave: 1
+  command: |
+    pytest tests/users -x
+  expected_exit: 0
+  timeout: 60

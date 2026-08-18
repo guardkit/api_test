@@ -153,6 +153,85 @@ curl -X GET http://localhost:8000/ready
 
 ---
 
+### Health Check
+
+#### GET /health
+
+Returns the current health status of the API service, including the service version,
+logging configuration, and database connectivity status. This endpoint is designed
+for Kubernetes liveness probes and general health monitoring.
+
+**Tags**: `health`
+
+**Authentication**: None required
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+{
+  "status": "string",
+  "version": "string",
+  "log_level": "string",
+  "log_format": "string",
+  "database": "string"
+}
+```
+
+**Field Descriptions**:
+- `status` (string): Overall service health status. One of `"ok"` (healthy) or `"degraded"` (database unavailable).
+- `version` (string): Application version string (e.g., "0.1.0").
+- `log_level` (string): Current configured log level (e.g., "INFO", "DEBUG").
+- `log_format` (string): Current configured log format (e.g., "json", "console").
+- `database` (string): Database connection status. One of `"connected"` or `"unavailable"`.
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/health
+```
+
+**Example Response (200 OK — Healthy)**:
+```json
+{
+  "status": "ok",
+  "version": "0.1.0",
+  "log_level": "INFO",
+  "log_format": "json",
+  "database": "connected"
+}
+```
+
+**Example Response (200 OK — Degraded)**:
+```json
+{
+  "status": "degraded",
+  "version": "0.1.0",
+  "log_level": "INFO",
+  "log_format": "json",
+  "database": "unavailable"
+}
+```
+
+**Status Codes**:
+- `200 OK`: Health check completed. The response body indicates whether the service is healthy (`status: "ok"`) or degraded (`status: "degraded"`).
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported).
+
+**Use Cases**:
+- Kubernetes liveness probes to detect and restart unhealthy pods
+- Monitoring dashboards to track service health over time
+- Debugging and troubleshooting to identify database connectivity issues
+- CI/CD pipeline validation to verify service readiness after deployment
+
+**Implementation Notes**:
+- The health check queries the database with a lightweight `SELECT 1` probe
+- When the database is unreachable, the endpoint returns `status: "degraded"` with `database: "unavailable"` rather than failing with a 500 error
+- The version, log level, and log format are read from the application configuration settings
+- This endpoint does not require authentication and is publicly accessible
+- Only the GET HTTP method is supported; other methods return 405
+
+---
+
 ## Common Response Formats
 
 ### Success Response

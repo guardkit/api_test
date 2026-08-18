@@ -5,15 +5,20 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response
+from pydantic import EmailStr
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.dependencies import get_db
 from src.users import crud
 from src.users.exceptions import UserNotFoundError
-from pydantic import EmailStr
-
-from src.users.schemas import UserCountResponse, UserCreate, UserList, UserPublic, UserUpdate
+from src.users.schemas import (
+    UserCountResponse,
+    UserCreate,
+    UserList,
+    UserPublic,
+    UserUpdate,
+)
 
 router = APIRouter(prefix="/users", redirect_slashes=False)
 
@@ -72,6 +77,34 @@ async def get_user_count(db: AsyncSession = Depends(get_db)) -> UserCountRespons
     """
     try:
         total = await crud.count_users(db)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return UserCountResponse(count=total)
+
+
+@router.get(
+    "/count-today",
+    response_model=UserCountResponse,
+    tags=["users"],
+    summary="Get today's user count",
+    description="Returns the number of users created on the current calendar day.",
+    responses={
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_users_count_today(
+    db: AsyncSession = Depends(get_db),
+) -> UserCountResponse:
+    """Get the count of users created today.
+
+    Returns the number of users created on the current calendar day.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        total = await crud.count_users_today(db)
     except SQLAlchemyError as exc:
         raise HTTPException(
             status_code=503,

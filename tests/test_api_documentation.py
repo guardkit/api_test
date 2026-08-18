@@ -125,9 +125,7 @@ def test_api_documentation_contains_ready_endpoint_path_and_method(
     content = api_docs_path.read_text()
 
     # Verify the endpoint path is documented
-    assert "/ready" in content, (
-        "Documentation must include the /ready endpoint path"
-    )
+    assert "/ready" in content, "Documentation must include the /ready endpoint path"
 
     # Verify the HTTP method is documented
     assert "GET /ready" in content, (
@@ -138,7 +136,8 @@ def test_api_documentation_contains_ready_endpoint_path_and_method(
 def test_api_documentation_contains_ready_endpoint_section(
     api_docs_path: Path,
 ) -> None:
-    """Test that the API documentation includes a dedicated section for the /ready endpoint.
+    """Test that the API documentation includes a dedicated section
+    for the /ready endpoint.
 
     AC-001: Endpoint path and method documented
     """
@@ -196,12 +195,8 @@ def test_api_documentation_ready_example_request(
     content = api_docs_path.read_text()
 
     # Verify example request exists for /ready
-    assert "Example Request" in content, (
-        "Documentation must include an example request"
-    )
-    assert "curl" in content, (
-        "Documentation must include a curl example"
-    )
+    assert "Example Request" in content, "Documentation must include an example request"
+    assert "curl" in content, "Documentation must include a curl example"
     # The example must reference /ready
     assert "/ready" in content, (
         "Documentation example must reference the /ready endpoint"
@@ -218,9 +213,7 @@ def test_api_documentation_ready_example_responses(
     content = api_docs_path.read_text()
 
     # Verify example responses exist
-    assert "Example Response" in content, (
-        "Documentation must include example responses"
-    )
+    assert "Example Response" in content, "Documentation must include example responses"
 
     # Verify JSON code blocks with readiness data
     assert "status" in content.lower(), (
@@ -272,9 +265,9 @@ def test_api_documentation_ready_field_descriptions(
     )
 
     # Verify the service field is described
-    assert "service name" in content.lower() or "name of the service" in content.lower(), (
-        "Documentation must describe the service field"
-    )
+    has_svc = "service name" in content.lower()
+    has_svc_name = "name of the service" in content.lower()
+    assert has_svc or has_svc_name, "Documentation must describe the service field"
 
 
 def test_api_documentation_ready_implementation_notes(
@@ -297,6 +290,208 @@ def test_api_documentation_ready_implementation_notes(
     )
 
 
+# ---------------------------------------------------------------------------
+# Health endpoint documentation tests (TASK-6D13-005)
+# ---------------------------------------------------------------------------
+
+
+def test_api_documentation_contains_health_endpoint_path_and_method(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes the /health endpoint with GET method.
+
+    AC-001: Endpoint path and method documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify the endpoint path is documented
+    assert "/health" in content, "Documentation must include the /health endpoint path"
+
+    # Verify the HTTP method is documented
+    assert "GET /health" in content, (
+        "Documentation must specify GET as the HTTP method for /health"
+    )
+
+
+def test_api_documentation_contains_health_endpoint_section(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes a dedicated section
+    for the /health endpoint.
+
+    AC-001: Endpoint path and method documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify a section header exists for health
+    assert "Health Check" in content, (
+        "Documentation must include a Health Check section"
+    )
+
+    # Verify the endpoint is described with its purpose
+    assert "health" in content.lower() and "status" in content.lower(), (
+        "Documentation must describe the health endpoint's purpose"
+    )
+
+
+def test_api_documentation_health_response_schema(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented response schema matches the HealthResponse model.
+
+    AC-002: Response format documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify response schema section exists
+    assert "Response Schema" in content or "Response Schemas" in content, (
+        "Documentation must include response schema for /health"
+    )
+
+    # Verify the five fields from HealthResponse are documented
+    assert '"status"' in content or "'status'" in content, (
+        "Documentation must include the 'status' field in /health response"
+    )
+    assert '"version"' in content or "'version'" in content, (
+        "Documentation must include the 'version' field in /health response"
+    )
+    assert '"log_level"' in content or "'log_level'" in content, (
+        "Documentation must include the 'log_level' field in /health response"
+    )
+    assert '"log_format"' in content or "'log_format'" in content, (
+        "Documentation must include the 'log_format' field in /health response"
+    )
+    assert '"database"' in content or "'database'" in content, (
+        "Documentation must include the 'database' field in /health response"
+    )
+
+
+def test_api_documentation_health_example_request(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example request for /health.
+
+    AC-002: Response format documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify example request exists for /health
+    assert "Example Request" in content, "Documentation must include an example request"
+    assert "curl" in content, "Documentation must include a curl example"
+    # The example must reference /health
+    assert "/health" in content, (
+        "Documentation example must reference the /health endpoint"
+    )
+
+
+def test_api_documentation_health_example_responses(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes example responses for /health.
+
+    AC-002: Response format documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify example responses exist
+    assert "Example Response" in content, "Documentation must include example responses"
+
+    # Verify JSON code blocks with health data
+    assert "status" in content.lower(), (
+        "Documentation must show the 'status' field in example response"
+    )
+    assert "database" in content.lower(), (
+        "Documentation must show the 'database' field in example response"
+    )
+
+
+def test_api_documentation_health_status_codes(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes status codes for /health.
+
+    AC-003: Error scenarios documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify HTTP status codes are documented
+    assert "200" in content, (
+        "Documentation must document the 200 status code for /health"
+    )
+    assert "405" in content, (
+        "Documentation must document the 405 method not allowed for /health"
+    )
+
+
+def test_api_documentation_health_error_scenarios(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes error scenarios for /health.
+
+    AC-003: Error scenarios documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify database error scenario is documented
+    assert "degraded" in content.lower(), (
+        "Documentation must describe the 'degraded' status for database issues"
+    )
+    assert "unavailable" in content.lower(), (
+        "Documentation must describe the 'unavailable' database status"
+    )
+
+
+def test_api_documentation_health_field_descriptions(
+    api_docs_path: Path,
+) -> None:
+    """Test that field descriptions are documented for /health response.
+
+    AC-002: Response format documented
+    """
+    content = api_docs_path.read_text()
+
+    # Verify field descriptions are present
+    assert "Field Descriptions" in content, (
+        "Documentation must include field descriptions"
+    )
+
+    # Verify the status field is described
+    assert "health status" in content.lower() or "service health" in content.lower(), (
+        "Documentation must describe the health status field"
+    )
+
+    # Verify the database field is described
+    has_db = "database" in content.lower()
+    has_conn = "connected" in content.lower()
+    has_unavail = "unavailable" in content.lower()
+    assert has_db and (has_conn or has_unavail), (
+        "Documentation must describe the database connection status field"
+    )
+
+
+def test_api_documentation_health_implementation_notes(
+    api_docs_path: Path,
+) -> None:
+    """Test that implementation notes are included for /health endpoint.
+
+    AC-003: Error scenarios documented (implementation context for error handling)
+    """
+    content = api_docs_path.read_text()
+
+    # Verify implementation notes exist
+    assert "Implementation Notes" in content, (
+        "Documentation must include implementation notes"
+    )
+
+    # Verify notes mention database probe
+    has_db = "database" in content.lower()
+    has_probe = "probe" in content.lower()
+    has_query = "query" in content.lower()
+    assert has_db and (has_probe or has_query), (
+        "Implementation notes must reference database health checking"
+    )
+
+
 def test_api_documentation_ready_use_cases(
     api_docs_path: Path,
 ) -> None:
@@ -307,18 +502,14 @@ def test_api_documentation_ready_use_cases(
     content = api_docs_path.read_text()
 
     # Verify use cases are documented
-    assert "Use Cases" in content, (
-        "Documentation must include use cases"
-    )
+    assert "Use Cases" in content, "Documentation must include use cases"
 
     # Verify Kubernetes or load balancer context is mentioned
     assert (
         "kubernetes" in content.lower()
         or "load balancer" in content.lower()
         or "probe" in content.lower()
-    ), (
-        "Documentation must reference Kubernetes or load balancer use cases"
-    )
+    ), "Documentation must reference Kubernetes or load balancer use cases"
 
 
 def test_api_documentation_ready_consistent_with_implementation(
