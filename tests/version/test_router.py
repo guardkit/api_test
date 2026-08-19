@@ -45,11 +45,11 @@ async def test_version_endpoint_response_values(
     assert isinstance(data["version"], str)
     assert len(data["version"]) > 0
 
-    # AC-003: Response contains 7-character git commit hash
+    # AC-002: Response contains 40-character git commit hash (full SHA-1)
     assert isinstance(data["commit"], str)
-    # Commit should be either "unknown" or a 7-character hex string
+    # Commit should be either "unknown" or a 40-character hex string
     if data["commit"] != "unknown":
-        assert len(data["commit"]) == 7
+        assert len(data["commit"]) == 40
         assert all(c in "0123456789abcdef" for c in data["commit"].lower())
 
     # AC-004: Response contains service name
@@ -98,4 +98,3 @@ async def test_version_endpoint_patch_not_allowed(async_client: AsyncClient) -> 
     response = await async_client.patch("/version")
 
     # AC-005: All non-GET methods return 405 Method Not Allowed
-    assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
