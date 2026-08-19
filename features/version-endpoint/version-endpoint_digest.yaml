@@ -1,0 +1,13 @@
+feature: version-endpoint
+generated: "2026-07-09T14:32:00Z"
+scenarios:
+  - title: "The version endpoint returns the running build"
+    tags: ["@key-example", "@smoke"]
+    sentence: "Requesting the version endpoint returns a JSON object containing the application version and the git commit hash of the currently running build."
+  - title: "The version endpoint rejects an unsupported media type"
+    tags: ["@boundary", "@negative"]
+    sentence: "Requesting the version endpoint with a format the service does not support is refused with an indication that the format is not supported."
+assumptions:
+  - id: ASSUM-001
+    text: "The git commit hash returned is the full SHA (40-character hexadecimal string)"
+    basis: "Input open question asked 'full SHA, short SHA, or tag?'; no answer provided — defaulting to full SHA as the canonical identifier, but short SHA or tag are equally plausible alternatives"
