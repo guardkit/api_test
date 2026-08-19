@@ -96,5 +96,6 @@ async def test_version_endpoint_delete_not_allowed(async_client: AsyncClient) ->
 async def test_version_endpoint_patch_not_allowed(async_client: AsyncClient) -> None:
     """Test that PATCH /version returns 405 Method Not Allowed."""
     response = await async_client.patch("/version")
+    assert response.status_code == HTTPStatus.METHOD_NOT_ALLOWED
 
     # AC-005: All non-GET methods return 405 Method Not Allowed
