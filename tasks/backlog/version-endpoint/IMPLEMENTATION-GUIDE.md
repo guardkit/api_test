@@ -1,53 +1,66 @@
 # Implementation Guide: Version Endpoint
 
 ## Overview
-This feature adds a read-only `/version` endpoint to the `api_test` service, exposing build metadata.
 
-## Data Flow: Read/Write Paths
+This feature implements a `/version` endpoint to expose application metadata.
+
+## Data Flow
 
 ```mermaid
 flowchart LR
+    subgraph Writes["Write Paths"]
+        W1["Startup: inject metadata"]
+    end
+
+    subgraph Storage["Storage"]
+        S1[("environment variables")]
+    end
+
     subgraph Reads["Read Paths"]
         R1["GET /version"]
     end
 
-    subgraph Storage["Metadata Source"]
-        S1[("build_metadata\n(env vars)")]
-    end
-
-    R1 -->|"reads"| S1
+    W1 -->|"sets"| S1
+    S1 -->|"read by"| R1
 
     style R1 fill:#cfc,stroke:#090
 ```
-The data flow is simple: the endpoint reads from environment variables populated at build time.
+*Data flow shows metadata injected at startup and read by the version endpoint.*
 
 ## Task Dependencies
 
 ```mermaid
 graph TD
-    T1[TASK-B70F-001: Create endpoint] --> T2[TASK-B70F-002: Add tests]
-    T1 --> T3[TASK-B70F-003: Update docs]
+    T1[TASK-F811-001: Implement endpoint] --> T2[TASK-F811-002: Add tests]
+    T1 --> T3[TASK-F811-003: Update docs]
 
     style T1 fill:#cfc,stroke:#090
-    style T2 fill:#cfc,stroke:#090
-    style T3 fill:#cfc,stroke:#090
 ```
-Tasks in wave 1 (T1) must complete before wave 2 tasks (T2, T3) begin.
+*Tasks 2 and 3 can run in parallel after Task 1 completes.*
 
-## Implementation Strategy
+## Execution Strategy
 
-1. **Infrastructure**: Configure environment variable extraction in the application startup
-2. **Endpoint**: Implement GET handler for `/version`
-3. **Validation**: Add tests covering happy path, boundary conditions, and negative cases
-4. **Documentation**: Update API docs with endpoint specification
+Wave 1:
+- TASK-F811-001 (direct)
 
-## Risk Assessment
+Wave 2:
+- TASK-F811-002 (direct)
+- TASK-F811-003 (direct)
 
-- **Low Risk**: The endpoint is read-only and does not touch the database
-- **Low Risk**: No authentication required — public contract
+## Implementation Notes
 
-## Timeline
+- Use environment variables for version and commit hash
+- Ensure JSON response format
+- Add Hurl tests in `tests/version/`
 
-- Wave 1: Endpoint creation (45m)
-- Wave 2: Testing and documentation (50m)
-- Total estimated duration: 95m
+## Deferred Planning Decisions
+
+| decision point | chosen default | status |
+|---|---|---|
+| review focus | all | deferred |
+| trade-off priority | balanced | deferred |
+| implementation approach | recommended | deferred |
+| execution preference | auto-detect | deferred |
+| testing depth | default | deferred |
+| smoke gates | omitted (test_roots match) | deferred |
+| evidence repos | none | deferred |

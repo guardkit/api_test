@@ -1,19 +1,15 @@
 # Version Endpoint Feature
 
-This directory contains the implementation tasks for adding the `/version` endpoint.
+This feature implements the `/version` endpoint for retrieving application metadata.
 
-## Feature Context
+## Subtasks
 
-- **Feature ID**: FEAT-B70F
-- **Review Task**: TASK-REV-B70F
-- **Status**: planned
+- TASK-F811-001: Implement version endpoint
+- TASK-F811-002: Add version endpoint tests
+- TASK-F811-003: Update documentation
 
-## Task List
+## Status
 
-- TASK-B70F-001: Create version endpoint and metadata extraction
-- TASK-B70F-002: Add tests for /version endpoint
-- TASK-B70F-003: Update API documentation
-
-## Execution Strategy
-
-Run tasks sequentially through the waves defined in the feature YAML. The implementation mode for all tasks is `direct`.
+- Feature: planned
+- Tasks: 3 pending
+- Estimated duration: 60 minutes
