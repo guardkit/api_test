@@ -12,21 +12,21 @@ def test_version_response_schema_valid() -> None:
     """Test that VersionResponse accepts valid data."""
     data = {
         "version": "0.1.0",
-        "commit": "abc1234",
+        "commit": "1b0f90ba3c7e5d6a9f2b1c4d8e0f3a5b7c9d1e2f",
         "service": "api",
     }
 
     response = VersionResponse(**data)
 
     assert response.version == "0.1.0"
-    assert response.commit == "abc1234"
+    assert response.commit == "1b0f90ba3c7e5d6a9f2b1c4d8e0f3a5b7c9d1e2f"
     assert response.service == "api"
 
 
 def test_version_response_schema_requires_version() -> None:
     """Test that VersionResponse requires version field."""
     data = {
-        "commit": "abc1234",
+        "commit": "1b0f90ba3c7e5d6a9f2b1c4d8e0f3a5b7c9d1e2f",
         "service": "api",
     }
 
@@ -55,7 +55,7 @@ def test_version_response_schema_requires_service() -> None:
     """Test that VersionResponse requires service field."""
     data = {
         "version": "0.1.0",
-        "commit": "abc1234",
+        "commit": "1b0f90ba3c7e5d6a9f2b1c4d8e0f3a5b7c9d1e2f",
     }
 
     with pytest.raises(ValidationError) as exc_info:
@@ -69,7 +69,7 @@ def test_version_response_schema_json_serialization() -> None:
     """Test that VersionResponse serializes to JSON correctly."""
     response = VersionResponse(
         version="0.1.0",
-        commit="abc1234",
+        commit="1b0f90ba3c7e5d6a9f2b1c4d8e0f3a5b7c9d1e2f",
         service="api",
     )
 
@@ -77,7 +77,7 @@ def test_version_response_schema_json_serialization() -> None:
 
     assert json_data == {
         "version": "0.1.0",
-        "commit": "abc1234",
+        "commit": "1b0f90ba3c7e5d6a9f2b1c4d8e0f3a5b7c9d1e2f",
         "service": "api",
     }
 
@@ -97,7 +97,7 @@ def test_version_response_schema_fields_are_strings() -> None:
     """Test that all VersionResponse fields are strings."""
     response = VersionResponse(
         version="0.1.0",
-        commit="abc1234",
+        commit="1b0f90ba3c7e5d6a9f2b1c4d8e0f3a5b7c9d1e2f",
         service="api",
     )
 

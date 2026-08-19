@@ -8,14 +8,14 @@ from unittest.mock import MagicMock, patch
 from src.version.utils import get_git_commit_hash
 
 
-def test_get_git_commit_hash_returns_7_characters() -> None:
-    """Test that get_git_commit_hash returns a 7-character string."""
+def test_get_git_commit_hash_returns_40_characters() -> None:
+    """Test that get_git_commit_hash returns a 40-character string."""
     commit_hash = get_git_commit_hash()
 
-    # Should return either "unknown" or a 7-character hex string
+    # Should return either "unknown" or a 40-character hex string
     assert isinstance(commit_hash, str)
     if commit_hash != "unknown":
-        assert len(commit_hash) == 7
+        assert len(commit_hash) == 40
         assert all(c in "0123456789abcdef" for c in commit_hash.lower())
 
 
@@ -23,7 +23,7 @@ def test_get_git_commit_hash_returns_unknown_when_git_fails() -> None:
     """Test that get_git_commit_hash returns 'unknown' when git command fails."""
     with patch("subprocess.run") as mock_run:
         mock_run.side_effect = subprocess.CalledProcessError(
-            returncode=128, cmd=["git", "rev-parse", "--short=7", "HEAD"]
+            returncode=128, cmd=["git", "rev-parse", "HEAD"]
         )
 
         result = get_git_commit_hash()
@@ -45,7 +45,7 @@ def test_get_git_commit_hash_returns_unknown_when_git_timeout() -> None:
     """Test that get_git_commit_hash returns 'unknown' when git command times out."""
     with patch("subprocess.run") as mock_run:
         mock_run.side_effect = subprocess.TimeoutExpired(
-            cmd=["git", "rev-parse", "--short=7", "HEAD"],
+            cmd=["git", "rev-parse", "HEAD"],
             timeout=5,
         )
 
@@ -69,7 +69,7 @@ def test_get_git_commit_hash_uses_correct_git_command() -> None:
     """Test that get_git_commit_hash uses the correct git command."""
     with patch("subprocess.run") as mock_run:
         mock_result = MagicMock()
-        mock_result.stdout = "abc1234\n"
+        mock_result.stdout = "1b0f90ba3c7e5d6a9f2b1c4d8e0f3a5b7c9d1e2f\n"
         mock_run.return_value = mock_result
 
         get_git_commit_hash()
@@ -77,7 +77,7 @@ def test_get_git_commit_hash_uses_correct_git_command() -> None:
         # Verify git command was called with correct arguments
         assert mock_run.called
         call_args = mock_run.call_args
-        assert call_args[0][0] == ["git", "rev-parse", "--short=7", "HEAD"]
+        assert call_args[0][0] == ["git", "rev-parse", "HEAD"]
         assert call_args[1]["capture_output"] is True
         assert call_args[1]["text"] is True
         assert call_args[1]["check"] is True
@@ -88,10 +88,10 @@ def test_get_git_commit_hash_strips_whitespace() -> None:
     """Test that get_git_commit_hash strips whitespace from git output."""
     with patch("subprocess.run") as mock_run:
         mock_result = MagicMock()
-        mock_result.stdout = "  abc1234  \n\n"
+        mock_result.stdout = "  1b0f90ba3c7e5d6a9f2b1c4d8e0f3a5b7c9d1e2f  \n\n"
         mock_run.return_value = mock_result
 
         result = get_git_commit_hash()
 
-        assert result == "abc1234"
+        assert result == "1b0f90ba3c7e5d6a9f2b1c4d8e0f3a5b7c9d1e2f"
         assert result == result.strip()

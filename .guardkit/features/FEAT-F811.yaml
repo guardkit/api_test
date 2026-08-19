@@ -1,0 +1,53 @@
+id: FEAT-F811
+name: "Version Endpoint"
+description: "Implement a /version endpoint that returns the application version and build commit hash"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 3
+estimated_tasks: 3
+
+tasks:
+  - id: TASK-F811-001
+    name: "Implement version endpoint"
+    file_path: "tasks/backlog/version-endpoint/TASK-F811-001-implement-version-endpoint.md"
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 45
+
+  - id: TASK-F811-002
+    name: "Add version endpoint tests"
+    file_path: "tasks/backlog/version-endpoint/TASK-F811-002-add-version-endpoint-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-F811-001
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-F811-003
+    name: "Update documentation"
+    file_path: "tasks/backlog/version-endpoint/TASK-F811-003-update-documentation.md"
+    complexity: 1
+    dependencies:
+      - TASK-F811-001
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 15
+
+orchestration:
+  parallel_groups:
+    - - TASK-F811-001
+    - - TASK-F811-002
+      - TASK-F811-003
+  estimated_duration_minutes: 60
+  recommended_parallel: 2
+
+feature_files:
+  - features/version-endpoint/version-endpoint.feature
+scenarios:
+  "The version endpoint returns the running build":
+    verifier: hurl
+  "The version endpoint rejects an unsupported media type":
+    verifier: hurl

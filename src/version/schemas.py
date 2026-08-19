@@ -13,7 +13,7 @@ class VersionResponse(BaseModel):
             "examples": [
                 {
                     "version": "0.1.0",
-                    "commit": "1b0f90b",
+                    "commit": "1b0f90ba3c7e5d6a9f2b1c4d8e0f3a5b7c9d1e2f",
                     "service": "api",
                 },
             ]
@@ -21,5 +21,5 @@ class VersionResponse(BaseModel):
     )
 
     version: str = Field(description="Application version string")
-    commit: str = Field(description="Git commit hash (7 characters)")
+    commit: str = Field(description="Git commit hash (40 characters)")
     service: str = Field(description="Service name")
