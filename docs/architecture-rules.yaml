@@ -1,0 +1,194 @@
+# api_test — the architecture rules a machine may check
+#
+# WHAT THIS FILE IS
+#   This repository already describes its own architecture, in prose, in
+#   .claude/CLAUDE.md (193 lines, in the repo since it was created). Prose is not
+#   something a checker can apply. This file turns four of those sentences into
+#   four rules a checker can apply, and nothing else.
+#
+#   Every rule below quotes the CLAUDE.md line it comes from, with the line
+#   number, verbatim. A rule with no quoted source is not a rule and must not be
+#   added here. Nothing in this file is derived from the code: a rules file
+#   derived from the code would describe the repository's violations as its
+#   rules.
+#
+# WHAT THIS FILE IS NOT
+#   It is not an ADR set. ADRs record why a decision was made; this records what
+#   a checker may mechanically look for. Different documents, different lifetimes.
+#   It is not a complete statement of this repository's architecture. It is the
+#   small, decidable corner of it.
+#
+# STATUS: UNRULED. Written 2026-08-22 on a lane branch. No human has agreed to
+#   these four rules yet, and a rule nobody has agreed to is worse than no rule,
+#   because it manufactures work at the rate it is wrong. `ruled_by` stays
+#   "UNRULED" until that sitting happens.
+
+format_version: "1.0"
+repo: api_test
+source_document: .claude/CLAUDE.md
+source_document_sha256: SEE_MANIFEST      # set when this file is ruled, so a
+                                          # CLAUDE.md edit invalidates the derivation
+ruled_by: UNRULED
+ruled_on: null
+written_on: "2026-08-22"
+
+# ---------------------------------------------------------------------------
+# Layout — what this repository's directories mean.
+# Source: .claude/CLAUDE.md line 9 and the project-structure diagram, lines 44-92.
+# ---------------------------------------------------------------------------
+layout:
+  source_root: src
+
+  # A feature module is any direct child directory of src/ that is not listed as
+  # infrastructure. Today that is: health, search, stats, time, uptime, users,
+  # version, whoami. This is a definition, not a list, so a new feature added
+  # tomorrow is covered without editing this file.
+  infrastructure_modules:
+    - src/core
+    - src/db
+
+  # main.py wires every feature's router into the app. Importing every feature is
+  # its job, so the import-boundary rule cannot apply to it.
+  composition_root:
+    - src/main.py
+
+# ---------------------------------------------------------------------------
+# Rules
+# ---------------------------------------------------------------------------
+rules:
+
+  - id: queries-live-in-crud
+    says: "Database query operations live in the feature's crud.py."
+    source:
+      file: .claude/CLAUDE.md
+      line: 102
+      quote: >-
+        **CRUD Layer (`crud.py`)**: Database query operations, Create/Read/Update/Delete,
+        generic base CRUD classes, repository pattern implementation
+    check:
+      kind: call-site-home-file
+      home_file: crud.py
+      scope: all              # every .py file under src/, infrastructure included.
+                              # Deliberate: CLAUDE.md line 102 carves out no exemption,
+                              # and scanning src/db keeps src/db/dependencies.py:29 —
+                              # a query written inside a docstring — inside the
+                              # checker's field of view, where it serves as the
+                              # instrument's own validation. A checker that reads
+                              # source text rather than the syntax tree fires there.
+      functions:
+        # A bare call like select(...) counts only when this file imported that
+        # name from sqlalchemy. Without that condition any project function
+        # called update() or delete() would match.
+        names: [select, insert, update, delete]
+        imported_from: [sqlalchemy]
+      methods:
+        # A method call like db.execute(...) counts only when the receiver is a
+        # database session — either named as one, or annotated as one in the
+        # enclosing function's signature.
+        names: [execute, scalar, scalars, stream, stream_scalars,
+                add, delete, commit, flush, refresh, rollback, merge]
+        receiver_names: [db, session, conn, connection, async_session]
+        receiver_types: [AsyncSession, Session]
+    exceptions:
+      - path: src/health/router.py
+        lines: [41]
+        why: >-
+          A liveness probe. `await db.execute(text("SELECT 1"))` proves the
+          connection is up; it reads no domain data and returns no domain data.
+          Moving it to a crud.py would create a crud layer for a feature that has
+          no data model. Recorded here so the checker's silence is a decision
+          somebody made, not an accident of what the checker can see.
+        ruled_on: UNRULED
+
+  - id: features-do-not-import-features
+    says: "A feature module does not import another feature module."
+    source:
+      file: .claude/CLAUDE.md
+      line: 9
+      quote: >-
+        1. **Feature-Based Organization**: Structure by domain/feature rather than
+        by file type
+    check:
+      kind: module-import-boundary
+      scope: feature_modules
+      # Feature -> infrastructure is how a feature reaches the database and the
+      # config. It is the intended direction and is not reported.
+      allowed_target_modules:
+        - src.core
+        - src.db
+    exceptions: []
+    # NOTE, recorded rather than silenced: src/search/router.py line 11 breaks
+    # this rule in main today (`from src.users.models import User`, written by the
+    # factory on 2026-08-16, commit 79730c0, merged as FEAT-F924). It is left
+    # unexcepted on purpose — it is the case this whole check was built to see.
+
+  - id: response-schemas-live-in-schemas-py
+    says: "A feature's Pydantic request and response models are declared in its schemas.py."
+    source:
+      file: .claude/CLAUDE.md
+      line: 98
+      quote: >-
+        **Schema Layer (`schemas.py`)**: Pydantic models for validation,
+        request/response serialization, type definitions, data transformation
+    check:
+      kind: class-definition-home-file
+      home_file: schemas.py
+      scope: feature_modules  # src/core and src/db are out of scope. src/core/config.py
+                              # declares Settings(BaseSettings), which is app-wide
+                              # configuration, not a feature's request/response schema.
+      base_names: [BaseModel, BaseSchema]
+    exceptions: []
+
+  - id: orm-models-live-in-models-py
+    says: "A feature's SQLAlchemy ORM models are declared in its models.py."
+    source:
+      file: .claude/CLAUDE.md
+      line: 100
+      quote: >-
+        **Model Layer (`models.py`)**: SQLAlchemy ORM models, database table
+        definitions, relationships and constraints, database-level validations
+    check:
+      kind: class-definition-home-file
+      home_file: models.py
+      scope: feature_modules  # src/db/base.py declares the DeclarativeBase every
+                              # model inherits. That is the base itself, in
+                              # infrastructure, not a feature's model.
+      base_names: [DeclarativeBase, Base]
+    exceptions: []
+
+# ---------------------------------------------------------------------------
+# Considered and deliberately LEFT OUT — recorded so a later session does not
+# add them back without reading why.
+# ---------------------------------------------------------------------------
+not_rules:
+
+  - id: tests-mirror-src
+    would_say: "Every feature module under src/ has a matching directory under tests/."
+    source_would_be:
+      file: .claude/CLAUDE.md
+      line: 72
+      quote: "├── tests/                        # Test structure mirrors src/"
+    left_out_because: >-
+      Two reasons. Its source is a comment inside an ASCII directory diagram, not
+      a stated responsibility like the Layer Responsibilities section — weaker
+      sourcing than the four rules above. And it fires today on src/stats and
+      src/uptime, both of which ARE tested, at tests/test_stats.py and
+      tests/test_uptime.py. That is drift in where a file is filed, not drift in
+      how the system is built, and a rule that reports it teaches people to
+      ignore the checker.
+
+  - id: routers-do-not-hold-business-logic
+    would_say: "Business logic lives in service.py or crud.py, not in router.py."
+    source_would_be:
+      file: .claude/CLAUDE.md
+      line: 104
+      quote: >-
+        **Service Layer (`service.py`)**: Business logic, complex operations,
+        cross-entity orchestration, external service integration
+    left_out_because: >-
+      No mechanical definition of "business logic" survives contact with this
+      repository. Every candidate test — a statement count, a loop over query
+      results, a comprehension — also matches src/users/router.py, which is the
+      repository's own example of a router done right. This rule needs judgement,
+      which is precisely what version one of the checker does not have. It is the
+      first thing to hand to a model, later, and it is not a rule today.
