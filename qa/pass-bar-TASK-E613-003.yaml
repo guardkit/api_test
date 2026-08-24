@@ -1,0 +1,23 @@
+format_version: '2.0'
+task_id: TASK-E613-003
+registered_at:
+  sha: 0b0df3bec9e8393fda180a052910a582feb4247a
+  date: '2026-08-24'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: etag-generation-and-validation-AC-001
+  text: A standard GET request returns an ETag header
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+- id: etag-generation-and-validation-AC-002
+  text: A GET request with a matching If-None-Match returns 304 with no body
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

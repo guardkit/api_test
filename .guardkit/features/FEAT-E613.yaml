@@ -1,0 +1,87 @@
+id: FEAT-E613
+name: "ETag Generation and Validation"
+description: "Add ETag support to the GET /users/{user_id} endpoint with strong validation"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-E613-001
+    name: "Implement ETag generation logic"
+    file_path: "tasks/backlog/etag-validation/TASK-E613-001-etag-generation.md"
+    complexity: 4
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-E613-002
+    name: "Add ETag validation middleware"
+    file_path: "tasks/backlog/etag-validation/TASK-E613-002-etag-middleware.md"
+    complexity: 5
+    dependencies:
+      - TASK-E613-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 90
+
+  - id: TASK-E613-003
+    name: "Update user endpoint to support ETags"
+    file_path: "tasks/backlog/etag-validation/TASK-E613-003-user-endpoint-etag.md"
+    complexity: 4
+    dependencies:
+      - TASK-E613-002
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-E613-004
+    name: "Add ETag acceptance tests"
+    file_path: "tasks/backlog/etag-validation/TASK-E613-004-etag-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-E613-003
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 45
+
+  - id: TASK-E613-005
+    name: "Document ETag behavior"
+    file_path: "tasks/backlog/etag-validation/TASK-E613-005-etag-docs.md"
+    complexity: 2
+    dependencies:
+      - TASK-E613-004
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+orchestration:
+  parallel_groups:
+    - - TASK-E613-001
+    - - TASK-E613-002
+    - - TASK-E613-003
+    - - TASK-E613-004
+    - - TASK-E613-005
+  estimated_duration_minutes: 285
+  recommended_parallel: 1
+
+feature_files:
+  - features/etag-generation-and-validation/etag-generation-and-validation.feature
+scenarios:
+  "A standard GET request returns an ETag header":
+    verifier: hurl
+  "A GET request with a matching If-None-Match returns 304 with no body":
+    verifier: hurl
+  "A GET request with an exact ETag match returns 304":
+    verifier: hurl
+  "A GET request with a non-matching If-None-Match returns the full resource":
+    verifier: hurl
+  "A GET request without an If-None-Match header returns the full resource":
+    verifier: hurl
+  "A GET request with a malformed If-None-Match header returns the full resource":
+    verifier: hurl
+  "A GET request with a stale If-None-Match returns the updated resource":
+    verifier: hurl
+  "Concurrent GET requests with the same If-None-Match both return 304":
+    verifier: hurl

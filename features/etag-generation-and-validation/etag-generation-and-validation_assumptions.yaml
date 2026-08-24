@@ -1,0 +1,19 @@
+feature: ETag Generation and Validation
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A standard GET request returns an ETag header
+  assumption: The ETag is a strong validator based on a hash of the resource body
+  confidence: low
+  basis: Inferred from problem statement 'strong ETag'; exact hashing algorithm not
+    specified
+  human_response: deferred
+- id: ASSUM-002
+  scenario: A GET request with a matching If-None-Match returns 304 with no body
+  assumption: The If-None-Match header must match the ETag exactly
+  confidence: low
+  basis: Inferred from HTTP semantics; exact matching rules (e.g., whitespace handling)
+    not specified
+  human_response: deferred
