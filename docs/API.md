@@ -232,6 +232,391 @@ curl -X GET http://localhost:8000/health
 
 ---
 
+### Whoami
+
+#### GET /whoami
+
+Returns the name of the API service currently running. This endpoint is useful
+for identifying which service instance is responding, particularly in load-balanced
+or multi-region deployments.
+
+**Tags**: `whoami`
+
+**Authentication**: None required
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+{
+  "service": "string"
+}
+```
+
+**Field Descriptions**:
+- `service` (string): The name of the API service (from the `app_name` configuration setting).
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/whoami
+```
+
+**Example Response**:
+```json
+{
+  "service": "api"
+}
+```
+
+**Status Codes**:
+- `200 OK`: Service identification returned successfully
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported)
+
+**Use Cases**:
+- Verifying which service instance responds in a distributed system
+- Debugging routing issues in load-balanced deployments
+- Service discovery in microservice architectures
+
+**Implementation Notes**:
+- The service name is read from the `app_name` configuration setting
+- This endpoint does not require authentication and is publicly accessible
+- Only the GET HTTP method is supported; other methods return 405
+
+---
+
+### Uptime
+
+#### GET /uptime
+
+Returns the service name, start time, and current uptime in seconds. This endpoint
+provides information about how long the service has been running since its last
+restart or deployment.
+
+**Tags**: `uptime`
+
+**Authentication**: None required
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+{
+  "service": "string",
+  "started_at": "string",
+  "uptime_seconds": 0.0
+}
+```
+
+**Field Descriptions**:
+- `service` (string): The name of the service (from the `app_name` configuration setting).
+- `started_at` (string): ISO-8601 timestamp when the service started (with UTC offset, e.g., "2024-01-01T00:00:00+00:00").
+- `uptime_seconds` (float): Seconds elapsed since the service started, computed from the monotonic clock to ensure it never goes backwards.
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/uptime
+```
+
+**Example Response**:
+```json
+{
+  "service": "api",
+  "started_at": "2024-01-01T00:00:00+00:00",
+  "uptime_seconds": 3600.5
+}
+```
+
+**Status Codes**:
+- `200 OK`: Uptime information returned successfully
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported)
+
+**Use Cases**:
+- Verifying that the service was recently restarted after a deployment
+- Detecting unexpectedly long uptimes that may indicate a missed restart
+- Capacity planning and reliability tracking
+
+**Implementation Notes**:
+- The startup time is captured as a module-level variable when the router is first imported
+- Uptime is computed using `time.monotonic()` to ensure it never goes backwards
+- The timestamp is recorded using `datetime.now(UTC)` for human-readable start time
+- This endpoint does not require authentication and is publicly accessible
+
+---
+
+### Request Statistics
+
+#### GET /stats
+
+Returns service request statistics including the service name, total number of
+requests served, and the timestamp of the first recorded request.
+
+**Tags**: `stats`
+
+**Authentication**: None required
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+{
+  "service": "string",
+  "requests_served": 0,
+  "first_request_at": "string"
+}
+```
+
+**Field Descriptions**:
+- `service` (string): The name of the service (from the `app_name` configuration setting).
+- `requests_served` (integer): Total number of requests served since the service started.
+- `first_request_at` (string or null): ISO-8601 timestamp of the first recorded request, or null if no requests have been served yet.
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/stats
+```
+
+**Example Response**:
+```json
+{
+  "service": "api",
+  "requests_served": 42,
+  "first_request_at": "2024-01-01T00:00:01+00:00"
+}
+```
+
+**Status Codes**:
+- `200 OK`: Statistics returned successfully
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported)
+
+**Use Cases**:
+- Monitoring request volume over time
+- Debugging request routing issues
+- Performance baseline measurement
+
+**Implementation Notes**:
+- The request counter is maintained by the `StatsCounterMiddleware` which runs on every request
+- The counter is thread-safe using a threading.Lock
+- This endpoint does not require authentication and is publicly accessible
+
+---
+
+### Server Time
+
+#### GET /time
+
+Returns the current UTC time in ISO-8601 format with second precision and the
+service name. The time is computed at request time, never cached or module-level.
+
+**Tags**: `time`
+
+**Authentication**: None required
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+{
+  "time": "string",
+  "service": "string"
+}
+```
+
+**Field Descriptions**:
+- `time` (string): Current UTC time in ISO-8601 format with second precision and trailing Z (e.g., "2026-07-31T12:34:56Z").
+- `service` (string): Service name (e.g., "api_test").
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/time
+```
+
+**Example Response**:
+```json
+{
+  "time": "2026-07-31T12:34:56Z",
+  "service": "api_test"
+}
+```
+
+**Status Codes**:
+- `200 OK`: Current time retrieved successfully
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported)
+
+**Use Cases**:
+- Clock synchronization verification
+- Debugging time-related issues in distributed systems
+- Validating server time accuracy against NTP sources
+
+**Implementation Notes**:
+- The time is computed at request time using `datetime.now(timezone.utc)`
+- Microseconds are truncated for second precision
+- The timezone offset is rendered as "Z" instead of "+00:00"
+- This endpoint does not require authentication and is publicly accessible
+
+---
+
+### Search
+
+#### GET /search
+
+Searches for content matching the provided query name. Returns a list of matching
+results and the total count. Uses case-insensitive substring matching on user full
+names.
+
+**Tags**: `search`
+
+**Authentication**: None required
+
+**Query Parameters**:
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | The search query string. Case-insensitive substring matching on user full names. |
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+{
+  "query": "string",
+  "results": ["string"],
+  "total": 0
+}
+```
+
+**Field Descriptions**:
+- `query` (string): The search query string that was provided.
+- `results` (array of strings): List of matching user full names. Empty array if no matches found.
+- `total` (integer): Total number of results found.
+
+**Example Request**:
+```bash
+curl -X GET "http://localhost:8000/search?name=john"
+```
+
+**Example Response (Happy Path — Matches Found)**:
+```json
+{
+  "query": "john",
+  "results": ["John Doe", "Johnny Smith"],
+  "total": 2
+}
+```
+
+**Example Response (Happy Path — No Matches)**:
+```json
+{
+  "query": "nonexistent",
+  "results": [],
+  "total": 0
+}
+```
+
+**Example Response (Error — Missing Parameter)**:
+```json
+{
+  "detail": "The 'name' query parameter is required"
+}
+```
+
+**Status Codes**:
+- `200 OK`: Search completed successfully. The response body contains the query, results list, and total count.
+- `400 Bad Request`: The `name` query parameter is missing.
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported).
+
+**Use Cases**:
+- Finding users by partial name match
+- Building search autocomplete features
+- Filtering user lists by name substring
+
+**Implementation Notes**:
+- Uses case-insensitive substring matching on user full names
+- Empty or whitespace-only queries return all users
+- The search queries the database using SQLAlchemy
+- This endpoint does not require authentication and is publicly accessible
+
+---
+
+### Domain Count
+
+#### GET /users/count-by-domain
+
+Returns a list of email domains and their user counts, ordered by count in
+descending order. This endpoint provides a summary of the email domain distribution
+among registered users.
+
+**Tags**: `users`
+
+**Authentication**: None required
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+[
+  {
+    "domain": "string",
+    "count": 0
+  }
+]
+```
+
+**Field Descriptions**:
+- `domain` (string): The email domain (e.g., "example.com").
+- `count` (integer): The number of users registered with this domain.
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/users/count-by-domain
+```
+
+**Example Response (Happy Path — Multiple Domains)**:
+```json
+[
+  {
+    "domain": "example.com",
+    "count": 5
+  },
+  {
+    "domain": "test.org",
+    "count": 3
+  },
+  {
+    "domain": "example.com",
+    "count": 1
+  }
+]
+```
+
+**Example Response (Happy Path — Empty User Set)**:
+```json
+[]
+```
+
+**Status Codes**:
+- `200 OK`: Domain counts returned successfully. The response body is a JSON array of domain/count objects.
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported).
+- `503 Service Unavailable`: Database error when querying user data.
+
+**Use Cases**:
+- Analyzing email domain distribution across users
+- Identifying dominant email providers
+- Monitoring domain diversity in user base
+
+**Implementation Notes**:
+- The endpoint queries the database for all users and extracts email domains
+- Malformed emails (without @) are filtered out
+- Results are ordered by count in descending order
+- The domain extraction uses case-insensitive normalization
+- This endpoint does not require authentication and is publicly accessible
+
+---
+
 ## Common Response Formats
 
 ### Success Response
