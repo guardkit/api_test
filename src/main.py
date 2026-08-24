@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.core.config import settings
+from src.core.etag import ETagMiddleware
 from src.core.logging import setup_logging
 from src.core.middleware import (
     APIVersionHeaderMiddleware,
@@ -112,11 +113,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Register middleware: CorrelationID -> StatsCounter -> RequestLogging -> APIVersion
+# Register middleware: CorrelationID -> StatsCounter -> RequestLogging ->
+# APIVersion -> ETag
 app.add_middleware(CorrelationIDMiddleware)
 app.add_middleware(StatsCounterMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(APIVersionHeaderMiddleware)
+app.add_middleware(ETagMiddleware)
 
 # Include health router with empty prefix so endpoint is at /health
 app.include_router(health_router)

@@ -107,21 +107,32 @@ class ETagMiddleware:
         if_none_match = headers.get(b"if-none-match")
 
         # Intercept the response to capture body and headers
-        self._response_status = 0
-        self._response_headers: list[tuple[bytes, bytes]] = []
-        self._response_body_chunks: list[bytes] = []
+        # Use local variables (not instance variables) to support concurrent requests
+        response_status: int = 0
+        response_headers: list[tuple[bytes, bytes]] = []
+        response_body_chunks: list[bytes] = []
 
         async def capture_send(message: Message) -> None:
             """Capture response messages for ETag comparison."""
             if message["type"] == "http.response.start":
-                self._response_status = message.get("status", 200)
-                self._response_headers = message.get("headers", [])
+                nonlocal response_status, response_headers
+                response_status = message.get("status", 200)
+                response_headers = message.get("headers", [])
             elif message["type"] == "http.response.body":
+                nonlocal response_body_chunks
                 body_chunk = message.get("body", b"")
-                self._response_body_chunks.append(body_chunk)
+                response_body_chunks.append(body_chunk)
                 # If this is the last chunk, process ETag
                 if not message.get("more_body", False):
-                    await self._handle_etag(scope, receive, send, if_none_match)
+                    await self._handle_etag(
+                        scope,
+                        receive,
+                        send,
+                        if_none_match,
+                        response_status,
+                        response_headers,
+                        response_body_chunks,
+                    )
 
         await self.app(scope, receive, capture_send)
 
@@ -130,7 +141,10 @@ class ETagMiddleware:
         scope: Scope,
         receive: Receive,
         send: Send,
-        if_none_match: bytes,
+        if_none_match: bytes | None,
+        response_status: int,
+        response_headers: list[tuple[bytes, bytes]],
+        response_body_chunks: list[bytes],
     ) -> None:
         """Process the captured response for ETag validation.
 
@@ -139,9 +153,12 @@ class ETagMiddleware:
             receive: The ASGI receive callable.
             send: The ASGI send callable.
             if_none_match: The If-None-Match header value from the request.
+            response_status: The HTTP status code from the response.
+            response_headers: The response headers.
+            response_body_chunks: The response body chunks.
         """
         # Combine all body chunks
-        body_bytes = b"".join(self._response_body_chunks)
+        body_bytes = b"".join(response_body_chunks)
 
         # Try to parse body as JSON for ETag generation
         resource_data: Any = None
@@ -154,7 +171,7 @@ class ETagMiddleware:
         if resource_data is None:
             # No body to generate ETag from; pass through original response
             await self._send_response(
-                send, self._response_status, self._response_headers, body_bytes
+                send, response_status, response_headers, body_bytes
             )
             return
 
@@ -163,10 +180,10 @@ class ETagMiddleware:
 
         if if_none_match is None:
             # No If-None-Match header; return full response with ETag
-            modified_headers = list(self._response_headers)
+            modified_headers = list(response_headers)
             modified_headers.append((b"etag", current_etag.encode("utf-8")))
             await self._send_response(
-                send, self._response_status, modified_headers, body_bytes
+                send, response_status, modified_headers, body_bytes
             )
             return
 
@@ -186,10 +203,10 @@ class ETagMiddleware:
                 "Malformed If-None-Match header, returning full resource",
                 header=if_none_match,
             )
-            modified_headers = list(self._response_headers)
+            modified_headers = list(response_headers)
             modified_headers.append((b"etag", current_etag.encode("utf-8")))
             await self._send_response(
-                send, self._response_status, modified_headers, body_bytes
+                send, response_status, modified_headers, body_bytes
             )
             return
 
@@ -197,9 +214,7 @@ class ETagMiddleware:
             # Return 304 Not Modified
             content_length_key = b"content-length"
             modified_headers = [
-                (k, v)
-                for k, v in self._response_headers
-                if k.lower() != content_length_key
+                (k, v) for k, v in response_headers if k.lower() != content_length_key
             ]
             modified_headers.append((b"etag", current_etag.encode("utf-8")))
             await send(
@@ -217,10 +232,10 @@ class ETagMiddleware:
             )
         else:
             # No match; return full response with ETag header
-            modified_headers = list(self._response_headers)
+            modified_headers = list(response_headers)
             modified_headers.append((b"etag", current_etag.encode("utf-8")))
             await self._send_response(
-                send, self._response_status, modified_headers, body_bytes
+                send, response_status, modified_headers, body_bytes
             )
 
     async def _send_response(

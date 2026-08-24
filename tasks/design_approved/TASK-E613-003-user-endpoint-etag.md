@@ -1,15 +1,15 @@
 ---
-id: TASK-E613-003
-title: Update user endpoint to support ETags
-task_type: feature
-parent_review: TASK-REV-E613-PLAN
-feature_id: FEAT-E613
-wave: 3
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-E613-002
-status: pending
+- TASK-E613-002
+feature_id: FEAT-E613
+id: TASK-E613-003
+implementation_mode: task-work
+parent_review: TASK-REV-E613-PLAN
+status: design_approved
+task_type: feature
+title: Update user endpoint to support ETags
+wave: 3
 ---
 
 # Update user endpoint to support ETags
