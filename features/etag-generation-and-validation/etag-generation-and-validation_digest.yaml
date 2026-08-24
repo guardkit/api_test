@@ -1,0 +1,47 @@
+feature: etag-generation-and-validation
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/{user_id}
+scenarios:
+- title: A standard GET request returns an ETag header
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A normal request for a user returns a response that includes a unique identifier representing the current state of that user.
+- title: A GET request with a matching If-None-Match returns 304 with no body
+  tags:
+  - '@key-example'
+  sentence: If the request includes an identifier that matches the current state, the server responds that the data has not changed and sends no content.
+- title: A GET request with an exact ETag match returns 304
+  tags:
+  - '@boundary'
+  sentence: When the identifier provided matches the current state exactly, the server confirms nothing has changed and sends no content.
+- title: A GET request with a non-matching If-None-Match returns the full resource
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: If the identifier provided does not match the current state, the server sends the full user details along with a new identifier.
+- title: A GET request without an If-None-Match header returns the full resource
+  tags:
+  - '@negative'
+  sentence: A request that does not include an identifier still receives the full user details and a new identifier.
+- title: A GET request with a malformed If-None-Match header returns the full resource
+  tags:
+  - '@negative'
+  sentence: If the identifier provided is formatted incorrectly, the server treats it as a non-match and sends the full user details with a new identifier.
+- title: A GET request with a stale If-None-Match returns the updated resource
+  tags:
+  - '@edge-case'
+  sentence: If the identifier provided refers to an older version of the user, the server sends the most recent user details and a new identifier.
+- title: Concurrent GET requests with the same If-None-Match both return 304
+  tags:
+  - '@edge-case'
+  sentence: Two simultaneous requests using the same identifier both receive confirmation that nothing has changed and both receive no content.
+assumptions:
+- id: ASSUM-001
+  text: The ETag is a strong validator based on a hash of the resource body
+  basis: Inferred from problem statement 'strong ETag'; exact hashing algorithm not specified
+- id: ASSUM-002
+  text: The If-None-Match header must match the ETag exactly
+  basis: Inferred from HTTP semantics; exact matching rules (e.g., whitespace handling) not specified
