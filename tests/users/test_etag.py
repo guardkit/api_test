@@ -162,6 +162,128 @@ class TestIfNoneMatch:
         assert response4.status_code == HTTPStatus.NOT_MODIFIED
 
 
+class TestMalformedHeaders:
+    """Tests for malformed If-None-Match header handling."""
+
+    @pytest.mark.asyncio
+    async def test_malformed_if_none_match_returns_200(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that a malformed If-None-Match header returns 200 with full resource."""
+        user_in = UserCreate(email="malformed@example.com", full_name="Malformed User")
+        created = await crud.create_user(db_session, user_in)
+
+        response = await async_client.get(
+            f"/users/{created.id}",
+            headers={"If-None-Match": "not-a-valid-etag-at-all"},
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        assert "ETag" in response.headers
+        data = response.json()
+        assert data["email"] == "malformed@example.com"
+
+    @pytest.mark.asyncio
+    async def test_empty_if_none_match_returns_200(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that an empty If-None-Match header returns 200 with full resource."""
+        user_in = UserCreate(email="empty@example.com", full_name="Empty User")
+        created = await crud.create_user(db_session, user_in)
+
+        response = await async_client.get(
+            f"/users/{created.id}",
+            headers={"If-None-Match": ""},
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        assert "ETag" in response.headers
+        data = response.json()
+        assert data["email"] == "empty@example.com"
+
+    @pytest.mark.asyncio
+    async def test_garbage_if_none_match_returns_200(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that a garbage If-None-Match header returns 200 with full resource."""
+        user_in = UserCreate(email="garbage@example.com", full_name="Garbage User")
+        created = await crud.create_user(db_session, user_in)
+
+        response = await async_client.get(
+            f"/users/{created.id}",
+            headers={"If-None-Match": "<<<garbage>>>!!!@#$%"},
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        assert "ETag" in response.headers
+        data = response.json()
+        assert data["email"] == "garbage@example.com"
+
+    @pytest.mark.asyncio
+    async def test_if_none_match_star_returns_304(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that If-None-Match: * returns 304 when resource exists."""
+        user_in = UserCreate(email="star@example.com", full_name="Star User")
+        created = await crud.create_user(db_session, user_in)
+
+        # If-None-Match: * matches any existing entity
+        response2 = await async_client.get(
+            f"/users/{created.id}",
+            headers={"If-None-Match": "*"},
+        )
+
+        assert response2.status_code == HTTPStatus.NOT_MODIFIED
+        assert response2.text == ""
+        assert "ETag" in response2.headers
+
+    @pytest.mark.asyncio
+    async def test_if_none_match_multiple_etags_with_match(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that If-None-Match with multiple ETags returns 304 if one matches."""
+        user_in = UserCreate(email="multi@example.com", full_name="Multi User")
+        created = await crud.create_user(db_session, user_in)
+
+        # Get the ETag
+        response1 = await async_client.get(f"/users/{created.id}")
+        etag = response1.headers["etag"]
+
+        # Send multiple ETags including the matching one
+        response2 = await async_client.get(
+            f"/users/{created.id}",
+            headers={"If-None-Match": f'"fake-etag-1", {etag}, "fake-etag-2"'},
+        )
+
+        assert response2.status_code == HTTPStatus.NOT_MODIFIED
+        assert response2.text == ""
+        assert "ETag" in response2.headers
+
+    @pytest.mark.asyncio
+    async def test_if_none_match_multiple_etags_no_match(
+        self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
+    ) -> None:
+        """Test that If-None-Match with multiple ETags returns 200 if none match."""
+        user_in = UserCreate(email="multi2@example.com", full_name="Multi2 User")
+        created = await crud.create_user(db_session, user_in)
+
+        # Get the ETag
+        response1 = await async_client.get(f"/users/{created.id}")
+        etag = response1.headers["etag"]
+
+        # Send multiple ETags none of which match
+        response2 = await async_client.get(
+            f"/users/{created.id}",
+            headers={"If-None-Match": '"fake-etag-1", "fake-etag-2", "fake-etag-3"'},
+        )
+
+        assert response2.status_code == HTTPStatus.OK
+        assert "ETag" in response2.headers
+        data = response2.json()
+        assert data["email"] == "multi2@example.com"
+        assert response2.headers["etag"] == etag
+
+
 class TestConcurrentRequests:
     """Tests for concurrent request handling with ETags."""
 
