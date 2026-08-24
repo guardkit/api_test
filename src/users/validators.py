@@ -2,7 +2,49 @@
 
 from __future__ import annotations
 
+import re
+from uuid import UUID
+
 MAX_LIMIT = 100
+
+# Allowed characters in a user ID: alphanumeric, hyphens, underscores
+# This is stricter than UUID format to prevent special character injection
+_VALID_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+def validate_user_id(user_id: str) -> str:
+    """Validate a user ID segment.
+
+    Checks that the ID segment is non-empty and contains only valid
+    characters (alphanumeric, hyphens, underscores). This prevents
+    injection of special characters that could be used for attacks.
+
+    Args:
+        user_id: The user ID string to validate.
+
+    Returns:
+        The validated user ID string.
+
+    Raises:
+        ValueError: If the ID is empty or contains invalid characters.
+    """
+    if not user_id or not user_id.strip():
+        raise ValueError("User ID must not be empty")
+
+    if not _VALID_ID_PATTERN.match(user_id):
+        raise ValueError(
+            f"User ID contains invalid characters: '{user_id}'"
+        )
+
+    # Also validate that it's a valid UUID format
+    try:
+        UUID(user_id)
+    except ValueError:
+        raise ValueError(
+            f"User ID must be a valid UUID: '{user_id}'"
+        ) from None
+
+    return user_id
 
 
 def validate_limit(limit_str: str) -> int:
