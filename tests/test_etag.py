@@ -1,10 +1,15 @@
-"""Tests for ETag generation logic."""
+"""Tests for ETag generation logic and middleware."""
 
 from __future__ import annotations
 
 import json
 
-from src.core.etag import etag_matches, generate_etag
+import pytest
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from fastapi.testclient import TestClient
+
+from src.core.etag import ETagMiddleware, etag_matches, generate_etag
 
 
 class TestGenerateETag:
@@ -113,3 +118,123 @@ class TestETagMatches:
         data_b = {"name": "Bob", "age": 25}
         etag = generate_etag(data_a)
         assert etag_matches(etag, data_b) is False
+
+
+class TestETagMiddleware:
+    """Tests for the ETagMiddleware class."""
+
+    @pytest.fixture
+    def etag_app(self) -> FastAPI:
+        """Create a FastAPI app with ETagMiddleware for testing."""
+        app = FastAPI()
+
+        @app.get("/resource")
+        def get_resource() -> JSONResponse:
+            return JSONResponse(content={"id": "1", "email": "test@example.com"})
+
+        @app.post("/resource")
+        def create_resource() -> JSONResponse:
+            return JSONResponse(
+                status_code=201,
+                content={"id": "2", "email": "new@example.com"},
+            )
+
+        app.add_middleware(ETagMiddleware)
+        return app
+
+    @pytest.fixture
+    def client(self, etag_app: FastAPI) -> TestClient:
+        """Create a TestClient for the ETag app."""
+        return TestClient(etag_app)
+
+    def test_middleware_can_be_instantiated(self) -> None:
+        """Test that ETagMiddleware can be instantiated."""
+        app = FastAPI()
+        middleware = ETagMiddleware(app)
+        assert isinstance(middleware, ETagMiddleware)
+
+    def test_middleware_has_call_method(self) -> None:
+        """Test that middleware has callable __call__ method."""
+        app = FastAPI()
+        middleware = ETagMiddleware(app)
+        assert hasattr(middleware, "__call__")
+        assert callable(middleware.__call__)
+
+    def test_get_without_if_none_match_returns_200(self, client: TestClient) -> None:
+        """Test that GET without If-None-Match returns 200 OK."""
+        response = client.get("/resource")
+        assert response.status_code == 200
+        assert "ETag" in response.headers
+
+    def test_get_with_matching_if_none_match_returns_304(
+        self, client: TestClient
+    ) -> None:
+        """Test that GET with matching If-None-Match returns 304 Not Modified."""
+        # First, get the ETag
+        response = client.get("/resource")
+        assert response.status_code == 200
+        etag = response.headers["ETag"]
+
+        # Now send the same ETag in If-None-Match
+        response = client.get("/resource", headers={"If-None-Match": etag})
+        assert response.status_code == 304
+        assert response.headers["ETag"] == etag
+
+    def test_get_with_non_matching_if_none_match_returns_200(
+        self, client: TestClient
+    ) -> None:
+        """Test that GET with non-matching If-None-Match returns 200 OK."""
+        response = client.get(
+            "/resource", headers={"If-None-Match": '"different-etag"'}
+        )
+        assert response.status_code == 200
+        assert "ETag" in response.headers
+        data = response.json()
+        assert data["id"] == "1"
+
+    def test_post_not_affected_by_etag_middleware(self, client: TestClient) -> None:
+        """Test that POST requests bypass ETag validation."""
+        response = client.post(
+            "/resource",
+            headers={"If-None-Match": '"some-etag"'},
+        )
+        assert response.status_code == 201
+
+    def test_middleware_handles_wildcard_if_none_match(
+        self, client: TestClient
+    ) -> None:
+        """Test that If-None-Match: * returns 304 when resource exists."""
+        # First get the ETag
+        response = client.get("/resource")
+        assert response.status_code == 200
+
+        # Wildcard should match any existing entity
+        response = client.get("/resource", headers={"If-None-Match": "*"})
+        assert response.status_code == 304
+
+    def test_middleware_handles_multiple_etags_in_if_none_match(
+        self, client: TestClient
+    ) -> None:
+        """Test If-None-Match with multiple ETags returns 304 if any match."""
+        response = client.get("/resource")
+        etag = response.headers["ETag"]
+
+        # Send multiple ETags including the matching one
+        response = client.get(
+            "/resource",
+            headers={"If-None-Match": f'"other-etag", {etag}, "another-etag"'},
+        )
+        assert response.status_code == 304
+
+    def test_middleware_handles_malformed_if_none_match(
+        self, client: TestClient
+    ) -> None:
+        """Test that malformed If-None-Match returns full resource gracefully."""
+        response = client.get(
+            "/resource",
+            headers={"If-None-Match": "not-valid-etag-format"},
+        )
+        # Should return 200 with full body, not crash
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == "1"

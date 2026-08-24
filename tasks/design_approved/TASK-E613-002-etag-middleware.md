@@ -1,15 +1,15 @@
 ---
-id: TASK-E613-002
-title: Add ETag validation middleware
-task_type: feature
-parent_review: TASK-REV-E613-PLAN
-feature_id: FEAT-E613
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-E613-001
-status: pending
+- TASK-E613-001
+feature_id: FEAT-E613
+id: TASK-E613-002
+implementation_mode: task-work
+parent_review: TASK-REV-E613-PLAN
+status: design_approved
+task_type: feature
+title: Add ETag validation middleware
+wave: 2
 ---
 
 # Add ETag validation middleware
