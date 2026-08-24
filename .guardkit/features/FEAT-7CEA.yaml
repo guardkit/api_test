@@ -1,0 +1,95 @@
+id: FEAT-7CEA
+name: "User Domain Count API"
+description: "Retrieve the number of users grouped by their email domain"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-7CEA-001
+    name: "Create domain count endpoint"
+    file_path: "tasks/backlog/user-domain-count/TASK-7CEA-001-create-domain-count-endpoint.md"
+    complexity: 5
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-7CEA-002
+    name: "Implement domain extraction logic"
+    file_path: "tasks/backlog/user-domain-count/TASK-7CEA-002-implement-domain-extraction-logic.md"
+    complexity: 4
+    dependencies:
+      - TASK-7CEA-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-7CEA-003
+    name: "Add domain count tests"
+    file_path: "tasks/backlog/user-domain-count/TASK-7CEA-003-add-domain-count-tests.md"
+    complexity: 4
+    dependencies:
+      - TASK-7CEA-002
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-7CEA-004
+    name: "Add documentation"
+    file_path: "tasks/backlog/user-domain-count/TASK-7CEA-004-add-documentation.md"
+    complexity: 2
+    dependencies:
+      - TASK-7CEA-003
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-7CEA-005
+    name: "Verify endpoint with smoke test"
+    file_path: "tasks/backlog/user-domain-count/TASK-7CEA-005-verify-endpoint-smoke-test.md"
+    complexity: 3
+    dependencies:
+      - TASK-7CEA-004
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+orchestration:
+  parallel_groups:
+    - - TASK-7CEA-001
+    - - TASK-7CEA-002
+    - - TASK-7CEA-003
+    - - TASK-7CEA-004
+    - - TASK-7CEA-005
+  estimated_duration_minutes: 225
+  recommended_parallel: 1
+
+feature_files:
+  - features/get-users-count-by-domain/get-users-count-by-domain.feature
+scenarios:
+  "A request returns domain counts ordered by count descending":
+    verifier: hurl
+  "An empty user set returns an empty list":
+    verifier: hurl
+  "A POST request to the endpoint is rejected":
+    verifier: hurl
+  "A PUT request to the endpoint is rejected":
+    verifier: hurl
+  "A DELETE request to the endpoint is rejected":
+    verifier: hurl
+  "The endpoint handles a large number of domains":
+    verifier: hurl
+  "Domains with no users are excluded from the list":
+    verifier: hurl
+  "Malformed email addresses are ignored":
+    verifier: hurl
+
+smoke_gates:
+  after_wave: 5
+  command: |
+    set -e
+    pytest tests/acceptance -x
+  expected_exit: 0
+  timeout: 60
