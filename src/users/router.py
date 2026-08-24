@@ -298,11 +298,24 @@ async def get_user_by_email(
     description="Retrieves a specific user by their UUID.",
     responses={
         404: {"description": "User not found"},
+        503: {"description": "Database unavailable"},
     },
 )
 async def get_user(user_id: UUID, db: AsyncSession = Depends(get_db)) -> UserPublic:
-    """Get user by ID."""
-    user = await crud.get_user(db, str(user_id))
+    """Get user by ID.
+
+    Returns the user with the matching ID.
+    Returns 404 if no user has that ID.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        user = await crud.get_user(db, str(user_id))
+    except SQLAlchemyError as exc:
+        logger.error("Database error while fetching user %s: %s", user_id, exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
     if user is None:
         raise UserNotFoundError(user_id=str(user_id))
     return UserPublic.model_validate(user)
