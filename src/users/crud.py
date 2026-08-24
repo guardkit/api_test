@@ -196,6 +196,8 @@ async def count_users_by_domain(db: AsyncSession) -> list[dict[str, int | str]]:
     - SQLite: INSTR(email, '@') to find the @ position
     - PostgreSQL: POSITION('@' IN email) via SQLAlchemy's func.position
 
+    Malformed emails (those without '@') are excluded from the count.
+
     Args:
         db: The async database session.
 
@@ -214,6 +216,7 @@ async def count_users_by_domain(db: AsyncSession) -> list[dict[str, int | str]]:
     stmt = (
         select(domain_expr.label("domain"), func.count().label("count"))
         .select_from(User)
+        .where(func.instr(User.email, "@") > 0)
         .group_by(domain_expr)
         .order_by(func.count().desc())
     )

@@ -1,15 +1,15 @@
 ---
-id: TASK-7CEA-003
-title: Add domain count tests
-task_type: testing
-parent_review: TASK-REV-7CEA
-feature_id: FEAT-7CEA
-wave: 3
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-7CEA-002
-status: pending
+- TASK-7CEA-002
+feature_id: FEAT-7CEA
+id: TASK-7CEA-003
+implementation_mode: task-work
+parent_review: TASK-REV-7CEA
+status: design_approved
+task_type: testing
+title: Add domain count tests
+wave: 3
 ---
 
 # Add domain count tests
