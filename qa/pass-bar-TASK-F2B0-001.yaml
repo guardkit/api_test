@@ -1,0 +1,18 @@
+format_version: '2.0'
+task_id: TASK-F2B0-001
+registered_at:
+  sha: 850435dff306365128bfb180ade8891a2be950e1
+  date: '2026-08-24'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: get-user-by-id-AC-001
+  text: A valid user ID returns the user details
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
