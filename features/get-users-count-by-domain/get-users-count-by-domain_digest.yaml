@@ -1,0 +1,54 @@
+feature: get-users-count-by-domain
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/count-by-domain
+scenarios:
+- title: A request returns domain counts ordered by count descending
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A request to the domain count endpoint returns a list of email domains and their
+    user counts, sorted from highest to lowest count.
+- title: An empty user set returns an empty list
+  tags:
+  - '@boundary'
+  sentence: If there are no users in the system, the endpoint returns an empty list instead
+    of an error.
+- title: A POST request to the endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: The endpoint rejects POST requests and does not process them.
+- title: A PUT request to the endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: The endpoint rejects PUT requests and does not process them.
+- title: A DELETE request to the endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: The endpoint rejects DELETE requests and does not process them.
+- title: The endpoint handles a large number of domains
+  tags:
+  - '@edge-case'
+  sentence: The endpoint can return up to one thousand different email domains in a
+    single response without failing.
+- title: Domains with no users are excluded from the list
+  tags:
+  - '@edge-case'
+  sentence: Email domains that have no associated users are not included in the
+    returned list.
+- title: Malformed email addresses are ignored
+  tags:
+  - '@edge-case'
+  sentence: Email addresses that are not correctly formatted are skipped and do
+    not cause the endpoint to fail.
+assumptions:
+- id: ASSUM-001
+  text: The endpoint returns a JSON array of objects with domain and count fields
+  basis: Inferred from problem statement; exact field names and structure not specified
+- id: ASSUM-002
+  text: The endpoint supports up to 1000 domains in a single response
+  basis: Arbitrary limit chosen for edge-case coverage; not stated in input
+- id: ASSUM-003
+  text: Malformed email addresses are ignored and do not cause errors
+  basis: Inferred from domain-extraction requirement; exact handling policy not stated
