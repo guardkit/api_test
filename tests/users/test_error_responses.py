@@ -12,10 +12,6 @@ from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.users import crud
-from src.users.schemas import UserCreate
 
 
 class TestGetUserByIdNotFound:
