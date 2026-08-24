@@ -7,7 +7,7 @@ import logging
 from uuid import UUID
 
 import redis.asyncio
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Response
 from pydantic import EmailStr
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +25,7 @@ from src.users.schemas import (
     UserSummaryResponse,
     UserUpdate,
 )
-from src.users.validators import validate_limit
+from src.users.validators import get_validated_user_id, validate_limit, validate_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -195,12 +195,14 @@ async def get_users_count_today(
         "is unavailable."
     ),
     responses={
+        400: {"description": "Invalid user ID format"},
         404: {"description": "User not found"},
         503: {"description": "Database unavailable"},
     },
 )
 async def get_user_summary(
-    user_id: UUID, db: AsyncSession = Depends(get_db)
+    validated_user_id: str = Depends(get_validated_user_id),
+    db: AsyncSession = Depends(get_db),
 ) -> UserSummaryResponse:
     """Get a user summary with profile metadata.
 
@@ -220,7 +222,7 @@ async def get_user_summary(
         UserNotFoundError: If the user does not exist in the database
             or cache.
     """
-    user_id_str = str(user_id)
+    user_id_str = validated_user_id
     try:
         user = await crud.get_user(db, user_id_str)
         if user is None:
@@ -297,14 +299,32 @@ async def get_user_by_email(
     summary="Get user by ID",
     description="Retrieves a specific user by their UUID.",
     responses={
+        400: {"description": "Invalid user ID format"},
         404: {"description": "User not found"},
+        503: {"description": "Database unavailable"},
     },
 )
-async def get_user(user_id: UUID, db: AsyncSession = Depends(get_db)) -> UserPublic:
-    """Get user by ID."""
-    user = await crud.get_user(db, str(user_id))
+async def get_user(
+    validated_user_id: str = Depends(get_validated_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> UserPublic:
+    """Get user by ID.
+
+    Returns the user with the matching ID.
+    Returns 400 if the user ID format is invalid.
+    Returns 404 if no user has that ID.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        user = await crud.get_user(db, validated_user_id)
+    except SQLAlchemyError as exc:
+        logger.error("Database error while fetching user %s: %s", validated_user_id, exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
     if user is None:
-        raise UserNotFoundError(user_id=str(user_id))
+        raise UserNotFoundError(user_id=validated_user_id)
     return UserPublic.model_validate(user)
 
 
@@ -367,18 +387,23 @@ async def get_recent_users(
     summary="Update user",
     description="Updates an existing user with the provided data.",
     responses={
+        400: {"description": "Invalid user ID format"},
         404: {"description": "User not found"},
     },
 )
 async def update_user(
-    user_id: UUID,
-    user_in: UserUpdate,
+    validated_user_id: str = Depends(get_validated_user_id),
+    user_in: UserUpdate = Body(...),
     db: AsyncSession = Depends(get_db),
 ) -> UserPublic:
-    """Update user."""
-    user = await crud.update_user(db, str(user_id), user_in)
+    """Update user.
+
+    Returns 400 if the user ID format is invalid.
+    Returns 404 if no user has that ID.
+    """
+    user = await crud.update_user(db, validated_user_id, user_in)
     if user is None:
-        raise UserNotFoundError(user_id=str(user_id))
+        raise UserNotFoundError(user_id=validated_user_id)
     return UserPublic.model_validate(user)
 
 
@@ -445,15 +470,20 @@ async def delete_user_by_email(
     description="Deletes a user by ID. Returns 204 No Content on success.",
     responses={
         204: {"description": "User deleted successfully"},
+        400: {"description": "Invalid user ID format"},
         404: {"description": "User not found"},
     },
 )
 async def delete_user(
-    user_id: UUID,
+    validated_user_id: str = Depends(get_validated_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
-    """Delete user."""
-    deleted = await crud.delete_user(db, str(user_id))
+    """Delete user.
+
+    Returns 400 if the user ID format is invalid.
+    Returns 404 if no user has that ID.
+    """
+    deleted = await crud.delete_user(db, validated_user_id)
     if not deleted:
-        raise UserNotFoundError(user_id=str(user_id))
+        raise UserNotFoundError(user_id=validated_user_id)
     return Response(status_code=204)

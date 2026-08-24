@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
 
 class UserBase(BaseModel):
@@ -50,10 +50,14 @@ class UserUpdate(BaseModel):
 
 
 class UserPublic(BaseModel):
-    """Schema for user responses."""
+    """Schema for user responses.
+
+    Includes id, name (derived from full_name), and email as per ASSUM-001.
+    """
 
     id: str
     email: EmailStr
+    name: str | None = None
     full_name: str | None = None
     is_active: bool = True
     created_at: str
@@ -82,6 +86,16 @@ class UserPublic(BaseModel):
         if isinstance(v, datetime):
             return v.isoformat()
         return v
+
+    @model_validator(mode="after")
+    def populate_name_from_full_name(self) -> UserPublic:
+        """Populate the name field from full_name if name is not set.
+
+        Ensures the response includes 'name' as required by ASSUM-001.
+        """
+        if self.name is None and self.full_name is not None:
+            self.name = self.full_name
+        return self
 
 
 class UserCountResponse(BaseModel):

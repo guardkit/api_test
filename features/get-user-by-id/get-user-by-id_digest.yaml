@@ -1,0 +1,43 @@
+feature: get-user-by-id
+generated: '2026-07-09T14:32:00Z'
+scenarios:
+- title: A valid user ID returns the user details
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: When you ask for a user using a valid ID, the system returns that user's full profile details.
+- title: A user ID that exists returns the user
+  tags:
+  - '@boundary'
+  sentence: A user ID that is known to the system returns that user's profile.
+- title: A user ID that does not exist returns a not found response
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: If you ask for a user ID that does not exist, the system tells you it could not find that user.
+- title: An empty user ID returns a bad request error
+  tags:
+  - '@negative'
+  sentence: Providing no ID at all results in an error indicating the request was invalid.
+- title: A user ID containing special characters is rejected
+  tags:
+  - '@negative'
+  sentence: Using an ID with special characters that are not allowed is rejected as an invalid request.
+- title: Multiple concurrent requests for the same user all succeed
+  tags:
+  - '@edge-case'
+  sentence: If many requests for the same user arrive at the same time, each one receives the user's details successfully.
+- title: A validly formatted ID that is not present returns not found
+  tags:
+  - '@edge-case'
+  sentence: An ID that looks correct but does not belong to any user results in a not found error.
+assumptions:
+- id: ASSUM-001
+  text: The response body includes a full user profile with id, name, and email
+  basis: Inferred from typical RESTful user endpoints; not stated in input
+- id: ASSUM-002
+  text: The 404 error response includes a JSON body with an error message field
+  basis: Inferred from common API error patterns; not stated in input
+- id: ASSUM-003
+  text: The API validates that the ID segment is non-empty before querying
+  basis: Inferred from standard web framework routing; not stated in input
