@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from uuid import UUID
 
+from fastapi import Depends, HTTPException, Query
+
 MAX_LIMIT = 100
 
 # Allowed characters in a user ID: alphanumeric, hyphens, underscores
@@ -45,6 +47,28 @@ def validate_user_id(user_id: str) -> str:
         ) from None
 
     return user_id
+
+
+def get_validated_user_id(user_id: str) -> str:
+    """FastAPI dependency that validates a user ID path parameter.
+
+    This dependency runs before other dependencies (like database session)
+    to ensure invalid IDs are caught early and return 400 Bad Request
+    instead of propagating to database operations.
+
+    Args:
+        user_id: The user ID from the path parameter.
+
+    Returns:
+        The validated user ID string.
+
+    Raises:
+        HTTPException: 400 Bad Request if the ID is invalid.
+    """
+    try:
+        return validate_user_id(user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def validate_limit(limit_str: str) -> int:
