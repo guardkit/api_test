@@ -1,15 +1,15 @@
 ---
-id: TASK-7CEA-002
-title: Implement domain extraction logic
-task_type: feature
-parent_review: TASK-REV-7CEA
-feature_id: FEAT-7CEA
-wave: 2
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-7CEA-001
-status: pending
+- TASK-7CEA-001
+feature_id: FEAT-7CEA
+id: TASK-7CEA-002
+implementation_mode: task-work
+parent_review: TASK-REV-7CEA
+status: design_approved
+task_type: feature
+title: Implement domain extraction logic
+wave: 2
 ---
 
 # Implement domain extraction logic
