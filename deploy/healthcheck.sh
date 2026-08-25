@@ -17,9 +17,12 @@ is_truthy() {
   esac
 }
 
-# Candidate leg: forge threads CANDIDATE=1 + CANDIDATE_PORT (the candidate.env
-# overlay) so this vetted script probes the candidate URL, not the live one.
-if is_truthy CANDIDATE; then
+# Candidate leg: probe the candidate URL, not the live one. The candidate.env
+# overlay forge actually threads into the health step carries CANDIDATE_PORT
+# but NOT CANDIDATE=1 (the first real dispatched deploy proved it live on
+# 2026-08-25: this script probed :8901 while the candidate answered on :8902),
+# so the presence of CANDIDATE_PORT alone must select the candidate URL.
+if is_truthy CANDIDATE || [ -n "${CANDIDATE_PORT:-}" ]; then
   HEALTH_URL="${HEALTH_URL:-http://localhost:${CANDIDATE_PORT:-8902}/health}"
 else
   HEALTH_URL="${HEALTH_URL:-http://localhost:8901/health}"
