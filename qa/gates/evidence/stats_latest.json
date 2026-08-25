@@ -1,31 +1,33 @@
 {
-  "url": "http://localhost:8902/stats",
+  "url": "http://localhost:8901/stats",
   "first": {
     "status": 200,
     "headers": {
-      "date": "Fri, 31 Jul 2026 14:45:06 GMT",
+      "date": "Tue, 25 Aug 2026 06:22:45 GMT",
       "server": "uvicorn",
-      "content-length": "92",
+      "content-length": "96",
       "content-type": "application/json",
-      "x-correlation-id": "a8ed35d5-90b2-4ce2-b9e9-68855966345d",
+      "x-correlation-id": "b17cdd5b-20f3-4d8e-83a3-a42304d09770",
       "x-api-version": "0.1.0",
+      "etag": "\"724559612d13d3f41b9070af7606fe8bc6a4ee84a1b0298a836e42b1fb36a4c5\"",
       "connection": "close"
     },
-    "body": "{\"service\":\"api\",\"requests_served\":45,\"first_request_at\":\"2026-07-31T14:43:09.821925+00:00\"}",
+    "body": "{\"service\":\"api_test\",\"requests_served\":5,\"first_request_at\":\"2026-08-25T06:22:43.857860+00:00\"}",
     "error": null
   },
   "second": {
     "status": 200,
     "headers": {
-      "date": "Fri, 31 Jul 2026 14:45:06 GMT",
+      "date": "Tue, 25 Aug 2026 06:22:45 GMT",
       "server": "uvicorn",
-      "content-length": "92",
+      "content-length": "96",
       "content-type": "application/json",
-      "x-correlation-id": "2f32051c-11e3-438c-b9dd-9f17da70b770",
+      "x-correlation-id": "59b0733a-116e-44a3-9b90-1b6d06a5f5e7",
       "x-api-version": "0.1.0",
+      "etag": "\"6a0a35be08b5f24f38d7ebed4658939e90126774653357c37cb1a79d7923ff6d\"",
       "connection": "close"
     },
-    "body": "{\"service\":\"api\",\"requests_served\":46,\"first_request_at\":\"2026-07-31T14:43:09.821925+00:00\"}",
+    "body": "{\"service\":\"api_test\",\"requests_served\":6,\"first_request_at\":\"2026-08-25T06:22:43.857860+00:00\"}",
     "error": null
   },
   "post": {
