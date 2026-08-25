@@ -23,7 +23,7 @@ autobuild:
     # still override. Rollback = delete these two lines (defaults restore
     # gemma4-coach pairing at launch + the legacy coachsplit contract).
     contract: v4
-    model: coach-ft-v4
+    model: gemma4-26b-q8-coach   # 2026-08-25 bake-off arm B (frozen card 00e0602); was coach-ft-v4 — restore at campaign end
     qav_shadow:
       enabled: true
       endpoint: http://localhost:9000/v1/chat/completions
