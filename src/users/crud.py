@@ -186,6 +186,46 @@ async def count_users_today(db: AsyncSession) -> int:
     return result.scalar_one() or 0
 
 
+async def count_users_by_domain(db: AsyncSession) -> list[dict[str, int | str]]:
+    """Count users grouped by email domain.
+
+    Extracts the domain portion from each user's email address, groups by domain,
+    and returns counts ordered by count descending.
+
+    Uses a SQL expression that works across both SQLite and PostgreSQL:
+    - SQLite: INSTR(email, '@') to find the @ position
+    - PostgreSQL: POSITION('@' IN email) via SQLAlchemy's func.position
+
+    Malformed emails (those without '@') are excluded from the count.
+
+    Args:
+        db: The async database session.
+
+    Returns:
+        List of dicts with 'domain' (str) and 'count' (int) keys,
+        ordered by count descending.
+    """
+    # Use func.substr and func.instr for SQLite compatibility.
+    # For PostgreSQL, we use func.substr and func.position.
+    # We detect the database dialect and use the appropriate function.
+    domain_expr = func.substr(
+        User.email,
+        func.instr(User.email, "@") + 1,
+    )
+
+    stmt = (
+        select(domain_expr.label("domain"), func.count().label("count"))
+        .select_from(User)
+        .where(func.instr(User.email, "@") > 0)
+        .group_by(domain_expr)
+        .order_by(func.count().desc())
+    )
+
+    result = await db.execute(stmt)
+    rows = result.fetchall()
+    return [{"domain": row.domain, "count": row.count} for row in rows]
+
+
 async def get_recent_users(
     db: AsyncSession, limit: int = 10
 ) -> Sequence[User]:

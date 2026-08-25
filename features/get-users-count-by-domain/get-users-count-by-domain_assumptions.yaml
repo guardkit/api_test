@@ -1,0 +1,23 @@
+feature: User Domain Count API
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A request returns domain counts ordered by count descending
+  assumption: The endpoint returns a JSON array of objects with domain and count fields
+  confidence: low
+  basis: Inferred from problem statement; exact field names and structure not specified
+  human_response: deferred
+- id: ASSUM-002
+  scenario: The endpoint handles a large number of domains
+  assumption: The endpoint supports up to 1000 domains in a single response
+  confidence: low
+  basis: Arbitrary limit chosen for edge-case coverage; not stated in input
+  human_response: deferred
+- id: ASSUM-003
+  scenario: Malformed email addresses are ignored
+  assumption: Malformed email addresses are ignored and do not cause errors
+  confidence: low
+  basis: Inferred from domain-extraction requirement; exact handling policy not stated
+  human_response: deferred

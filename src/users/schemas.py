@@ -29,6 +29,24 @@ class UserCreate(UserBase):
     )
 
 
+class DomainCountResponse(BaseModel):
+    """Schema for domain count entries."""
+
+    domain: str
+    count: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "domain": "example.com",
+                    "count": 5,
+                }
+            ]
+        }
+    )
+
+
 class UserUpdate(BaseModel):
     """Schema for updating an existing user."""
 

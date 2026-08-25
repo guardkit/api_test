@@ -17,6 +17,7 @@ from src.users import crud
 from src.users.calculations import calculate_days_since_created
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
+    DomainCountResponse,
     RecentUsersResponse,
     UserCountResponse,
     UserCreate,
@@ -182,6 +183,38 @@ async def get_users_count_today(
             detail=f"Database unavailable: {exc}",
         ) from exc
     return UserCountResponse(count=total)
+
+
+@router.get(
+    "/count-by-domain",
+    response_model=list[DomainCountResponse],
+    tags=["users"],
+    summary="Get user count by email domain",
+    description=(
+        "Returns a JSON array of {domain, count} objects showing how many "
+        "users are registered per email domain, ordered by count descending."
+    ),
+    responses={
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_domain_count(
+    db: AsyncSession = Depends(get_db),
+) -> list[DomainCountResponse]:
+    """Get user count grouped by email domain.
+
+    Extracts the domain portion from each user's email address, groups by domain,
+    and returns counts ordered by count descending.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        rows = await crud.count_users_by_domain(db)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return [DomainCountResponse(**row) for row in rows]
 
 
 @router.get(

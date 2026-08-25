@@ -539,3 +539,752 @@ def test_api_documentation_ready_consistent_with_implementation(
         f"Documented fields {documented_fields} must match "
         f"ReadyResponse fields {schema_fields}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Whoami endpoint documentation tests (TASK-7CEA-004)
+# ---------------------------------------------------------------------------
+
+
+def test_api_documentation_contains_whoami_endpoint_path_and_method(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes the /whoami endpoint with GET method.
+
+    AC-001: Endpoint path and method documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "/whoami" in content, "Documentation must include the /whoami endpoint path"
+    assert "GET /whoami" in content, (
+        "Documentation must specify GET as the HTTP method for /whoami"
+    )
+
+
+def test_api_documentation_whoami_response_schema(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented response schema matches the WhoamiResponse model.
+
+    AC-003: Response format described clearly
+    """
+    content = api_docs_path.read_text()
+
+    assert "Response Schema" in content or "Response Schemas" in content, (
+        "Documentation must include response schema for /whoami"
+    )
+    assert '"service"' in content or "'service'" in content, (
+        "Documentation must include the 'service' field in /whoami response"
+    )
+
+
+def test_api_documentation_whoami_example_request(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example request for /whoami.
+
+    AC-002: Examples included for happy path
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Request" in content, "Documentation must include an example request"
+    assert "curl" in content, "Documentation must include a curl example"
+    assert "/whoami" in content, (
+        "Documentation example must reference the /whoami endpoint"
+    )
+
+
+def test_api_documentation_whoami_example_response(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example response for /whoami.
+
+    AC-002: Examples included for happy path
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Response" in content, "Documentation must include example responses"
+    assert "service" in content.lower(), (
+        "Documentation must show the 'service' field in example response"
+    )
+
+
+def test_api_documentation_whoami_status_codes(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes status codes for /whoami.
+
+    AC-002: Error cases documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "200" in content, "Documentation must document the 200 status code for /whoami"
+    assert "405" in content, "Documentation must document the 405 method not allowed for /whoami"
+
+
+def test_api_documentation_whoami_field_descriptions(
+    api_docs_path: Path,
+) -> None:
+    """Test that field descriptions are documented for /whoami response.
+
+    AC-003: Response format described clearly
+    """
+    content = api_docs_path.read_text()
+
+    assert "Field Descriptions" in content, (
+        "Documentation must include field descriptions"
+    )
+    assert "service name" in content.lower() or "api service" in content.lower(), (
+        "Documentation must describe the service field"
+    )
+
+
+def test_api_documentation_whoami_consistent_with_implementation(
+    api_docs_path: Path,
+) -> None:
+    """Test that documented response format matches the WhoamiResponse schema.
+
+    This is an invariant test: the documented fields for /whoami must match
+    the WhoamiResponse model fields (service), regardless of future changes.
+    """
+    content = api_docs_path.read_text()
+
+    from src.whoami.schemas import WhoamiResponse
+
+    schema_fields = set(WhoamiResponse.model_fields.keys())
+    documented_fields = set()
+
+    for field_name in schema_fields:
+        if f'"{field_name}"' in content or f"'{field_name}'" in content:
+            documented_fields.add(field_name)
+
+    assert documented_fields == schema_fields, (
+        f"Documented fields {documented_fields} must match "
+        f"WhoamiResponse fields {schema_fields}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Uptime endpoint documentation tests (TASK-7CEA-004)
+# ---------------------------------------------------------------------------
+
+
+def test_api_documentation_contains_uptime_endpoint_path_and_method(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes the /uptime endpoint with GET method.
+
+    AC-001: Endpoint path and method documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "/uptime" in content, "Documentation must include the /uptime endpoint path"
+    assert "GET /uptime" in content, (
+        "Documentation must specify GET as the HTTP method for /uptime"
+    )
+
+
+def test_api_documentation_uptime_response_schema(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented response schema matches the UptimeResponse model.
+
+    AC-003: Response format described clearly
+    """
+    content = api_docs_path.read_text()
+
+    assert "Response Schema" in content or "Response Schemas" in content, (
+        "Documentation must include response schema for /uptime"
+    )
+    assert '"service"' in content or "'service'" in content, (
+        "Documentation must include the 'service' field in /uptime response"
+    )
+    assert '"started_at"' in content or "'started_at'" in content, (
+        "Documentation must include the 'started_at' field in /uptime response"
+    )
+    assert '"uptime_seconds"' in content or "'uptime_seconds'" in content, (
+        "Documentation must include the 'uptime_seconds' field in /uptime response"
+    )
+
+
+def test_api_documentation_uptime_example_request(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example request for /uptime.
+
+    AC-002: Examples included for happy path
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Request" in content, "Documentation must include an example request"
+    assert "curl" in content, "Documentation must include a curl example"
+    assert "/uptime" in content, (
+        "Documentation example must reference the /uptime endpoint"
+    )
+
+
+def test_api_documentation_uptime_example_response(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example response for /uptime.
+
+    AC-002: Examples included for happy path
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Response" in content, "Documentation must include example responses"
+    assert "uptime_seconds" in content.lower(), (
+        "Documentation must show the 'uptime_seconds' field in example response"
+    )
+
+
+def test_api_documentation_uptime_status_codes(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes status codes for /uptime.
+
+    AC-002: Error cases documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "200" in content, "Documentation must document the 200 status code for /uptime"
+    assert "405" in content, "Documentation must document the 405 method not allowed for /uptime"
+
+
+def test_api_documentation_uptime_field_descriptions(
+    api_docs_path: Path,
+) -> None:
+    """Test that field descriptions are documented for /uptime response.
+
+    AC-003: Response format described clearly
+    """
+    content = api_docs_path.read_text()
+
+    assert "Field Descriptions" in content, (
+        "Documentation must include field descriptions"
+    )
+    assert "started_at" in content.lower() or "start time" in content.lower(), (
+        "Documentation must describe the started_at field"
+    )
+    assert "uptime_seconds" in content.lower() or "uptime" in content.lower(), (
+        "Documentation must describe the uptime_seconds field"
+    )
+
+
+def test_api_documentation_uptime_consistent_with_implementation(
+    api_docs_path: Path,
+) -> None:
+    """Test that documented response format matches the UptimeResponse schema.
+
+    This is an invariant test: the documented fields for /uptime must match
+    the UptimeResponse model fields (service, started_at, uptime_seconds).
+    """
+    content = api_docs_path.read_text()
+
+    from src.uptime.schemas import UptimeResponse
+
+    schema_fields = set(UptimeResponse.model_fields.keys())
+    documented_fields = set()
+
+    for field_name in schema_fields:
+        if f'"{field_name}"' in content or f"'{field_name}'" in content:
+            documented_fields.add(field_name)
+
+    assert documented_fields == schema_fields, (
+        f"Documented fields {documented_fields} must match "
+        f"UptimeResponse fields {schema_fields}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Stats endpoint documentation tests (TASK-7CEA-004)
+# ---------------------------------------------------------------------------
+
+
+def test_api_documentation_contains_stats_endpoint_path_and_method(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes the /stats endpoint with GET method.
+
+    AC-001: Endpoint path and method documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "/stats" in content, "Documentation must include the /stats endpoint path"
+    assert "GET /stats" in content, (
+        "Documentation must specify GET as the HTTP method for /stats"
+    )
+
+
+def test_api_documentation_stats_response_schema(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented response schema matches the StatsResponse model.
+
+    AC-003: Response format described clearly
+    """
+    content = api_docs_path.read_text()
+
+    assert "Response Schema" in content or "Response Schemas" in content, (
+        "Documentation must include response schema for /stats"
+    )
+    assert '"service"' in content or "'service'" in content, (
+        "Documentation must include the 'service' field in /stats response"
+    )
+    assert '"requests_served"' in content or "'requests_served'" in content, (
+        "Documentation must include the 'requests_served' field in /stats response"
+    )
+
+
+def test_api_documentation_stats_example_request(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example request for /stats.
+
+    AC-002: Examples included for happy path
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Request" in content, "Documentation must include an example request"
+    assert "curl" in content, "Documentation must include a curl example"
+    assert "/stats" in content, (
+        "Documentation example must reference the /stats endpoint"
+    )
+
+
+def test_api_documentation_stats_example_response(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example response for /stats.
+
+    AC-002: Examples included for happy path
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Response" in content, "Documentation must include example responses"
+    assert "requests_served" in content.lower(), (
+        "Documentation must show the 'requests_served' field in example response"
+    )
+
+
+def test_api_documentation_stats_status_codes(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes status codes for /stats.
+
+    AC-002: Error cases documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "200" in content, "Documentation must document the 200 status code for /stats"
+    assert "405" in content, "Documentation must document the 405 method not allowed for /stats"
+
+
+def test_api_documentation_stats_consistent_with_implementation(
+    api_docs_path: Path,
+) -> None:
+    """Test that documented response format matches the StatsResponse schema.
+
+    This is an invariant test: the documented fields for /stats must match
+    the StatsResponse model fields (service, requests_served).
+    """
+    content = api_docs_path.read_text()
+
+    from src.stats.router import StatsResponse
+
+    schema_fields = set(StatsResponse.model_fields.keys())
+    documented_fields = set()
+
+    for field_name in schema_fields:
+        if f'"{field_name}"' in content or f"'{field_name}'" in content:
+            documented_fields.add(field_name)
+
+    assert documented_fields == schema_fields, (
+        f"Documented fields {documented_fields} must match "
+        f"StatsResponse fields {schema_fields}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Time endpoint documentation tests (TASK-7CEA-004)
+# ---------------------------------------------------------------------------
+
+
+def test_api_documentation_contains_time_endpoint_path_and_method(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes the /time endpoint with GET method.
+
+    AC-001: Endpoint path and method documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "/time" in content, "Documentation must include the /time endpoint path"
+    assert "GET /time" in content, (
+        "Documentation must specify GET as the HTTP method for /time"
+    )
+
+
+def test_api_documentation_time_response_schema(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented response schema matches the TimeResponse model.
+
+    AC-003: Response format described clearly
+    """
+    content = api_docs_path.read_text()
+
+    assert "Response Schema" in content or "Response Schemas" in content, (
+        "Documentation must include response schema for /time"
+    )
+    assert '"time"' in content or "'time'" in content, (
+        "Documentation must include the 'time' field in /time response"
+    )
+    assert '"service"' in content or "'service'" in content, (
+        "Documentation must include the 'service' field in /time response"
+    )
+
+
+def test_api_documentation_time_example_request(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example request for /time.
+
+    AC-002: Examples included for happy path
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Request" in content, "Documentation must include an example request"
+    assert "curl" in content, "Documentation must include a curl example"
+    assert "/time" in content, (
+        "Documentation example must reference the /time endpoint"
+    )
+
+
+def test_api_documentation_time_example_response(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example response for /time.
+
+    AC-002: Examples included for happy path
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Response" in content, "Documentation must include example responses"
+    assert "time" in content.lower(), (
+        "Documentation must show the 'time' field in example response"
+    )
+
+
+def test_api_documentation_time_status_codes(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes status codes for /time.
+
+    AC-002: Error cases documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "200" in content, "Documentation must document the 200 status code for /time"
+    assert "405" in content, "Documentation must document the 405 method not allowed for /time"
+
+
+def test_api_documentation_time_consistent_with_implementation(
+    api_docs_path: Path,
+) -> None:
+    """Test that documented response format matches the TimeResponse schema.
+
+    This is an invariant test: the documented fields for /time must match
+    the TimeResponse model fields (time, service).
+    """
+    content = api_docs_path.read_text()
+
+    from src.time.schemas import TimeResponse
+
+    schema_fields = set(TimeResponse.model_fields.keys())
+    documented_fields = set()
+
+    for field_name in schema_fields:
+        if f'"{field_name}"' in content or f"'{field_name}'" in content:
+            documented_fields.add(field_name)
+
+    assert documented_fields == schema_fields, (
+        f"Documented fields {documented_fields} must match "
+        f"TimeResponse fields {schema_fields}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Search endpoint documentation tests (TASK-7CEA-004)
+# ---------------------------------------------------------------------------
+
+
+def test_api_documentation_contains_search_endpoint_path_and_method(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes the /search endpoint with GET method.
+
+    AC-001: Endpoint path and method documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "/search" in content, "Documentation must include the /search endpoint path"
+    assert "GET /search" in content, (
+        "Documentation must specify GET as the HTTP method for /search"
+    )
+
+
+def test_api_documentation_search_response_schema(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented response schema matches the SearchResponse model.
+
+    AC-003: Response format described clearly
+    """
+    content = api_docs_path.read_text()
+
+    assert "Response Schema" in content or "Response Schemas" in content, (
+        "Documentation must include response schema for /search"
+    )
+    assert '"query"' in content or "'query'" in content, (
+        "Documentation must include the 'query' field in /search response"
+    )
+    assert '"results"' in content or "'results'" in content, (
+        "Documentation must include the 'results' field in /search response"
+    )
+    assert '"total"' in content or "'total'" in content, (
+        "Documentation must include the 'total' field in /search response"
+    )
+
+
+def test_api_documentation_search_example_request(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example request for /search.
+
+    AC-002: Examples included for happy path
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Request" in content, "Documentation must include an example request"
+    assert "curl" in content, "Documentation must include a curl example"
+    assert "/search" in content, (
+        "Documentation example must reference the /search endpoint"
+    )
+    assert "name" in content.lower(), (
+        "Documentation example must reference the 'name' query parameter"
+    )
+
+
+def test_api_documentation_search_example_responses(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes example responses for /search.
+
+    AC-002: Examples included for happy path and error cases
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Response" in content, "Documentation must include example responses"
+    assert "query" in content.lower(), (
+        "Documentation must show the 'query' field in example response"
+    )
+    assert "results" in content.lower(), (
+        "Documentation must show the 'results' field in example response"
+    )
+
+
+def test_api_documentation_search_error_example(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes error examples for /search.
+
+    AC-002: Error cases documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "Error" in content or "error" in content.lower(), (
+        "Documentation must include error examples"
+    )
+    assert "400" in content, (
+        "Documentation must document the 400 status code for /search"
+    )
+    assert "name" in content.lower() and "required" in content.lower(), (
+        "Documentation must describe the missing name parameter error"
+    )
+
+
+def test_api_documentation_search_status_codes(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes status codes for /search.
+
+    AC-002: Error cases documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "200" in content, "Documentation must document the 200 status code for /search"
+    assert "400" in content, "Documentation must document the 400 bad request for /search"
+    assert "405" in content, "Documentation must document the 405 method not allowed for /search"
+
+
+def test_api_documentation_search_consistent_with_implementation(
+    api_docs_path: Path,
+) -> None:
+    """Test that documented response format matches the SearchResponse schema.
+
+    This is an invariant test: the documented fields for /search must match
+    the SearchResponse model fields (query, results, total).
+    """
+    content = api_docs_path.read_text()
+
+    from src.search.schemas import SearchResponse
+
+    schema_fields = set(SearchResponse.model_fields.keys())
+    documented_fields = set()
+
+    for field_name in schema_fields:
+        if f'"{field_name}"' in content or f"'{field_name}'" in content:
+            documented_fields.add(field_name)
+
+    assert documented_fields == schema_fields, (
+        f"Documented fields {documented_fields} must match "
+        f"SearchResponse fields {schema_fields}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Domain Count endpoint documentation tests (TASK-7CEA-004)
+# ---------------------------------------------------------------------------
+
+
+def test_api_documentation_contains_domain_count_endpoint_path_and_method(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes the /users/count-by-domain endpoint.
+
+    AC-001: Endpoint path and method documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "/users/count-by-domain" in content, (
+        "Documentation must include the /users/count-by-domain endpoint path"
+    )
+    assert "GET" in content, "Documentation must specify GET method"
+
+
+def test_api_documentation_domain_count_response_schema(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented response schema matches the DomainCountResponse model.
+
+    AC-003: Response format described clearly
+    """
+    content = api_docs_path.read_text()
+
+    assert "Response Schema" in content or "Response Schemas" in content, (
+        "Documentation must include response schema for /users/count-by-domain"
+    )
+    assert '"domain"' in content or "'domain'" in content, (
+        "Documentation must include the 'domain' field in response"
+    )
+    assert '"count"' in content or "'count'" in content, (
+        "Documentation must include the 'count' field in response"
+    )
+
+
+def test_api_documentation_domain_count_example_request(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes an example request for /users/count-by-domain.
+
+    AC-002: Examples included for happy path
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Request" in content, "Documentation must include an example request"
+    assert "curl" in content, "Documentation must include a curl example"
+    assert "/users/count-by-domain" in content, (
+        "Documentation example must reference the /users/count-by-domain endpoint"
+    )
+
+
+def test_api_documentation_domain_count_example_response(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes example responses for /users/count-by-domain.
+
+    AC-002: Examples included for happy path and error cases
+    """
+    content = api_docs_path.read_text()
+
+    assert "Example Response" in content, "Documentation must include example responses"
+    assert "domain" in content.lower(), (
+        "Documentation must show the 'domain' field in example response"
+    )
+    assert "count" in content.lower(), (
+        "Documentation must show the 'count' field in example response"
+    )
+    # Verify both happy path and empty set examples exist
+    assert "[]" in content or "empty" in content.lower(), (
+        "Documentation must include empty set example"
+    )
+
+
+def test_api_documentation_domain_count_status_codes(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes status codes for /users/count-by-domain.
+
+    AC-002: Error cases documented
+    """
+    content = api_docs_path.read_text()
+
+    assert "200" in content, "Documentation must document the 200 status code"
+    assert "503" in content, "Documentation must document the 503 status code for database errors"
+    assert "405" in content, "Documentation must document the 405 method not allowed"
+
+
+def test_api_documentation_domain_count_field_descriptions(
+    api_docs_path: Path,
+) -> None:
+    """Test that field descriptions are documented for /users/count-by-domain response.
+
+    AC-003: Response format described clearly
+    """
+    content = api_docs_path.read_text()
+
+    assert "Field Descriptions" in content, (
+        "Documentation must include field descriptions"
+    )
+    assert "domain" in content.lower(), (
+        "Documentation must describe the domain field"
+    )
+    assert "count" in content.lower(), (
+        "Documentation must describe the count field"
+    )
+
+
+def test_api_documentation_domain_count_consistent_with_implementation(
+    api_docs_path: Path,
+) -> None:
+    """Test that documented response format matches the DomainCountResponse schema.
+
+    This is an invariant test: the documented fields for domain count must match
+    the DomainCountResponse model fields (domain, count).
+    """
+    content = api_docs_path.read_text()
+
+    from src.users.schemas import DomainCountResponse
+
+    schema_fields = set(DomainCountResponse.model_fields.keys())
+    documented_fields = set()
+
+    for field_name in schema_fields:
+        if f'"{field_name}"' in content or f"'{field_name}'" in content:
+            documented_fields.add(field_name)
+
+    assert documented_fields == schema_fields, (
+        f"Documented fields {documented_fields} must match "
+        f"DomainCountResponse fields {schema_fields}"
+    )
