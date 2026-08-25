@@ -205,18 +205,25 @@ async def count_users_by_domain(db: AsyncSession) -> list[dict[str, int | str]]:
         List of dicts with 'domain' (str) and 'count' (int) keys,
         ordered by count descending.
     """
-    # Use func.substr and func.instr for SQLite compatibility.
-    # For PostgreSQL, we use func.substr and func.position.
-    # We detect the database dialect and use the appropriate function.
+    # Postgres has no instr(); SQLite has no strpos(). The sandbox gate
+    # caught this live on 2026-08-25: green on the SQLite test database,
+    # 503 on the real Postgres. Pick the position function by dialect —
+    # what the old comment claimed and never did.
+    dialect_name = db.get_bind().dialect.name
+    if dialect_name == "postgresql":
+        at_position = func.strpos(User.email, "@")
+    else:
+        at_position = func.instr(User.email, "@")
+
     domain_expr = func.substr(
         User.email,
-        func.instr(User.email, "@") + 1,
+        at_position + 1,
     )
 
     stmt = (
         select(domain_expr.label("domain"), func.count().label("count"))
         .select_from(User)
-        .where(func.instr(User.email, "@") > 0)
+        .where(at_position > 0)
         .group_by(domain_expr)
         .order_by(func.count().desc())
     )
