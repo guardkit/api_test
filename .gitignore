@@ -53,3 +53,4 @@ large_tool_results/
 *.env
 !*.env.example
 !*.env.sample
+.guardkit/qav-shadow/queue.jsonl
