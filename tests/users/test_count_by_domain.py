@@ -313,15 +313,48 @@ class TestMinCountParameter:
         assert data == []
 
     # AC-002: min_count parameter type enforcement
-    async def test_min_count_invalid_type_returns_422(
+    async def test_min_count_non_integer_returns_400(
         self,
         async_client: AsyncClient,
     ) -> None:
-        """Test that a non-integer min_count value returns 422 validation error."""
+        """Test that a non-integer min_count value returns 400 Bad Request."""
         response = await async_client.get(
             "/users/count-by-domain?min_count=not_a_number"
         )
-        assert response.status_code == 422
+        assert response.status_code == 400
+
+    # AC-001: negative min_count rejected
+    async def test_min_count_negative_returns_400(
+        self,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that a negative min_count value returns 400 Bad Request."""
+        response = await async_client.get(
+            "/users/count-by-domain?min_count=-1"
+        )
+        assert response.status_code == 400
+
+    # AC-003: empty min_count rejected
+    async def test_min_count_empty_returns_400(
+        self,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that an empty min_count value returns 400 Bad Request."""
+        response = await async_client.get(
+            "/users/count-by-domain?min_count="
+        )
+        assert response.status_code == 400
+
+    # AC-004: min_count exceeding maximum rejected
+    async def test_min_count_exceeds_max_returns_400(
+        self,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that a min_count exceeding 10,000 returns 400 Bad Request."""
+        response = await async_client.get(
+            "/users/count-by-domain?min_count=10001"
+        )
+        assert response.status_code == 400
 
 
 class TestMinCountCrud:

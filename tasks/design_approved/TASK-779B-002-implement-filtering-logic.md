@@ -1,14 +1,15 @@
 ---
-id: TASK-779B-002
-title: Implement filtering logic
-task_type: feature
-parent_review: TASK-REV-779B
-feature_id: FEAT-779B
-wave: 2
-implementation_mode: task-work
 complexity: 6
 dependencies:
-  - TASK-779B-001
+- TASK-779B-001
+feature_id: FEAT-779B
+id: TASK-779B-002
+implementation_mode: task-work
+parent_review: TASK-REV-779B
+status: design_approved
+task_type: feature
+title: Implement filtering logic
+wave: 2
 ---
 
 ## Acceptance Criteria

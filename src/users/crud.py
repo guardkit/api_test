@@ -249,7 +249,7 @@ async def count_users_by_domain(
     )
 
     if min_count is not None:
-        stmt = stmt.having(count_expr >= min_count)
+        stmt = stmt.having(func.count() >= min_count)
 
     result = await db.execute(stmt)
     rows = result.fetchall()

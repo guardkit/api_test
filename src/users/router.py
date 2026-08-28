@@ -25,7 +25,11 @@ from src.users.schemas import (
     UserSummaryResponse,
     UserUpdate,
 )
-from src.users.validators import get_validated_user_id, validate_limit
+from src.users.validators import (
+    get_validated_min_count,
+    get_validated_user_id,
+    validate_limit,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -225,7 +229,7 @@ async def get_users_count_today(
     },
 )
 async def get_domain_count(
-    min_count: int | None = None,
+    min_count: int | None = Depends(get_validated_min_count),
     db: AsyncSession = Depends(get_db),
 ) -> list[DomainCountResponse]:
     """Get user count grouped by email domain.
@@ -235,6 +239,9 @@ async def get_domain_count(
 
     When ``min_count`` is provided, only domains with a count greater than or
     equal to the given value are returned.
+
+    Returns 400 if ``min_count`` is invalid (empty, non-integer, negative, or
+    exceeds the maximum allowed value of 10,000).
 
     Returns 503 if the database is unavailable.
     """
