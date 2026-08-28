@@ -1,0 +1,18 @@
+format_version: '2.0'
+task_id: TASK-BBE5-003
+registered_at:
+  sha: 0cd6f0e4c51351959dc40b280ba97b291ae659f5
+  date: '2026-08-28'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: user-deletion-api-AC-001
+  text: Deleting an existing user succeeds
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

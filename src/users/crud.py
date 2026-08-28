@@ -122,35 +122,48 @@ async def update_user(
 
 
 async def delete_user(db: AsyncSession, user_id: str) -> bool:
-    """Delete a user by ID.
+    """Soft-delete a user by ID.
+
+    Sets the ``deleted_at`` timestamp instead of removing the row,
+    so that count endpoints can exclude deleted users while preserving
+    audit history.
+
+    Returns False if the user is already soft-deleted (prevents double-delete).
 
     Args:
         db: The async database session.
         user_id: The UUID of the user to delete.
 
     Returns:
-        True if the user was deleted, False if not found.
+        True if the user was deleted, False if not found or already deleted.
     """
     user = await get_user(db, user_id)
     if user is None:
         return False
 
-    await db.delete(user)
+    # Prevent double-delete: if already soft-deleted, return False
+    if user.deleted_at is not None:
+        return False
+
+    from datetime import UTC, datetime
+
+    user.deleted_at = datetime.now(UTC)
+    db.add(user)
     await db.flush()
     await db.commit()
     return True
 
 
 async def count_users(db: AsyncSession) -> int:
-    """Count total number of users.
+    """Count total number of non-deleted users.
 
     Args:
         db: The async database session.
 
     Returns:
-        Total number of users in the database.
+        Total number of non-deleted users in the database.
     """
-    stmt = select(func.count()).select_from(User)
+    stmt = select(func.count()).select_from(User).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one() or 0
 
@@ -172,15 +185,14 @@ async def count_users_today(db: AsyncSession) -> int:
 
     # Build start-of-today and start-of-tomorrow as timezone-aware datetimes
     start_today = datetime(today.year, today.month, today.day, tzinfo=UTC)
-    start_tomorrow = datetime(
-        tomorrow.year, tomorrow.month, tomorrow.day, tzinfo=UTC
-    )
+    start_tomorrow = datetime(tomorrow.year, tomorrow.month, tomorrow.day, tzinfo=UTC)
 
     stmt = (
         select(func.count())
         .select_from(User)
         .where(User.created_at >= start_today)
         .where(User.created_at < start_tomorrow)
+        .where(User.deleted_at.is_(None))
     )
     result = await db.execute(stmt)
     return result.scalar_one() or 0
@@ -224,6 +236,7 @@ async def count_users_by_domain(db: AsyncSession) -> list[dict[str, int | str]]:
         select(domain_expr.label("domain"), func.count().label("count"))
         .select_from(User)
         .where(at_position > 0)
+        .where(User.deleted_at.is_(None))
         .group_by(domain_expr)
         .order_by(func.count().desc())
     )
@@ -233,9 +246,7 @@ async def count_users_by_domain(db: AsyncSession) -> list[dict[str, int | str]]:
     return [{"domain": row.domain, "count": row.count} for row in rows]
 
 
-async def get_recent_users(
-    db: AsyncSession, limit: int = 10
-) -> Sequence[User]:
+async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
     """Get the most recently created users in descending order.
 
     Args:

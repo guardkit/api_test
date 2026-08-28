@@ -1,0 +1,79 @@
+id: FEAT-BBE5
+name: "User Deletion API"
+description: "Implement DELETE /users/{user_id} endpoint with real-time count reflection"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-BBE5-001
+    name: "Create user deletion endpoint"
+    file_path: "tasks/backlog/user-deletion-api/TASK-BBE5-001-create-user-deletion-endpoint.md"
+    complexity: 5
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-BBE5-002
+    name: "Implement user deletion logic"
+    file_path: "tasks/backlog/user-deletion-api/TASK-BBE5-002-implement-user-deletion-logic.md"
+    complexity: 5
+    dependencies:
+      - TASK-BBE5-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-BBE5-003
+    name: "Update count endpoints for real-time reflection"
+    file_path: "tasks/backlog/user-deletion-api/TASK-BBE5-003-update-count-endpoints.md"
+    complexity: 4
+    dependencies:
+      - TASK-BBE5-002
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-BBE5-004
+    name: "Add deletion acceptance tests"
+    file_path: "tasks/backlog/user-deletion-api/TASK-BBE5-004-add-deletion-acceptance-tests.md"
+    complexity: 4
+    dependencies:
+      - TASK-BBE5-003
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-BBE5-005
+    name: "Update API documentation"
+    file_path: "tasks/backlog/user-deletion-api/TASK-BBE5-005-update-api-documentation.md"
+    complexity: 2
+    dependencies:
+      - TASK-BBE5-001
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+orchestration:
+  parallel_groups:
+    - - TASK-BBE5-001
+    - - TASK-BBE5-002
+    - - TASK-BBE5-003
+    - - TASK-BBE5-004
+    - - TASK-BBE5-005
+  estimated_duration_minutes: 255
+  recommended_parallel: 2
+
+feature_files:
+  - features/user-deletion-api/user-deletion-api.feature
+scenarios:
+  "Deleting an existing user succeeds":
+    verifier: "hurl"
+  "Deleting a non-existent user returns not found":
+    verifier: "hurl"
+  "Deleting an already deleted user returns not found":
+    verifier: "hurl"
+  "Deletion is reflected in real time across all count endpoints":
+    verifier: "hurl"

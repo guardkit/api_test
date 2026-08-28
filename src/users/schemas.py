@@ -94,7 +94,7 @@ class UserPublic(BaseModel):
                     "updated_at": "2024-01-01T00:00:00Z",
                 }
             ]
-        }
+        },
     )
 
     @field_validator("created_at", "updated_at", mode="before")
@@ -121,13 +121,7 @@ class UserCountResponse(BaseModel):
 
     count: int
 
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {"count": 42}
-            ]
-        }
-    )
+    model_config = ConfigDict(json_schema_extra={"examples": [{"count": 42}]})
 
 
 class UserSummaryResponse(BaseModel):

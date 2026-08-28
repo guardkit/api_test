@@ -6,13 +6,13 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from sqlalchemy import Boolean, String, func
+from sqlalchemy import Boolean, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.db.base import DeclarativeBase
 
 if TYPE_CHECKING:
-    from sqlalchemy.ext.asyncio import AsyncSession
+    pass
 
 
 class User(DeclarativeBase):
@@ -55,6 +55,11 @@ class User(DeclarativeBase):
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+        default=None,
     )
 
     def __repr__(self) -> str:

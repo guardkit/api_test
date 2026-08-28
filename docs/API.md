@@ -835,6 +835,71 @@ GET requests. It operates as follows:
 The middleware handles malformed `If-None-Match` headers gracefully by returning
 the full resource without triggering a 304 response.
 
+### Delete User
+
+#### DELETE /users/{user_id}
+
+Deletes a user by their UUID. This is a soft-delete operation that sets the
+``deleted_at`` timestamp rather than removing the row, preserving audit history.
+
+**Tags**: `users`
+
+**Authentication**: Required via ``X-Auth-Token`` header
+
+**Path Parameters**:
+
+| Parameter | Type   | Required | Description              |
+|-----------|--------|----------|--------------------------|
+| user_id   | string | Yes      | UUID of the user to delete |
+
+**Request Headers**:
+
+| Header          | Required | Description                          |
+|-----------------|----------|--------------------------------------|
+| X-Auth-Token    | Yes      | Authentication token for authorization |
+
+**Response**: `204 No Content`
+
+**Response Schema**:
+
+This endpoint returns no response body on success.
+
+**Example Request**:
+
+```bash
+curl -X DELETE http://localhost:8000/users/550e8400-e29b-41d4-a716-446655440000 \
+  -H "X-Auth-Token: dev-token"
+```
+
+**Example Response (204 No Content)**:
+
+```
+HTTP/1.1 204 No Content
+```
+
+**Status Codes**:
+
+- `204 No Content`: User deleted successfully. The user record is soft-deleted (``deleted_at`` is set) but not removed from the database.
+- `400 Bad Request`: Invalid user ID format. The user_id parameter must be a valid UUID.
+- `403 Forbidden`: Unauthorized. The request is missing a valid ``X-Auth-Token`` header or the token is incorrect.
+- `404 Not Found`: User not found. No user exists with the specified ID, or the user has already been soft-deleted.
+
+**Use Cases**:
+
+- Removing a user from the system while preserving audit history for compliance
+- Implementing user account deactivation workflows
+- Bulk cleanup of inactive user accounts
+
+**Implementation Notes**:
+
+- The delete operation is a soft-delete: the user row remains in the database with ``deleted_at`` set to the current timestamp
+- Count endpoints (such as ``GET /users/count``) exclude soft-deleted users from their totals
+- Attempting to delete an already soft-deleted user returns 404 (prevents double-delete)
+- Authentication is enforced via the ``X-Auth-Token`` header; missing or invalid tokens return 403
+- The user ID must be a valid UUID format; invalid formats return 400
+
+---
+
 ## Rate Limiting
 
 Currently, no rate limiting is enforced. This may be added in future versions.

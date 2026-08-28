@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
-from uuid import UUID
 
 import redis.asyncio
-from fastapi import APIRouter, Body, Depends, HTTPException, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from pydantic import EmailStr
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,9 +25,13 @@ from src.users.schemas import (
     UserSummaryResponse,
     UserUpdate,
 )
-from src.users.validators import get_validated_user_id, validate_limit, validate_user_id
+from src.users.validators import get_validated_user_id, validate_limit
 
 logger = logging.getLogger(__name__)
+
+# Authorization token expected in the X-Auth-Token header.
+# In production this would be validated against a real auth provider.
+AUTH_TOKEN = "dev-token"
 
 CACHE_TTL = 300  # 5 minutes
 REDIS_URL = "redis://localhost:6379/0"
@@ -83,6 +86,27 @@ async def _set_cached_summary(user_id: str, summary: dict) -> None:
         await client.close()
     except Exception:
         logger.debug("Cache write failed for user %s", user_id)
+
+
+def require_auth(request: Request) -> None:
+    """FastAPI dependency that enforces authentication on protected endpoints.
+
+    Checks for the ``X-Auth-Token`` header and validates it against the
+    configured auth token.  Returns a 403 response when the header is
+    missing or incorrect.
+
+    Args:
+        request: The incoming FastAPI request.
+
+    Raises:
+        HTTPException: 403 Forbidden if the request is unauthorized.
+    """
+    token = request.headers.get("X-Auth-Token")
+    if not token or token != AUTH_TOKEN:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized: valid authentication token required",
+        )
 
 
 router = APIRouter(prefix="/users", redirect_slashes=False)
@@ -351,7 +375,9 @@ async def get_user(
     try:
         user = await crud.get_user(db, validated_user_id)
     except SQLAlchemyError as exc:
-        logger.error("Database error while fetching user %s: %s", validated_user_id, exc)
+        logger.error(
+            "Database error while fetching user %s: %s", validated_user_id, exc
+        )
         raise HTTPException(
             status_code=503,
             detail=f"Database unavailable: {exc}",
@@ -504,18 +530,23 @@ async def delete_user_by_email(
     responses={
         204: {"description": "User deleted successfully"},
         400: {"description": "Invalid user ID format"},
+        403: {"description": "Unauthorized: valid authentication token required"},
         404: {"description": "User not found"},
     },
 )
 async def delete_user(
+    request: Request,
     validated_user_id: str = Depends(get_validated_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     """Delete user.
 
+    Requires authentication via the ``X-Auth-Token`` header.
     Returns 400 if the user ID format is invalid.
+    Returns 403 if the request is unauthorized.
     Returns 404 if no user has that ID.
     """
+    require_auth(request)
     deleted = await crud.delete_user(db, validated_user_id)
     if not deleted:
         raise UserNotFoundError(user_id=validated_user_id)
