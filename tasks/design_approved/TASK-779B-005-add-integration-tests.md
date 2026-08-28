@@ -1,15 +1,16 @@
 ---
-id: TASK-779B-005
-title: Add integration tests
-task_type: testing
-parent_review: TASK-REV-779B
-feature_id: FEAT-779B
-wave: 4
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-779B-002
-  - TASK-779B-003
+- TASK-779B-002
+- TASK-779B-003
+feature_id: FEAT-779B
+id: TASK-779B-005
+implementation_mode: task-work
+parent_review: TASK-REV-779B
+status: design_approved
+task_type: testing
+title: Add integration tests
+wave: 4
 ---
 
 ## Acceptance Criteria
