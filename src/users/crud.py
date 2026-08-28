@@ -163,11 +163,7 @@ async def count_users(db: AsyncSession) -> int:
     Returns:
         Total number of non-deleted users in the database.
     """
-    stmt = (
-        select(func.count())
-        .select_from(User)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(func.count()).select_from(User).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one() or 0
 
@@ -189,9 +185,7 @@ async def count_users_today(db: AsyncSession) -> int:
 
     # Build start-of-today and start-of-tomorrow as timezone-aware datetimes
     start_today = datetime(today.year, today.month, today.day, tzinfo=UTC)
-    start_tomorrow = datetime(
-        tomorrow.year, tomorrow.month, tomorrow.day, tzinfo=UTC
-    )
+    start_tomorrow = datetime(tomorrow.year, tomorrow.month, tomorrow.day, tzinfo=UTC)
 
     stmt = (
         select(func.count())
@@ -252,9 +246,7 @@ async def count_users_by_domain(db: AsyncSession) -> list[dict[str, int | str]]:
     return [{"domain": row.domain, "count": row.count} for row in rows]
 
 
-async def get_recent_users(
-    db: AsyncSession, limit: int = 10
-) -> Sequence[User]:
+async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
     """Get the most recently created users in descending order.
 
     Args:

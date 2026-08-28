@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, Query
+from fastapi import HTTPException
 
 MAX_LIMIT = 100
 
@@ -34,17 +34,13 @@ def validate_user_id(user_id: str) -> str:
         raise ValueError("User ID must not be empty")
 
     if not _VALID_ID_PATTERN.match(user_id):
-        raise ValueError(
-            f"User ID contains invalid characters: '{user_id}'"
-        )
+        raise ValueError(f"User ID contains invalid characters: '{user_id}'")
 
     # Also validate that it's a valid UUID format
     try:
         UUID(user_id)
     except ValueError:
-        raise ValueError(
-            f"User ID must be a valid UUID: '{user_id}'"
-        ) from None
+        raise ValueError(f"User ID must be a valid UUID: '{user_id}'") from None
 
     return user_id
 

@@ -2,7 +2,13 @@
 
 from src.users.exceptions import UserAlreadyExistsError, UserNotFoundError
 from src.users.models import User
-from src.users.schemas import UserCountResponse, UserCreate, UserList, UserPublic, UserUpdate
+from src.users.schemas import (
+    UserCountResponse,
+    UserCreate,
+    UserList,
+    UserPublic,
+    UserUpdate,
+)
 
 __all__ = [
     "User",

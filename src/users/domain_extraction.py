@@ -45,7 +45,7 @@ def extract_domain(email: str) -> str | None:
     if at_index == -1:
         return None
 
-    domain = email_stripped[at_index + 1:]
+    domain = email_stripped[at_index + 1 :]
 
     # Validate domain is not empty
     if not domain:
