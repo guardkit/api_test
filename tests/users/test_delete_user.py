@@ -90,6 +90,45 @@ class TestDeleteUserById:
         assert "unauthorized" in data["detail"].lower()
 
     @pytest.mark.asyncio
+    async def test_delete_user_double_delete(
+        self,
+        async_client: AsyncClient,
+        override_get_db: None,
+        db_session: AsyncSession,
+    ) -> None:
+        """Test that deleting the same user twice returns 404 on the second attempt.
+
+        AC-003: DELETE /users/{user_id} twice returns 404 on second attempt.
+        The first delete succeeds (204, soft-delete), the second returns 404.
+        """
+        # Create a user to delete
+        user_in = UserCreate(
+            email="double-delete@example.com", full_name="Double Delete"
+        )
+        user = await crud.create_user(db_session, user_in)
+        await db_session.flush()
+        await db_session.refresh(user)
+
+        # First delete — should succeed with 204
+        response1 = await async_client.delete(
+            f"/users/{user.id}", headers={"X-Auth-Token": AUTH_TOKEN}
+        )
+        assert response1.status_code == HTTPStatus.NO_CONTENT
+
+        # Verify user is soft-deleted
+        existing = await crud.get_user(db_session, user.id)
+        assert existing is not None
+        assert existing.deleted_at is not None
+
+        # Second delete — user already soft-deleted, expect 404
+        response2 = await async_client.delete(
+            f"/users/{user.id}", headers={"X-Auth-Token": AUTH_TOKEN}
+        )
+        assert response2.status_code == HTTPStatus.NOT_FOUND
+        data = response2.json()
+        assert "not found" in data["detail"].lower()
+
+    @pytest.mark.asyncio
     async def test_delete_user_invalid_id_format(
         self,
         async_client: AsyncClient,

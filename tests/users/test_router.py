@@ -555,11 +555,11 @@ class TestDeleteUserByEmail:
         )
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-        # Second delete succeeds (soft-delete is idempotent)
+        # Second delete returns 404 (user already soft-deleted)
         response = await async_client.delete(
             "/users/by-email", params={"email": "deletetwice@example.com"}
         )
-        assert response.status_code == HTTPStatus.NO_CONTENT
+        assert response.status_code == HTTPStatus.NOT_FOUND
 
     @pytest.mark.asyncio
     async def test_by_email_delete_malformed_returns_422(

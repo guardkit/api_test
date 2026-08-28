@@ -128,15 +128,21 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
     so that count endpoints can exclude deleted users while preserving
     audit history.
 
+    Returns False if the user is already soft-deleted (prevents double-delete).
+
     Args:
         db: The async database session.
         user_id: The UUID of the user to delete.
 
     Returns:
-        True if the user was deleted, False if not found.
+        True if the user was deleted, False if not found or already deleted.
     """
     user = await get_user(db, user_id)
     if user is None:
+        return False
+
+    # Prevent double-delete: if already soft-deleted, return False
+    if user.deleted_at is not None:
         return False
 
     from datetime import UTC, datetime
