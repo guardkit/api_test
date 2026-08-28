@@ -1,0 +1,23 @@
+format_version: '2.0'
+task_id: TASK-779B-002
+registered_at:
+  sha: 11b9e90f1735b5bfad386f951f36c987a82e4ce6
+  date: '2026-08-28'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: add-min-count-query-parameter-to-get-users-count-by-domain-AC-001
+  text: Providing a valid min_count filters domains below that count
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+- id: add-min-count-query-parameter-to-get-users-count-by-domain-AC-002
+  text: Omitting the min_count parameter returns all domains
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
