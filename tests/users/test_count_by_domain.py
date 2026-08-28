@@ -5,13 +5,13 @@ from __future__ import annotations
 from http import HTTPStatus
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.db.dependencies import get_db as app_get_db
+from src.main import app
 from src.users import crud
 from src.users.schemas import DomainCountResponse, UserCreate
-from src.main import app
-from src.db.dependencies import get_db as app_get_db
 
 
 class TestCountByDomainCrud:
@@ -292,7 +292,9 @@ class TestCountByDomainMinCountFiltering:
                 )
             await db_session.commit()
 
-            response = await client.get("/users/count-by-domain", params={"min_count": "3"})
+            response = await client.get(
+                "/users/count-by-domain", params={"min_count": "3"}
+            )
 
         assert response.status_code == HTTPStatus.OK
         data = response.json()
@@ -301,7 +303,6 @@ class TestCountByDomainMinCountFiltering:
         assert data[1] == {"domain": "example.com", "count": 3}
 
         app.dependency_overrides.clear()
-        assert result[1]["count"] == 1
 
 
 class TestCountByDomainEndpoint:
