@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.users import crud
 from src.users.schemas import DomainCountResponse, UserCreate
+from src.main import app
+from src.db.dependencies import get_db as app_get_db
 
 
 class TestCountByDomainCrud:
@@ -98,6 +100,207 @@ class TestCountByDomainCrud:
         assert result[0]["count"] == 2
         # another-domain.org has 1 user
         assert result[1]["domain"] == "another-domain.org"
+
+
+class TestCountByDomainMinCountFiltering:
+    """Tests for min_count filtering behavior (AC-002, AC-003)."""
+
+    # AC-002: Filter is applied when min_count is provided
+    async def test_count_by_domain_with_min_count_filters(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that min_count filters out domains below the threshold."""
+        # 3 users from example.com
+        for i in range(3):
+            user_in = UserCreate(
+                email=f"user{i}@example.com",
+                full_name=f"User {i}",
+            )
+            await crud.create_user(db_session, user_in)
+
+        # 5 users from other.org
+        for i in range(5):
+            user_in = UserCreate(
+                email=f"user{i}@other.org",
+                full_name=f"User {i}",
+            )
+            await crud.create_user(db_session, user_in)
+
+        # 1 user from third.net
+        user_in = UserCreate(
+            email="single@third.net",
+            full_name="Single User",
+        )
+        await crud.create_user(db_session, user_in)
+
+        # With min_count=3, only domains with >= 3 users should be returned
+        result = await crud.count_users_by_domain(db_session, min_count=3)
+
+        assert len(result) == 2
+        domains = {r["domain"] for r in result}
+        assert "other.org" in domains
+        assert "example.com" in domains
+        assert "third.net" not in domains
+
+        # Verify ordering is preserved
+        assert result[0]["domain"] == "other.org"
+        assert result[0]["count"] == 5
+        assert result[1]["domain"] == "example.com"
+        assert result[1]["count"] == 3
+
+    # AC-002: min_count=0 returns all domains
+    async def test_count_by_domain_min_count_zero_returns_all(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that min_count=0 returns all domains (no filtering)."""
+        for i in range(2):
+            user_in = UserCreate(
+                email=f"user{i}@example.com",
+                full_name=f"User {i}",
+            )
+            await crud.create_user(db_session, user_in)
+
+        user_in = UserCreate(
+            email="single@other.org",
+            full_name="Single",
+        )
+        await crud.create_user(db_session, user_in)
+
+        result = await crud.count_users_by_domain(db_session, min_count=0)
+
+        assert len(result) == 2
+        assert result[0]["domain"] == "example.com"
+        assert result[0]["count"] == 2
+        assert result[1]["domain"] == "other.org"
+        assert result[1]["count"] == 1
+
+    # AC-002: min_count that excludes all domains returns empty list
+    async def test_count_by_domain_min_count_excludes_all(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that min_count higher than any domain count returns empty list."""
+        for i in range(2):
+            user_in = UserCreate(
+                email=f"user{i}@example.com",
+                full_name=f"User {i}",
+            )
+            await crud.create_user(db_session, user_in)
+
+        result = await crud.count_users_by_domain(db_session, min_count=100)
+
+        assert result == []
+
+    # AC-003: All domains returned when min_count is omitted
+    async def test_count_by_domain_without_min_count_returns_all(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that omitting min_count returns all domains unfiltered."""
+        for i in range(3):
+            user_in = UserCreate(
+                email=f"user{i}@example.com",
+                full_name=f"User {i}",
+            )
+            await crud.create_user(db_session, user_in)
+
+        for i in range(5):
+            user_in = UserCreate(
+                email=f"user{i}@other.org",
+                full_name=f"User {i}",
+            )
+            await crud.create_user(db_session, user_in)
+
+        user_in = UserCreate(
+            email="single@third.net",
+            full_name="Single",
+        )
+        await crud.create_user(db_session, user_in)
+
+        # Call without min_count (None)
+        result = await crud.count_users_by_domain(db_session, min_count=None)
+
+        assert len(result) == 3
+        assert result[0]["domain"] == "other.org"
+        assert result[0]["count"] == 5
+        assert result[1]["domain"] == "example.com"
+        assert result[1]["count"] == 3
+        assert result[2]["domain"] == "third.net"
+        assert result[2]["count"] == 1
+
+    # AC-003: API endpoint returns all domains without min_count
+    async def test_api_count_by_domain_without_min_count(
+        self,
+        db_session: AsyncSession,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Test the API endpoint returns all domains when min_count is not provided."""
+        # Override the db dependency
+        app.dependency_overrides[app_get_db] = lambda: db_session
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            # Create test data
+            for i in range(3):
+                await crud.create_user(
+                    db_session,
+                    UserCreate(email=f"user{i}@example.com", full_name=f"User {i}"),
+                )
+            for i in range(5):
+                await crud.create_user(
+                    db_session,
+                    UserCreate(email=f"user{i}@other.org", full_name=f"User {i}"),
+                )
+            await db_session.commit()
+
+            response = await client.get("/users/count-by-domain")
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert len(data) == 2
+        assert data[0] == {"domain": "other.org", "count": 5}
+        assert data[1] == {"domain": "example.com", "count": 3}
+
+        app.dependency_overrides.clear()
+
+    # AC-003: API endpoint applies min_count filter
+    async def test_api_count_by_domain_with_min_count(
+        self,
+        db_session: AsyncSession,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Test the API endpoint filters domains when min_count is provided."""
+        app.dependency_overrides[app_get_db] = lambda: db_session
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            # Create test data
+            for i in range(3):
+                await crud.create_user(
+                    db_session,
+                    UserCreate(email=f"user{i}@example.com", full_name=f"User {i}"),
+                )
+            for i in range(5):
+                await crud.create_user(
+                    db_session,
+                    UserCreate(email=f"user{i}@other.org", full_name=f"User {i}"),
+                )
+            for i in range(1):
+                await crud.create_user(
+                    db_session,
+                    UserCreate(email=f"user{i}@third.net", full_name=f"User {i}"),
+                )
+            await db_session.commit()
+
+            response = await client.get("/users/count-by-domain", params={"min_count": "3"})
+
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert len(data) == 2
+        assert data[0] == {"domain": "other.org", "count": 5}
+        assert data[1] == {"domain": "example.com", "count": 3}
+
+        app.dependency_overrides.clear()
         assert result[1]["count"] == 1
 
 
@@ -329,9 +532,7 @@ class TestMinCountParameter:
         async_client: AsyncClient,
     ) -> None:
         """Test that a negative min_count value returns 400 Bad Request."""
-        response = await async_client.get(
-            "/users/count-by-domain?min_count=-1"
-        )
+        response = await async_client.get("/users/count-by-domain?min_count=-1")
         assert response.status_code == 400
 
     # AC-003: empty min_count rejected
@@ -340,9 +541,7 @@ class TestMinCountParameter:
         async_client: AsyncClient,
     ) -> None:
         """Test that an empty min_count value returns 400 Bad Request."""
-        response = await async_client.get(
-            "/users/count-by-domain?min_count="
-        )
+        response = await async_client.get("/users/count-by-domain?min_count=")
         assert response.status_code == 400
 
     # AC-004: min_count exceeding maximum rejected
@@ -351,9 +550,7 @@ class TestMinCountParameter:
         async_client: AsyncClient,
     ) -> None:
         """Test that a min_count exceeding 10,000 returns 400 Bad Request."""
-        response = await async_client.get(
-            "/users/count-by-domain?min_count=10001"
-        )
+        response = await async_client.get("/users/count-by-domain?min_count=10001")
         assert response.status_code == 400
 
 
