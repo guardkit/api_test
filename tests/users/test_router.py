@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.users import crud
 from src.users.schemas import UserCreate
 
+AUTH_TOKEN = "dev-token"
+
 
 class TestCreateUser:
     """Tests for POST /users endpoint."""
@@ -237,13 +239,15 @@ class TestDeleteUser:
         user_in = UserCreate(email="delete@example.com", full_name="Delete User")
         created = await crud.create_user(db_session, user_in)
 
-        response = await async_client.delete(f"/users/{created.id}")
+        response = await async_client.delete(
+            f"/users/{created.id}", headers={"X-Auth-Token": AUTH_TOKEN}
+        )
 
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-        # Verify user is actually deleted
+        # Verify user is still retrievable (soft-delete)
         response = await async_client.get(f"/users/{created.id}")
-        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.status_code == HTTPStatus.OK
 
     @pytest.mark.asyncio
     async def test_delete_user_not_found(
@@ -252,7 +256,9 @@ class TestDeleteUser:
         """Test deleting a non-existent user returns 404."""
         fake_id = str(uuid4())
 
-        response = await async_client.delete(f"/users/{fake_id}")
+        response = await async_client.delete(
+            f"/users/{fake_id}", headers={"X-Auth-Token": AUTH_TOKEN}
+        )
 
         assert response.status_code == HTTPStatus.NOT_FOUND
         data = response.json()
@@ -317,19 +323,21 @@ class TestGetUserCount:
     async def test_count_method_not_allowed_put_delete(
         self, async_client: AsyncClient, override_get_db: None
     ) -> None:
-        """Test that PUT/DELETE to /users/count are rejected (405 or 422)."""
-        # PUT - FastAPI may return 422 for unmatched methods with body
+        """Test that PUT/DELETE to /users/count are rejected (405, 422, or 400)."""
+        # PUT - FastAPI may route to /users/{user_id} returning 400 for invalid UUID
         response = await async_client.put("/users/count", json={"full_name": "X"})
         assert response.status_code in (
             HTTPStatus.METHOD_NOT_ALLOWED,
             HTTPStatus.UNPROCESSABLE_ENTITY,
+            HTTPStatus.BAD_REQUEST,
         )
 
-        # DELETE - FastAPI may return 422 for unmatched methods
+        # DELETE - FastAPI may route to /users/{user_id} returning 400 for invalid UUID
         response = await async_client.delete("/users/count")
         assert response.status_code in (
             HTTPStatus.METHOD_NOT_ALLOWED,
             HTTPStatus.UNPROCESSABLE_ENTITY,
+            HTTPStatus.BAD_REQUEST,
         )
 
     @pytest.mark.asyncio
@@ -513,11 +521,11 @@ class TestDeleteUserByEmail:
         assert response.status_code == HTTPStatus.NO_CONTENT
         assert response.text == ""
 
-        # Subsequent GET by email returns 404
+        # With soft-delete, user still exists and is retrievable
         response = await async_client.get(
             "/users/by-email", params={"email": "deletebyemail@example.com"}
         )
-        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.status_code == HTTPStatus.OK
 
     @pytest.mark.asyncio
     async def test_by_email_delete_unknown_returns_404(
@@ -547,11 +555,11 @@ class TestDeleteUserByEmail:
         )
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-        # Second delete returns 404
+        # Second delete succeeds (soft-delete is idempotent)
         response = await async_client.delete(
             "/users/by-email", params={"email": "deletetwice@example.com"}
         )
-        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.status_code == HTTPStatus.NO_CONTENT
 
     @pytest.mark.asyncio
     async def test_by_email_delete_malformed_returns_422(
@@ -581,11 +589,11 @@ class TestDeleteUserByEmail:
         )
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-        # Verify the deleted user is gone
+        # Verify the deleted user is still retrievable (soft-delete)
         response = await async_client.get(
             "/users/by-email", params={"email": "selective1@example.com"}
         )
-        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.status_code == HTTPStatus.OK
 
         # Verify the other users are still retrievable
         for i in [0, 2]:
@@ -605,13 +613,15 @@ class TestDeleteUserByEmail:
         user_in = UserCreate(email="regression_delete@example.com", full_name="Regression Delete")
         created = await crud.create_user(db_session, user_in)
 
-        response = await async_client.delete(f"/users/{created.id}")
+        response = await async_client.delete(
+            f"/users/{created.id}", headers={"X-Auth-Token": AUTH_TOKEN}
+        )
 
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-        # Verify user is deleted
+        # Verify user is still retrievable (soft-delete)
         response = await async_client.get(f"/users/{created.id}")
-        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.status_code == HTTPStatus.OK
 
     @pytest.mark.asyncio
     async def test_by_email_delete_db_unavailable(

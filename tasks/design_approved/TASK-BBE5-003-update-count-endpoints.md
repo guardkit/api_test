@@ -1,14 +1,15 @@
 ---
-id: TASK-BBE5-003
-title: Update count endpoints for real-time reflection
-task_type: feature
-parent_review: TASK-REV-BBE5
-feature_id: FEAT-BBE5
-wave: 3
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-BBE5-002
+- TASK-BBE5-002
+feature_id: FEAT-BBE5
+id: TASK-BBE5-003
+implementation_mode: task-work
+parent_review: TASK-REV-BBE5
+status: design_approved
+task_type: feature
+title: Update count endpoints for real-time reflection
+wave: 3
 ---
 
 ## Description

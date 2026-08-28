@@ -122,7 +122,11 @@ async def update_user(
 
 
 async def delete_user(db: AsyncSession, user_id: str) -> bool:
-    """Delete a user by ID.
+    """Soft-delete a user by ID.
+
+    Sets the ``deleted_at`` timestamp instead of removing the row,
+    so that count endpoints can exclude deleted users while preserving
+    audit history.
 
     Args:
         db: The async database session.
@@ -135,22 +139,29 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
     if user is None:
         return False
 
-    await db.delete(user)
+    from datetime import UTC, datetime
+
+    user.deleted_at = datetime.now(UTC)
+    db.add(user)
     await db.flush()
     await db.commit()
     return True
 
 
 async def count_users(db: AsyncSession) -> int:
-    """Count total number of users.
+    """Count total number of non-deleted users.
 
     Args:
         db: The async database session.
 
     Returns:
-        Total number of users in the database.
+        Total number of non-deleted users in the database.
     """
-    stmt = select(func.count()).select_from(User)
+    stmt = (
+        select(func.count())
+        .select_from(User)
+        .where(User.deleted_at.is_(None))
+    )
     result = await db.execute(stmt)
     return result.scalar_one() or 0
 
@@ -181,6 +192,7 @@ async def count_users_today(db: AsyncSession) -> int:
         .select_from(User)
         .where(User.created_at >= start_today)
         .where(User.created_at < start_tomorrow)
+        .where(User.deleted_at.is_(None))
     )
     result = await db.execute(stmt)
     return result.scalar_one() or 0
@@ -224,6 +236,7 @@ async def count_users_by_domain(db: AsyncSession) -> list[dict[str, int | str]]:
         select(domain_expr.label("domain"), func.count().label("count"))
         .select_from(User)
         .where(at_position > 0)
+        .where(User.deleted_at.is_(None))
         .group_by(domain_expr)
         .order_by(func.count().desc())
     )

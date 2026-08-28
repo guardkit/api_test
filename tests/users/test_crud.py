@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.users import crud
-from src.users.exceptions import UserAlreadyExistsError, UserNotFoundError
-from src.users.models import User
+from src.users.exceptions import UserAlreadyExistsError
 from src.users.schemas import UserCreate, UserUpdate
 
 
@@ -205,9 +202,10 @@ class TestDeleteUser:
 
         assert result is True
 
-        # Verify user is deleted
+        # Verify user is soft-deleted (deleted_at is set, user still exists)
         user = await crud.get_user(db_session, created.id)
-        assert user is None
+        assert user is not None
+        assert user.deleted_at is not None
 
     async def test_delete_user_not_found(self, db_session: AsyncSession) -> None:
         """Test deleting a non-existent user."""
