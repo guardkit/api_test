@@ -98,8 +98,132 @@ class TestCountByDomainCrud:
         # sub.domain.com has 2 users
         assert result[0]["domain"] == "sub.domain.com"
         assert result[0]["count"] == 2
-        # another-domain.org has 1 user
-        assert result[1]["domain"] == "another-domain.org"
+
+
+class TestCountByDomainMinCount:
+    """Tests for min_count filtering in count-by-domain endpoint."""
+
+    # AC-001: Filter domain counts to include only those with >= min_count users
+    async def test_count_by_domain_min_count_filters_low_domains(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that min_count filters out domains below the threshold."""
+        # 5 users from example.com
+        for i in range(5):
+            user_in = UserCreate(
+                email=f"user{i}@example.com",
+                full_name=f"User {i}",
+            )
+            await crud.create_user(db_session, user_in)
+
+        # 2 users from other.org
+        for i in range(2):
+            user_in = UserCreate(
+                email=f"user{i}@other.org",
+                full_name=f"User {i}",
+            )
+            await crud.create_user(db_session, user_in)
+
+        # 1 user from third.net
+        user_in = UserCreate(
+            email="single@third.net",
+            full_name="Single User",
+        )
+        await crud.create_user(db_session, user_in)
+
+        result = await crud.count_users_by_domain(db_session, min_count=3)
+        # Only example.com (5 users) meets min_count=3
+        assert len(result) == 1
+        assert result[0]["domain"] == "example.com"
+        assert result[0]["count"] == 5
+
+    # AC-002: Ensure the filter is applied correctly when min_count is provided
+    async def test_count_by_domain_min_count_exact_match(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that min_count includes domains with exactly the threshold count."""
+        # 3 users from example.com
+        for i in range(3):
+            user_in = UserCreate(
+                email=f"user{i}@example.com",
+                full_name=f"User {i}",
+            )
+            await crud.create_user(db_session, user_in)
+
+        # 5 users from other.org
+        for i in range(5):
+            user_in = UserCreate(
+                email=f"user{i}@other.org",
+                full_name=f"User {i}",
+            )
+            await crud.create_user(db_session, user_in)
+
+        result = await crud.count_users_by_domain(db_session, min_count=3)
+        # Both domains meet min_count=3 (3 >= 3, 5 >= 3)
+        assert len(result) == 2
+        assert result[0]["domain"] == "other.org"
+        assert result[0]["count"] == 5
+        assert result[1]["domain"] == "example.com"
+        assert result[1]["count"] == 3
+
+    # AC-002: Ensure the filter is applied correctly when min_count is provided
+    async def test_count_by_domain_min_count_no_matches(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that min_count returns empty list when no domains meet threshold."""
+        # 1 user from example.com
+        user_in = UserCreate(
+            email="user@example.com",
+            full_name="User",
+        )
+        await crud.create_user(db_session, user_in)
+
+        result = await crud.count_users_by_domain(db_session, min_count=10)
+        assert result == []
+
+    # AC-003: Ensure all domains are returned when min_count is omitted
+    async def test_count_by_domain_no_min_count_returns_all(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that omitting min_count returns all domains regardless of count."""
+        # 10 users from example.com
+        for i in range(10):
+            user_in = UserCreate(
+                email=f"user{i}@example.com",
+                full_name=f"User {i}",
+            )
+            await crud.create_user(db_session, user_in)
+
+        # 1 user from other.org
+        user_in = UserCreate(
+            email="single@other.org",
+            full_name="Single User",
+        )
+        await crud.create_user(db_session, user_in)
+
+        result = await crud.count_users_by_domain(db_session, min_count=None)
+        assert len(result) == 2
+        assert result[0]["domain"] == "example.com"
+        assert result[0]["count"] == 10
+        assert result[1]["domain"] == "other.org"
+        assert result[1]["count"] == 1
+
+    # AC-003: Ensure all domains are returned when min_count is omitted (zero)
+    async def test_count_by_domain_min_count_zero_returns_all(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that min_count=0 returns all domains."""
+        # 1 user from example.com
+        user_in = UserCreate(
+            email="user@example.com",
+            full_name="User",
+        )
+        await crud.create_user(db_session, user_in)
+
+        result = await crud.count_users_by_domain(db_session, min_count=0)
+        assert len(result) == 1
+        assert result[0]["domain"] == "example.com"
+        assert result[0]["count"] == 1
 
 
 class TestCountByDomainMinCountFiltering:
