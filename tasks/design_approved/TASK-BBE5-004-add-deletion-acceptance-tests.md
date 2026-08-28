@@ -1,14 +1,15 @@
 ---
-id: TASK-BBE5-004
-title: Add deletion acceptance tests
-task_type: testing
-parent_review: TASK-REV-BBE5
-feature_id: FEAT-BBE5
-wave: 4
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-BBE5-003
+- TASK-BBE5-003
+feature_id: FEAT-BBE5
+id: TASK-BBE5-004
+implementation_mode: task-work
+parent_review: TASK-REV-BBE5
+status: design_approved
+task_type: testing
+title: Add deletion acceptance tests
+wave: 4
 ---
 
 ## Description

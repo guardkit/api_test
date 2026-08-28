@@ -20,6 +20,9 @@ dev = [
     "mypy>=1.0.0",
 ]
 
+[tool.ruff]
+exclude = ["*.hurl"]
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
 
