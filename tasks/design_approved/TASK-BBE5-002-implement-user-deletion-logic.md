@@ -1,14 +1,15 @@
 ---
-id: TASK-BBE5-002
-title: Implement user deletion logic
-task_type: feature
-parent_review: TASK-REV-BBE5
-feature_id: FEAT-BBE5
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-BBE5-001
+- TASK-BBE5-001
+feature_id: FEAT-BBE5
+id: TASK-BBE5-002
+implementation_mode: task-work
+parent_review: TASK-REV-BBE5
+status: design_approved
+task_type: feature
+title: Implement user deletion logic
+wave: 2
 ---
 
 ## Description
