@@ -1,0 +1,39 @@
+feature: user-deletion-api
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: DELETE
+  path: /users/{user_id}
+scenarios:
+- title: Deleting an existing user succeeds
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: When you delete a user that exists, the system removes them and the total count of users
+    decreases by one.
+- title: Deleting a non-existent user returns not found
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: Trying to delete a user that does not exist results in a failure that indicates the
+    user was not found.
+- title: Deleting an already deleted user returns not found
+  tags:
+  - '@negative'
+  sentence: If you try to delete a user that has already been removed, the system still reports
+    that the user was not found.
+- title: Deletion is reflected in real time across all count endpoints
+  tags:
+  - '@edge-case'
+  sentence: Once a user is deleted, every count endpoint immediately shows the updated,
+    lower total without any delay.
+assumptions:
+- id: ASSUM-001
+  text: The system currently has at least one count endpoint that returns the total number of users.
+  basis: Stated in problem statement; no contradictory information in input
+- id: ASSUM-002
+  text: The user deletion is a hard delete rather than a soft delete.
+  basis: Inferred from 'permanent' in problem statement; soft-delete would require different
+    implementation
+- id: ASSUM-003
+  text: The count endpoints are expected to reflect deletions in near real-time.
+  basis: Inferred from 'real time without caching delays' in problem statement

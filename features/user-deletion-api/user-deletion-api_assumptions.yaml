@@ -1,0 +1,25 @@
+feature: User Deletion API
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: Deleting an existing user succeeds
+  assumption: The system currently has at least one count endpoint that returns the
+    total number of users.
+  confidence: low
+  basis: Stated in problem statement; no contradictory information in input
+  human_response: deferred
+- id: ASSUM-002
+  scenario: Deleting an existing user succeeds
+  assumption: The user deletion is a hard delete rather than a soft delete.
+  confidence: low
+  basis: Inferred from 'permanent' in problem statement; soft-delete would require
+    different implementation
+  human_response: deferred
+- id: ASSUM-003
+  scenario: Deletion is reflected in real time across all count endpoints
+  assumption: The count endpoints are expected to reflect deletions in near real-time.
+  confidence: low
+  basis: Inferred from 'real time without caching delays' in problem statement
+  human_response: deferred
