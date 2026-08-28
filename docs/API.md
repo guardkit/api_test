@@ -553,6 +553,11 @@ among registered users.
 
 **Authentication**: None required
 
+**Query Parameters**:
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `min_count` | integer | No | None | Minimum number of users a domain must have to be included in the response. Domains with fewer users than `min_count` are excluded. Must be a non-negative integer not exceeding 10,000. Omit or set to `0` to return all domains. |
+
 **Response**: `200 OK`
 
 **Response Schema**:
@@ -598,8 +603,47 @@ curl -X GET http://localhost:8000/users/count-by-domain
 []
 ```
 
+**Example Request (With `min_count` Filter)**:
+```bash
+curl -X GET "http://localhost:8000/users/count-by-domain?min_count=3"
+```
+
+**Example Response (With `min_count=3` — Filtered Domains)**:
+```json
+[
+  {
+    "domain": "example.com",
+    "count": 5
+  },
+  {
+    "domain": "test.org",
+    "count": 3
+  }
+]
+```
+Note: Domains with fewer than 3 users are excluded from the response.
+
+**Valid `min_count` Examples**:
+| Value | Behavior |
+|-------|----------|
+| `0` | Returns all domains (no filtering) |
+| `1` | Returns domains with at least 1 user |
+| `5` | Returns only domains with 5 or more users |
+| `10000` | Returns only domains with 10,000 or more users (maximum allowed) |
+| Omitted | Returns all domains (no filtering, same as `min_count=0`) |
+
+**Invalid `min_count` Examples**:
+| Value | HTTP Status | Error Detail |
+|-------|-------------|--------------|
+| `-1` | `400 Bad Request` | `min_count must not be negative` |
+| `10001` | `400 Bad Request` | `min_count must not exceed 10000` |
+| `abc` | `400 Bad Request` | `min_count must be a valid integer` |
+| (empty string) | `400 Bad Request` | `min_count must not be empty` |
+| `3.5` | `400 Bad Request` | `min_count must be a valid integer` |
+
 **Status Codes**:
 - `200 OK`: Domain counts returned successfully. The response body is a JSON array of domain/count objects.
+- `400 Bad Request`: The `min_count` query parameter is invalid (empty, non-integer, negative, or exceeds 10,000).
 - `405 Method Not Allowed`: HTTP method not allowed (only GET is supported).
 - `503 Service Unavailable`: Database error when querying user data.
 
@@ -613,6 +657,9 @@ curl -X GET http://localhost:8000/users/count-by-domain
 - Malformed emails (without @) are filtered out
 - Results are ordered by count in descending order
 - The domain extraction uses case-insensitive normalization
+- When `min_count` is provided, only domains with a count >= `min_count` are included
+- Invalid `min_count` values (negative, non-integer, empty, or > 10,000) return 400 Bad Request
+- The maximum allowed `min_count` value is 10,000
 - This endpoint does not require authentication and is publicly accessible
 
 ---
