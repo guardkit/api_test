@@ -1,4 +1,4 @@
-"""Tests for the /users/count-by-domain endpoint and count_users_by_domain CRUD function."""
+"""Tests for count-by-domain endpoint and CRUD function."""
 
 from __future__ import annotations
 
@@ -198,6 +198,178 @@ class TestDomainCountSchema:
         entry = DomainCountResponse(domain="example.com", count=5)
         assert entry.domain == "example.com"
         assert entry.count == 5
+
+
+class TestMinCountParameter:
+    """Tests for the min_count optional query parameter on /users/count-by-domain."""
+
+    # AC-001: min_count as optional query parameter
+    async def test_min_count_returns_filtered_domains(
+        self,
+        async_client: AsyncClient,
+        override_get_db: None,
+        db_session: AsyncSession,
+    ) -> None:
+        """Test that min_count filters out domains below the threshold."""
+        # Create users: 1 from alpha.com, 3 from beta.com, 2 from gamma.com
+        user_in = UserCreate(email="a@alpha.com", full_name="A")
+        await crud.create_user(db_session, user_in)
+
+        for i in range(3):
+            user_in = UserCreate(email=f"b{i}@beta.com", full_name=f"B{i}")
+            await crud.create_user(db_session, user_in)
+
+        for i in range(2):
+            user_in = UserCreate(email=f"c{i}@gamma.com", full_name=f"C{i}")
+            await crud.create_user(db_session, user_in)
+
+        # min_count=2 should exclude alpha.com (count=1)
+        response = await async_client.get("/users/count-by-domain?min_count=2")
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert len(data) == 2
+        domains = {entry["domain"] for entry in data}
+        assert domains == {"beta.com", "gamma.com"}
+        assert "alpha.com" not in domains
+
+    # AC-003: omitting min_count returns all domains (backward compatibility)
+    async def test_min_count_omitted_returns_all_domains(
+        self,
+        async_client: AsyncClient,
+        override_get_db: None,
+        db_session: AsyncSession,
+    ) -> None:
+        """Test that omitting min_count returns all domains (no filtering)."""
+        for i in range(1):
+            user_in = UserCreate(email=f"user{i}@alpha.com", full_name="A")
+            await crud.create_user(db_session, user_in)
+
+        for i in range(3):
+            user_in = UserCreate(email=f"user{i}@beta.com", full_name=f"B{i}")
+            await crud.create_user(db_session, user_in)
+
+        response = await async_client.get("/users/count-by-domain")
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert len(data) == 2
+
+    # AC-002: min_count is treated as an integer
+    async def test_min_count_integer_type(
+        self,
+        async_client: AsyncClient,
+        override_get_db: None,
+        db_session: AsyncSession,
+    ) -> None:
+        """Test that min_count parameter is treated as an integer."""
+        for i in range(5):
+            user_in = UserCreate(email=f"user{i}@example.com", full_name="U")
+            await crud.create_user(db_session, user_in)
+
+        # Pass min_count as integer value
+        response = await async_client.get("/users/count-by-domain?min_count=3")
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        # All 5 users are in example.com, which is >= 3
+        assert len(data) == 1
+        assert data[0]["domain"] == "example.com"
+        assert data[0]["count"] == 5
+
+    # AC-003: min_count=0 returns all domains
+    async def test_min_count_zero_returns_all(
+        self,
+        async_client: AsyncClient,
+        override_get_db: None,
+        db_session: AsyncSession,
+    ) -> None:
+        """Test that min_count=0 returns all domains (no filtering)."""
+        for i in range(1):
+            user_in = UserCreate(email=f"user{i}@alpha.com", full_name="A")
+            await crud.create_user(db_session, user_in)
+
+        for i in range(3):
+            user_in = UserCreate(email=f"user{i}@beta.com", full_name=f"B{i}")
+            await crud.create_user(db_session, user_in)
+
+        response = await async_client.get("/users/count-by-domain?min_count=0")
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert len(data) == 2
+
+    # AC-003: min_count higher than any domain returns empty list
+    async def test_min_count_excludes_all_domains(
+        self,
+        async_client: AsyncClient,
+        override_get_db: None,
+        db_session: AsyncSession,
+    ) -> None:
+        """Test that a min_count higher than all domain counts returns empty list."""
+        for i in range(2):
+            user_in = UserCreate(email=f"user{i}@example.com", full_name="U")
+            await crud.create_user(db_session, user_in)
+
+        response = await async_client.get("/users/count-by-domain?min_count=100")
+        assert response.status_code == HTTPStatus.OK
+        data = response.json()
+        assert data == []
+
+    # AC-002: min_count parameter type enforcement
+    async def test_min_count_invalid_type_returns_422(
+        self,
+        async_client: AsyncClient,
+    ) -> None:
+        """Test that a non-integer min_count value returns 422 validation error."""
+        response = await async_client.get(
+            "/users/count-by-domain?min_count=not_a_number"
+        )
+        assert response.status_code == 422
+
+
+class TestMinCountCrud:
+    """Tests for the min_count parameter in count_users_by_domain CRUD function."""
+
+    # AC-002: CRUD min_count as integer
+    async def test_crud_min_count_filters_by_integer(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test CRUD function filters correctly when min_count is an integer."""
+        for i in range(1):
+            user_in = UserCreate(email=f"user{i}@alpha.com", full_name="A")
+            await crud.create_user(db_session, user_in)
+
+        for i in range(3):
+            user_in = UserCreate(email=f"user{i}@beta.com", full_name=f"B{i}")
+            await crud.create_user(db_session, user_in)
+
+        for i in range(2):
+            user_in = UserCreate(email=f"user{i}@gamma.com", full_name=f"C{i}")
+            await crud.create_user(db_session, user_in)
+
+        result = await crud.count_users_by_domain(db_session, min_count=2)
+        assert len(result) == 2
+        assert result[0]["domain"] == "beta.com"
+        assert result[0]["count"] == 3
+        assert result[1]["domain"] == "gamma.com"
+        assert result[1]["count"] == 2
+
+    # AC-003: CRUD min_count=None returns all domains
+    async def test_crud_min_count_none_returns_all(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test CRUD function returns all domains when min_count is None."""
+        for i in range(1):
+            user_in = UserCreate(email=f"user{i}@alpha.com", full_name="A")
+            await crud.create_user(db_session, user_in)
+
+        for i in range(3):
+            user_in = UserCreate(email=f"user{i}@beta.com", full_name=f"B{i}")
+            await crud.create_user(db_session, user_in)
+
+        result = await crud.count_users_by_domain(db_session, min_count=None)
+        assert len(result) == 2
+        assert result[0]["domain"] == "beta.com"
+        assert result[0]["count"] == 3
+        assert result[1]["domain"] == "alpha.com"
+        assert result[1]["count"] == 1
 
     def test_schema_invalid_count_type(self) -> None:
         """Test schema rejects non-integer count."""

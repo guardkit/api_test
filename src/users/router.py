@@ -216,23 +216,30 @@ async def get_users_count_today(
     summary="Get user count by email domain",
     description=(
         "Returns a JSON array of {domain, count} objects showing how many "
-        "users are registered per email domain, ordered by count descending."
+        "users are registered per email domain, ordered by count descending. "
+        "An optional ``min_count`` query parameter filters results to only "
+        "include domains with at least that many users."
     ),
     responses={
         503: {"description": "Database unavailable"},
     },
 )
 async def get_domain_count(
+    min_count: int | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> list[DomainCountResponse]:
     """Get user count grouped by email domain.
 
     Extracts the domain portion from each user's email address, groups by domain,
     and returns counts ordered by count descending.
+
+    When ``min_count`` is provided, only domains with a count greater than or
+    equal to the given value are returned.
+
     Returns 503 if the database is unavailable.
     """
     try:
-        rows = await crud.count_users_by_domain(db)
+        rows = await crud.count_users_by_domain(db, min_count=min_count)
     except SQLAlchemyError as exc:
         raise HTTPException(
             status_code=503,
