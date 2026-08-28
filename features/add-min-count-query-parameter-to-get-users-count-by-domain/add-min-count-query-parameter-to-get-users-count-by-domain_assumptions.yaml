@@ -1,0 +1,25 @@
+feature: Add min_count query parameter to GET /users/count-by-domain
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: Providing a valid min_count filters domains below that count
+  assumption: The endpoint returns a JSON object mapping domain names to user counts
+  confidence: low
+  basis: Inferred from problem statement; exact response structure not confirmed
+  human_response: deferred
+- id: ASSUM-002
+  scenario: A negative minimum count is rejected
+  assumption: Negative min_count values are rejected with a bad request response
+  confidence: low
+  basis: 'Open question in input: ''Should the endpoint return a 400 Bad Request for
+    negative min_count values or silently ignore them?'''
+  human_response: deferred
+- id: ASSUM-003
+  scenario: A minimum count exceeding the maximum allowed value is rejected
+  assumption: The maximum allowable min_count is 10,000
+  confidence: low
+  basis: 'Open question in input: ''What is the maximum allowable value for min_count
+    to prevent performance degradation?'''
+  human_response: deferred
