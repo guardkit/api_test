@@ -88,6 +88,118 @@ def test_api_documentation_response_schema_matches_implementation(
         )
 
 
+class TestCountByDomainDocumentation:
+    """Tests for the count-by-domain endpoint documentation."""
+
+    def test_documentation_contains_count_by_domain_endpoint(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the count-by-domain endpoint is documented.
+
+        AC-001: Document the `min_count` query parameter in the API specification
+        """
+        content = api_docs_path.read_text()
+        assert "/users/count-by-domain" in content, (
+            "API documentation must include the /users/count-by-domain endpoint"
+        )
+
+    def test_documentation_contains_min_count_parameter_description(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the `min_count` query parameter is described in the documentation.
+
+        AC-001: Document the `min_count` query parameter in the API specification
+        """
+        content = api_docs_path.read_text()
+        assert "min_count" in content, (
+            "API documentation must document the `min_count` query parameter"
+        )
+        # Verify it's described as a query parameter
+        assert "Query Parameters" in content or "query parameter" in content.lower()
+
+    def test_documentation_contains_min_count_query_params_table(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the documentation includes a query parameters table for min_count.
+
+        AC-001: Document the `min_count` query parameter in the API specification
+        """
+        content = api_docs_path.read_text()
+        # The table should have min_count with its type and description
+        assert "min_count" in content
+        assert "integer" in content.lower()
+        # Verify the parameter has a description of its filtering behavior
+        assert (
+            "filter" in content.lower()
+            or "exclude" in content.lower()
+            or ("minimum" in content.lower() and "domain" in content.lower())
+        )
+
+    def test_documentation_contains_valid_min_count_examples(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the documentation includes examples of valid `min_count` values.
+
+        AC-002: Include examples of valid and invalid `min_count` values
+        """
+        content = api_docs_path.read_text()
+        assert "Valid" in content or "valid" in content.lower()
+        # Check for specific valid examples
+        assert "0" in content  # zero is a valid value
+        assert "1" in content  # one is a valid value
+        assert "10000" in content  # maximum is a valid value
+
+    def test_documentation_contains_invalid_min_count_examples(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the documentation includes examples of invalid `min_count` values.
+
+        AC-002: Include examples of valid and invalid `min_count` values
+        """
+        content = api_docs_path.read_text()
+        assert "Invalid" in content or "invalid" in content.lower()
+        # Check for specific invalid examples
+        assert "-1" in content  # negative is invalid
+        assert "non-integer" in content.lower() or "invalid integer" in content.lower()
+        # Check for 400 status code documentation
+        assert "400" in content or "Bad Request" in content
+
+    def test_documentation_contains_min_count_400_status_code(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the documentation includes 400 Bad Request for invalid min_count.
+
+        AC-001: Document the `min_count` query parameter in the API specification
+        """
+        content = api_docs_path.read_text()
+        assert "400" in content, "Documentation must document 400 Bad Request status"
+        assert "Bad Request" in content or "bad request" in content.lower()
+
+    def test_documentation_contains_min_count_example_request(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the documentation includes an example request using min_count.
+
+        AC-002: Include examples of valid and invalid `min_count` values
+        """
+        content = api_docs_path.read_text()
+        assert "min_count=" in content or "min_count%3D" in content, (
+            "Documentation should include an example request with min_count parameter"
+        )
+
+    def test_documentation_contains_min_count_max_value(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the documentation mentions the maximum allowed min_count value.
+
+        AC-001: Document the `min_count` query parameter in the API specification
+        """
+        content = api_docs_path.read_text()
+        assert "10000" in content, (
+            "Documentation must mention the maximum min_count value of 10,000"
+        )
+
+
 @pytest.mark.asyncio
 async def test_documented_example_matches_actual_response_structure(
     async_client: AsyncClient,
@@ -618,8 +730,12 @@ def test_api_documentation_whoami_status_codes(
     """
     content = api_docs_path.read_text()
 
-    assert "200" in content, "Documentation must document the 200 status code for /whoami"
-    assert "405" in content, "Documentation must document the 405 method not allowed for /whoami"
+    assert "200" in content, (
+        "Documentation must document the 200 status code for /whoami"
+    )
+    assert "405" in content, (
+        "Documentation must document the 405 method not allowed for /whoami"
+    )
 
 
 def test_api_documentation_whoami_field_descriptions(
@@ -747,8 +863,12 @@ def test_api_documentation_uptime_status_codes(
     """
     content = api_docs_path.read_text()
 
-    assert "200" in content, "Documentation must document the 200 status code for /uptime"
-    assert "405" in content, "Documentation must document the 405 method not allowed for /uptime"
+    assert "200" in content, (
+        "Documentation must document the 200 status code for /uptime"
+    )
+    assert "405" in content, (
+        "Documentation must document the 405 method not allowed for /uptime"
+    )
 
 
 def test_api_documentation_uptime_field_descriptions(
@@ -876,8 +996,12 @@ def test_api_documentation_stats_status_codes(
     """
     content = api_docs_path.read_text()
 
-    assert "200" in content, "Documentation must document the 200 status code for /stats"
-    assert "405" in content, "Documentation must document the 405 method not allowed for /stats"
+    assert "200" in content, (
+        "Documentation must document the 200 status code for /stats"
+    )
+    assert "405" in content, (
+        "Documentation must document the 405 method not allowed for /stats"
+    )
 
 
 def test_api_documentation_stats_consistent_with_implementation(
@@ -956,9 +1080,7 @@ def test_api_documentation_time_example_request(
 
     assert "Example Request" in content, "Documentation must include an example request"
     assert "curl" in content, "Documentation must include a curl example"
-    assert "/time" in content, (
-        "Documentation example must reference the /time endpoint"
-    )
+    assert "/time" in content, "Documentation example must reference the /time endpoint"
 
 
 def test_api_documentation_time_example_response(
@@ -986,7 +1108,9 @@ def test_api_documentation_time_status_codes(
     content = api_docs_path.read_text()
 
     assert "200" in content, "Documentation must document the 200 status code for /time"
-    assert "405" in content, "Documentation must document the 405 method not allowed for /time"
+    assert "405" in content, (
+        "Documentation must document the 405 method not allowed for /time"
+    )
 
 
 def test_api_documentation_time_consistent_with_implementation(
@@ -1123,9 +1247,15 @@ def test_api_documentation_search_status_codes(
     """
     content = api_docs_path.read_text()
 
-    assert "200" in content, "Documentation must document the 200 status code for /search"
-    assert "400" in content, "Documentation must document the 400 bad request for /search"
-    assert "405" in content, "Documentation must document the 405 method not allowed for /search"
+    assert "200" in content, (
+        "Documentation must document the 200 status code for /search"
+    )
+    assert "400" in content, (
+        "Documentation must document the 400 bad request for /search"
+    )
+    assert "405" in content, (
+        "Documentation must document the 405 method not allowed for /search"
+    )
 
 
 def test_api_documentation_search_consistent_with_implementation(
@@ -1196,7 +1326,8 @@ def test_api_documentation_domain_count_response_schema(
 def test_api_documentation_domain_count_example_request(
     api_docs_path: Path,
 ) -> None:
-    """Test that the API documentation includes an example request for /users/count-by-domain.
+    """Test that the API documentation includes an example request
+    for /users/count-by-domain.
 
     AC-002: Examples included for happy path
     """
@@ -1212,7 +1343,8 @@ def test_api_documentation_domain_count_example_request(
 def test_api_documentation_domain_count_example_response(
     api_docs_path: Path,
 ) -> None:
-    """Test that the API documentation includes example responses for /users/count-by-domain.
+    """Test that the API documentation includes example responses
+    for /users/count-by-domain.
 
     AC-002: Examples included for happy path and error cases
     """
@@ -1234,14 +1366,17 @@ def test_api_documentation_domain_count_example_response(
 def test_api_documentation_domain_count_status_codes(
     api_docs_path: Path,
 ) -> None:
-    """Test that the API documentation includes status codes for /users/count-by-domain.
+    """Test that the API documentation includes status codes
+    for /users/count-by-domain.
 
     AC-002: Error cases documented
     """
     content = api_docs_path.read_text()
 
     assert "200" in content, "Documentation must document the 200 status code"
-    assert "503" in content, "Documentation must document the 503 status code for database errors"
+    assert "503" in content, (
+        "Documentation must document the 503 status code for database errors"
+    )
     assert "405" in content, "Documentation must document the 405 method not allowed"
 
 
@@ -1257,12 +1392,8 @@ def test_api_documentation_domain_count_field_descriptions(
     assert "Field Descriptions" in content, (
         "Documentation must include field descriptions"
     )
-    assert "domain" in content.lower(), (
-        "Documentation must describe the domain field"
-    )
-    assert "count" in content.lower(), (
-        "Documentation must describe the count field"
-    )
+    assert "domain" in content.lower(), "Documentation must describe the domain field"
+    assert "count" in content.lower(), "Documentation must describe the count field"
 
 
 def test_api_documentation_domain_count_consistent_with_implementation(

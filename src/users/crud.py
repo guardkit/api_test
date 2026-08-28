@@ -198,7 +198,9 @@ async def count_users_today(db: AsyncSession) -> int:
     return result.scalar_one() or 0
 
 
-async def count_users_by_domain(db: AsyncSession) -> list[dict[str, int | str]]:
+async def count_users_by_domain(
+    db: AsyncSession, min_count: int | None = None
+) -> list[dict[str, int | str]]:
     """Count users grouped by email domain.
 
     Extracts the domain portion from each user's email address, groups by domain,
@@ -210,8 +212,12 @@ async def count_users_by_domain(db: AsyncSession) -> list[dict[str, int | str]]:
 
     Malformed emails (those without '@') are excluded from the count.
 
+    When ``min_count`` is provided, only domains with a count >= min_count
+    are included in the result.
+
     Args:
         db: The async database session.
+        min_count: Optional minimum count threshold for filtering domains.
 
     Returns:
         List of dicts with 'domain' (str) and 'count' (int) keys,
@@ -232,14 +238,18 @@ async def count_users_by_domain(db: AsyncSession) -> list[dict[str, int | str]]:
         at_position + 1,
     )
 
+    count_expr = func.count().label("count")
     stmt = (
-        select(domain_expr.label("domain"), func.count().label("count"))
+        select(domain_expr.label("domain"), count_expr)
         .select_from(User)
         .where(at_position > 0)
         .where(User.deleted_at.is_(None))
         .group_by(domain_expr)
         .order_by(func.count().desc())
     )
+
+    if min_count is not None:
+        stmt = stmt.having(func.count() >= min_count)
 
     result = await db.execute(stmt)
     rows = result.fetchall()

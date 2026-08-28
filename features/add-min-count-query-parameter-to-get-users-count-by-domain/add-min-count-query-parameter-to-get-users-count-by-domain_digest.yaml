@@ -1,0 +1,51 @@
+feature: add-min-count-query-parameter-to-get-users-count-by-domain
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/count-by-domain
+scenarios:
+- title: Providing a valid min_count filters domains below that count
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: When you ask for domain counts with a minimum number of users, the system only shows domains that meet or exceed that number.
+- title: Omitting the min_count parameter returns all domains
+  tags:
+  - '@key-example'
+  sentence: If you do not specify a minimum count, the system shows all domains regardless of how many users they have.
+- title: A minimum count of zero includes all domains
+  tags:
+  - '@boundary'
+  sentence: Setting the minimum count to zero includes every domain in the list.
+- title: A negative minimum count is rejected
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: The system rejects any request that tries to use a negative minimum count.
+- title: A minimum count exceeding the maximum allowed value is rejected
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: The system rejects any request that sets a minimum count higher than the allowed limit.
+- title: A non-integer minimum count is rejected
+  tags:
+  - '@negative'
+  sentence: The system rejects any request that provides a non-number value for the minimum count.
+- title: An empty minimum count value is rejected
+  tags:
+  - '@negative'
+  sentence: The system rejects any request that leaves the minimum count blank.
+- title: A minimum count higher than any existing domain count returns no domains
+  tags:
+  - '@edge-case'
+  sentence: If you set a minimum count higher than any domain actually has, the system returns an empty list.
+assumptions:
+- id: ASSUM-001
+  text: The endpoint returns a JSON object mapping domain names to user counts
+  basis: Inferred from problem statement; exact response structure not confirmed
+- id: ASSUM-002
+  text: Negative min_count values are rejected with a bad request response
+  basis: 'Open question in input: ''Should the endpoint return a 400 Bad Request for negative min_count values or silently ignore them?'''
+- id: ASSUM-003
+  text: The maximum allowable min_count is 10,000
+  basis: 'Open question in input: ''What is the maximum allowable value for min_count to prevent performance degradation?'''

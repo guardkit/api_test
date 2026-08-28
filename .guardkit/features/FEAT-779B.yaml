@@ -1,0 +1,90 @@
+id: FEAT-779B
+name: "Add min_count query parameter to GET /users/count-by-domain"
+description: "Add min_count query parameter to filter domain counts by a minimum user count"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-779B-001
+    name: "Add min_count parameter to endpoint"
+    file_path: "tasks/backlog/add-min-count/TASK-779B-001-add-min-count-parameter.md"
+    complexity: 5
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-779B-002
+    name: "Implement filtering logic"
+    file_path: "tasks/backlog/add-min-count/TASK-779B-002-implement-filtering-logic.md"
+    complexity: 6
+    dependencies:
+      - TASK-779B-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 90
+
+  - id: TASK-779B-003
+    name: "Add input validation"
+    file_path: "tasks/backlog/add-min-count/TASK-779B-003-add-input-validation.md"
+    complexity: 4
+    dependencies:
+      - TASK-779B-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-779B-004
+    name: "Update API documentation"
+    file_path: "tasks/backlog/add-min-count/TASK-779B-004-update-api-documentation.md"
+    complexity: 3
+    dependencies:
+      - TASK-779B-001
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-779B-005
+    name: "Add integration tests"
+    file_path: "tasks/backlog/add-min-count/TASK-779B-005-add-integration-tests.md"
+    complexity: 5
+    dependencies:
+      - TASK-779B-002
+      - TASK-779B-003
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+orchestration:
+  parallel_groups:
+    - - TASK-779B-001
+    - - TASK-779B-002
+      - TASK-779B-003
+    - - TASK-779B-004
+    - - TASK-779B-005
+  estimated_duration_minutes: 285
+  recommended_parallel: 2
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/add-min-count-query-parameter-to-get-users-count-by-domain/add-min-count-query-parameter-to-get-users-count-by-domain.feature"
+scenarios:
+  "Providing a valid min_count filters domains below that count":
+    verifier: "hurl"
+  "Omitting the min_count parameter returns all domains":
+    verifier: "hurl"
+  "A minimum count of zero includes all domains":
+    verifier: "hurl"
+  "A negative minimum count is rejected":
+    verifier: "hurl"
+  "A minimum count exceeding the maximum allowed value is rejected":
+    verifier: "hurl"
+  "A non-integer minimum count is rejected":
+    verifier: "hurl"
+  "An empty minimum count value is rejected":
+    verifier: "hurl"
+  "A minimum count higher than any existing domain count returns no domains":
+    verifier: "hurl"

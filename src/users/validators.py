@@ -8,6 +8,7 @@ from uuid import UUID
 from fastapi import HTTPException
 
 MAX_LIMIT = 100
+MIN_COUNT_MAX = 10_000
 
 # Allowed characters in a user ID: alphanumeric, hyphens, underscores
 # This is stricter than UUID format to prevent special character injection
@@ -91,3 +92,61 @@ def validate_limit(limit_str: str) -> int:
         raise ValueError(f"limit must not exceed {MAX_LIMIT}")
 
     return limit
+
+
+def validate_min_count(min_count: str | None) -> int | None:
+    """Validate and parse a min_count query parameter.
+
+    Args:
+        min_count: The min_count value as a string from the query parameter,
+            or None if the parameter was omitted.
+
+    Returns:
+        The validated min_count as an integer, or None if the parameter
+        was omitted (no filtering applied).
+
+    Raises:
+        ValueError: If the value is an empty string, not an integer, negative,
+            or exceeds the maximum allowed value.
+    """
+    if min_count is None:
+        return None
+
+    if min_count == "":
+        raise ValueError("min_count must not be empty")
+
+    try:
+        value = int(min_count)
+    except (ValueError, TypeError):
+        raise ValueError("min_count must be a valid integer") from None
+
+    if value < 0:
+        raise ValueError("min_count must not be negative")
+
+    if value > MIN_COUNT_MAX:
+        raise ValueError(f"min_count must not exceed {MIN_COUNT_MAX}")
+
+    return value
+
+
+def get_validated_min_count(min_count: str | None = None) -> int | None:
+    """FastAPI dependency that validates a min_count query parameter.
+
+    This dependency runs before the service layer to ensure invalid
+    min_count values are caught early and return 400 Bad Request.
+
+    Args:
+        min_count: The min_count value from the query parameter,
+            or None if the parameter was omitted.
+
+    Returns:
+        The validated min_count as an integer, or None if the parameter
+        was omitted (no filtering applied).
+
+    Raises:
+        HTTPException: 400 Bad Request if the min_count is invalid.
+    """
+    try:
+        return validate_min_count(min_count)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
