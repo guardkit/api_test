@@ -55,11 +55,19 @@ checker_style: deterministic   # Python's standard-library ast module and file l
 # How the checker reads this repository's shape.
 layout:
   source_root: src
-  # A feature module is any direct child directory of src/ not listed as infrastructure.
-  # This is a definition, not a list, so a feature added tomorrow is covered without
-  # editing this file. Today that means: health, search, stats, time, uptime, users,
-  # version, whoami.
+  # A feature module is any direct child directory of src/ that git tracks and that is not
+  # listed as infrastructure. This is a definition, not a list, so a feature added tomorrow
+  # is covered without editing this file. Today that means: health, search, stats, time,
+  # uptime, users, version, whoami.
+  #
+  # "that git tracks" is doing real work here. Any machine that has run the tests has an
+  # untracked src/__pycache__/ sitting on disk. It is gitignored, it holds no router.py, and
+  # a checker that read the directory listing instead of the tracked files would call it a
+  # ninth feature and report a false violation of R-ADR001-3 on every developer's machine.
+  # So: walk the tracked files. A checker that walks the disk instead must skip the
+  # directories named below.
   infrastructure_modules: [src/core, src/db]
+  never_a_feature_module: ["__pycache__", "any directory whose name starts with a dot"]
   # main.py wires every feature's router into the app. Importing every feature is its job,
   # so the import-boundary rule cannot apply to it.
   composition_root: [src/main.py]
@@ -104,6 +112,15 @@ rules:
                 flush, refresh, merge]
         receiver_names: [db, session, conn, connection, async_session]
         receiver_types: [AsyncSession, Session]
+      finding_granularity: >-
+        One finding per query, anchored at the line where the query is built. A line that only
+        runs a query built on an earlier line — "result = await db.execute(stmt)" — is named
+        inside that finding's description rather than reported as a finding of its own. This
+        is why the two queries in src/search/router.py occupy four lines (61, 62, 68, 69) but
+        are two findings, at 61 and 68. Reporting four would not be wrong about the code, but
+        it would count one problem twice, and the count is the thing people will look at.
+        Stated here so it is settled before the checker is written, not discovered as a
+        mismatch afterwards.
     exceptions:
       - path: src/health/router.py
         lines: [41]
@@ -190,8 +207,9 @@ rules:
     source_section: Decision — The rule
     source_sentence: "`router.py` (API endpoints) — required in every feature"
     checked_by: >-
-      File layout only. For each direct child directory of src/ that is not infrastructure,
-      report a finding if it contains no router.py.
+      File layout only. For each feature module — as the layout block at the top of this file
+      defines one, which means a tracked directory and never src/__pycache__ — report a
+      finding if it contains no router.py.
     signals:
       kind: file-layout
       scope: feature_modules
@@ -216,17 +234,28 @@ rules:
     source_section: Decision
     source_sentence: "Synchronous blocking calls are forbidden in route handlers and service layers."
     checked_by: >-
-      Parse src/ with ast. A route handler is any function whose decorators include a call
-      on a router or app object naming an HTTP method. Report a finding when such a function
-      is an ordinary def rather than an async def — a synchronous handler cannot await
-      anything, and blocks the event loop for the whole request.
+      Parse src/ with ast. A route handler is any function whose decorators include a call on
+      some object naming an HTTP method — the shape matters, the name of the object does not.
+      Report a finding when such a function is an ordinary def rather than an async def: a
+      synchronous handler cannot await anything, and blocks the event loop for the whole
+      request.
     signals:
       kind: handler-shape
-      handler_decorators: [router.get, router.post, router.put, router.patch, router.delete,
-                           app.get, app.post, app.put, app.patch, app.delete]
+      # Match the SHAPE — a decorator of the form <anything>.<http-method>(...) — not a list
+      # of receiver names. A checker hard-coding "router" and "app" would miss
+      # src/users/router.py:407, where get_recent_users is decorated @recent_router.get
+      # because that feature mounts a second router object at line 404. It would then scan 19
+      # of this repository's 20 handlers and report nothing about the twentieth. (That handler
+      # passes both handler rules anyway — it is async def and returns RecentUsersResponse —
+      # so nothing is hidden today; the gap would be in the checker, not in the code.)
+      handler_decorator_shape: an attribute call on any object, where the attribute is an HTTP method name
+      http_method_names: [get, post, put, patch, delete, head, options]
       require: AsyncFunctionDef
     checked_against_main_on: "2026-08-30"
-    other_sites_seen: All twenty route handlers in the repository are async def.
+    other_sites_seen: >-
+      All twenty route handlers in the repository are async def. Nineteen are decorated
+      @router.<method>; the twentieth, get_recent_users at src/users/router.py:420, is
+      decorated @recent_router.get.
 
   - id: R-ADR002-2
     rule: Feature code does not use blocking I/O libraries.
@@ -261,7 +290,7 @@ rules:
       a typed object and correct.
     signals:
       kind: handler-shape
-      handler_decorators: same as R-ADR002-1
+      handler_decorator_shape: same as R-ADR002-1 — match the shape, not a list of names
       require: return annotation present
       forbidden_annotations: [dict, Dict, Any, object]
     not_checked_yet:
