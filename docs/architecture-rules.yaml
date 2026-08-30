@@ -123,7 +123,9 @@ rules:
         mismatch afterwards.
     exceptions:
       - path: src/health/router.py
-        lines: [41]
+        # line pin removed 2026-08-30 (Rich's word): the backwards run showed the pin
+        # produced all three historical false alarms as the file grew; the exception now
+        # names the file and the statement, wherever it sits.
         what: 'await db.execute(text("SELECT 1"))'
         why: >-
           A liveness probe. It proves the connection is up; it reads no domain data and
