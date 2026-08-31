@@ -37,6 +37,18 @@ No feature currently has a `service.py`; a business-logic file is allowed, not r
 
 **The sanctioned exception**: the shared base-class file `src/schemas.py` (`BaseSchema` and friends, inherited by feature schemas) is allowed under the no-global-schemas rule. What stays forbidden is a global directory collecting feature-specific models.
 
+**Amendment, 2026-08-31 — which files are public and which are private**
+
+The forbidden list above draws a line between one feature's private files and everything else, but it never says which files are which. This says which.
+
+A feature's **public read interface** is its `crud.py` — the functions in it whose names do not start with an underscore — and its `schemas.py`, the shapes those functions return. Another feature may import those two files.
+
+A feature's **private files** are `models.py`, `service.py`, `router.py`, `dependencies.py`, and anything whose name starts with an underscore. Another feature may not import those.
+
+The public functions must return schemas or plain data, never ORM model instances. A public function that hands back a model instance leaks the model through the interface, the caller ends up importing the model anyway, and the boundary is only nominal. This last point is written guidance for people: the checker does not verify it. The checker looks at which files an import names, not at what a function returns.
+
+What taught this: the first build run with these rules enforced hit a request that could not be satisfied — an analytics feature had to read user data — which showed the record forbade the import without ever naming a legal way to do it.
+
 ## Evidence
 - `src/users/` contains `router.py`, `schemas.py`, `models.py`, `crud.py`, and `exceptions.py`.
 - `src/search/` contains `router.py` and `schemas.py`.

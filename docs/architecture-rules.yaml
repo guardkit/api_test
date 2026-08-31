@@ -153,36 +153,63 @@ rules:
 
   - id: R-ADR001-1
     previously_known_as: features-do-not-import-features
-    rule: A feature module does not import another feature module.
+    rule: >-
+      A feature module may import another feature's public read interface — its crud.py and
+      its schemas.py — and nothing else of that feature.
     source_document: docs/architecture/adr-001-feature-based-module-structure.md
-    source_section: Consequences — What it forbids
-    source_sentence: "Cross-feature coupling where one module imports internals from another's private files."
+    source_section: "Consequences — Amendment, 2026-08-31: which files are public and which are private"
+    source_sentence: "A feature's **public read interface** is its `crud.py` — the functions in it whose names do not start with an underscore — and its `schemas.py`, the shapes those functions return. Another feature may import those two files."
+    also_from:
+      - source_sentence: "A feature's **private files** are `models.py`, `service.py`, `router.py`, `dependencies.py`, and anything whose name starts with an underscore. Another feature may not import those."
+        why: names the files on the other side of the line, and it is that half of the amendment which keeps src/search/router.py:11 a finding
+      - source_section: Consequences — What it forbids
+        source_sentence: "Cross-feature coupling where one module imports internals from another's private files."
+        why: >-
+          the original sentence, which drew the public/private line without ever saying which
+          files were which. The 2026-08-31 amendment completes it rather than replacing it.
     checked_by: >-
       Parse every file under src/<feature>/ with ast. For each import, take the module path;
       report a finding when it starts with src.<other> where <other> is a different feature
-      module. Feature to infrastructure (src.core, src.db) is the intended direction and is
-      not reported. Imports within the same feature are not reported. src/main.py is skipped
-      entirely — joining the features together is its job.
+      module — with one exception, and two things that exception does not cover. The
+      exception: src.<other>.crud and src.<other>.schemas are that feature's public read
+      interface, and importing them is the sanctioned way for one feature to read another's
+      data, so they are not reported. Not covered by it: a name in such an import that starts
+      with an underscore is that feature's private helper wearing a public file's address and
+      is still reported; and a bare import of src.<other>, with no file named after it,
+      reaches every file in the feature and is still reported. Feature to infrastructure
+      (src.core, src.db) is the intended direction and is not reported. Imports within the
+      same feature are not reported. src/main.py is skipped entirely — joining the features
+      together is its job. What the checker cannot see: it reads which files an import names,
+      not what a function returns, so the amendment's instruction that public functions
+      return schemas or plain data and never ORM model instances is written guidance for
+      people and is checked by nothing.
     signals:
       kind: module-import-boundary
       scope: feature_modules
       allowed_target_modules: [src.core, src.db]
+      public_modules: [crud, schemas]
       skip_files: [src/main.py]
     expected_current_finding:
       status: >-
         The second symptom of the same known violation as R-OV-1, not a separate one. The
         import exists only so the route handler can run its own query, and it disappears
-        when that query moves out. Left in place on purpose alongside it.
+        when that query moves out. Left in place on purpose alongside it. The 2026-08-31
+        amendment does not excuse it: models.py is a private file, and the legal move — had
+        the search feature needed user data for its own sake — is src.users.crud.
       findings:
         - at: src/search/router.py:11
           what: "from src.users.models import User"
       introduced_by: commit 79730c0, 2026-08-16, FEAT-F924
-    checked_against_main_on: "2026-08-30"
+    checked_against_main_on: "2026-08-31"
     other_sites_seen: >-
       This is the only feature-to-feature import in the repository. src/main.py:19-28
       imports every feature's router (composition root, skipped). src/users/__init__.py:3-5
-      imports from within src/users. src/search/router.py:9, src/health/router.py:10-11 and
-      src/whoami/router.py:7 import src.core or src.db. All must stay silent.
+      and src/users/router.py:15-28 import from within src/users. src/search/router.py:9,
+      src/health/router.py:10-11 and src/whoami/router.py:7 import src.core or src.db. All
+      must stay silent. No file in this repository imports another feature's crud.py or
+      schemas.py today, so the public read interface the amendment allows changes nothing
+      about what this rule reports on main; it changes what a new feature is allowed to
+      write.
 
   - id: R-ADR001-2
     rule: There is no global models/ or schemas/ directory; each feature keeps its own.
