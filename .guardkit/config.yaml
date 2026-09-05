@@ -26,7 +26,7 @@ autobuild:
     model: coach-ft-v4   # 2026-08-26 arm-T return (bake-off evens); was gemma4-26b-q8-coach for arm B
     qav_shadow:
       enabled: true
-      endpoint: http://localhost:9000/v1/chat/completions
+      endpoint: http://localhost:4000/v1/chat/completions   # 2026-09-05: through LiteLLM (counted; key from OPENAI_API_KEY via guardkit/lib/client_env), was the switchboard :9000 direct
       model: qav-shadow
       timeout_seconds: 60
 
