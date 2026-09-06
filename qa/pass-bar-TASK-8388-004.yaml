@@ -1,0 +1,29 @@
+format_version: '2.0'
+task_id: TASK-8388-004
+registered_at:
+  sha: d5006b48e5cd184b382e3d682d5781e66908e813
+  date: '2026-09-06'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: user-domain-analytics-and-user-creation-extension-AC-001
+  text: Querying user domain counts on a fresh database returns an empty list
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+- id: user-domain-analytics-and-user-creation-extension-AC-002
+  text: Querying user domain counts on an existing database returns counts for each
+    domain
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+- id: user-domain-analytics-and-user-creation-extension-AC-003
+  text: Creating a new user on a fresh database succeeds
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
