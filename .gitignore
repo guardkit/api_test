@@ -40,6 +40,8 @@ build/
 .guardkit/worktrees/
 # GuardKit build-time state — never committed (B4 round-19 fossil lesson; rode in via selective merges)
 .guardkit/autobuild/
+# Scratch files the tooling writes while a build or a merge is running (forge keeps the merge baseline here) — never committed
+.guardkit/tmp/
 
 # Machine-local build junk (register 2a5; belt to guardkit's checkpoint exclusions)
 .cache/

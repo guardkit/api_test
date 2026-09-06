@@ -5,13 +5,29 @@
 # the test sets. It NEVER talks to the real sandbox tool or daemon, and never
 # creates, starts, stops or removes anything.
 #
-#   FAKE_SBX_LS                 what `sbx ls` prints (empty = no sandboxes)
-#   FAKE_SBX_POLICY_LS_RC       exit code for `sbx policy ls` (0 = this version
-#                               can list one sandbox's rules; non-zero = it
-#                               cannot, which is the marker-file path)
-#   FAKE_SBX_POLICY_LS          what `sbx policy ls` prints when it succeeds
-#   FAKE_SBX_EXEC_RC            exit code for `sbx exec` (the inner deploy's
-#                               exit code, which the wrapper must pass through)
+# It models only the forms the real tool (version 0.39.0) actually has, proven
+# on this box:
+#   sbx ls
+#   sbx create shell <path> --name <name> [--memory ..] [--cpus ..] [--publish ..]
+#   sbx policy check network --sandbox <name> <target>   (read-only; the answer)
+#   sbx policy allow network --sandbox <name> <targets>
+#   sbx exec [-w <dir>] [-e NAME ...] <name> <command...>
+# `sbx policy show` does not exist and `sbx policy ls --sandbox <name>` is
+# refused by the real tool as an unknown flag. Any `sbx policy` form other than
+# the two above is refused here as well, so a wrapper that went back to one of
+# them would fail its tests.
+#
+# HOW THE POLICY ANSWER IS MODELLED: `sbx policy check network` answers through
+# its EXIT CODE — 0 means the sandbox is allowed to reach that target, non-zero
+# means it is not. This is the same reading the wrapper does.
+#
+#   FAKE_SBX_LOG            file every call is appended to        (required)
+#   FAKE_SBX_LS             what `sbx ls` prints (empty = no sandboxes)
+#   FAKE_SBX_DENIED         comma-separated targets `policy check network`
+#                           answers "not allowed" for; every other target is
+#                           answered "allowed". Empty = everything allowed.
+#   FAKE_SBX_EXEC_RC        exit code for `sbx exec` (the inner deploy's exit
+#                           code, which the wrapper must pass through)
 #
 # `sbx exec` also records the values it can see for the variables named by the
 # bare `-e NAME` flags, which is how the tests prove the mode signal really
@@ -30,16 +46,28 @@ case "${1:-}" in
     exit 0 # record-only (already logged above)
     ;;
   policy)
-    if [[ "${2:-}" == "ls" ]]; then
-      rc="${FAKE_SBX_POLICY_LS_RC:-0}"
-      if [[ "${rc}" == "0" ]]; then
-        printf '%s' "${FAKE_SBX_POLICY_LS:-}"
+    case "${2:-}" in
+      check)
+        # sbx policy check network --sandbox NAME TARGET
+        target="${6:-}"
+        denied=",${FAKE_SBX_DENIED:-},"
+        if [[ "${denied}" == *",${target},"* ]]; then
+          printf 'not allowed: %s\n' "${target}"
+          exit 1
+        fi
+        printf 'allowed: %s\n' "${target}"
         exit 0
-      fi
-      printf 'unknown flag --sandbox for "sbx policy ls"\n' >&2
-      exit "${rc}"
-    fi
-    exit 0 # `sbx policy allow network ...` -> record-only
+        ;;
+      allow)
+        exit 0 # record-only
+        ;;
+      *)
+        # Anything else, `sbx policy show` and `sbx policy ls --sandbox NAME`
+        # included, is not a form this wrapper is allowed to use.
+        printf 'unknown command or flag for "sbx policy": %s\n' "$*" >&2
+        exit 2
+        ;;
+    esac
     ;;
   exec)
     # Record what each -e NAME would carry into the sandbox.

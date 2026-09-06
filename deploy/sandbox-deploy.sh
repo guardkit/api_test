@@ -1,35 +1,50 @@
 #!/usr/bin/env bash
 #
-# api_test sandbox deploy wrapper — the vetted script the forge deploy step runs
-# for the compose stage (deploy/profile.yaml -> compose.script).
+# The sandbox deploy wrapper — the one script the factory's deploy step runs for
+# the compose stage (deploy/profile.yaml -> compose.script).
 #
 # WHAT IT IS FOR (Rich's decision, 2026-09-06). Every merge now deploys the
 # feature into a Docker Sandbox: a small virtual machine with its own kernel and
 # its own Docker engine, made by Docker's `sbx` tool. The host's own Docker
-# engine is no longer in the deployment path. This wrapper is the only thing that
-# knows about the sandbox; deploy/deploy.sh is unchanged and simply runs inside.
+# engine is no longer in the deployment path. This wrapper is the only thing
+# that knows about the sandbox; deploy/deploy.sh is unchanged and simply runs
+# inside it.
+#
+# THIS FILE IS SHARED. It is written to be the same file in every repository:
+# it holds no value belonging to any one repository. The name of the sandbox,
+# its size and its rules all arrive in the environment, and the checkout it
+# works on is worked out from where this file itself sits. forge ships the same
+# bytes as the template it writes into a newly registered repository.
 #
 # WHAT IT DOES, IN ORDER, AND NOTHING ELSE:
 #   1. Make sure this repository's sandbox exists. If `sbx ls` does not list it,
-#      create it, bind-mounting this checkout at its own host path so the path is
-#      the same inside the sandbox and out, with the memory, processor count and
-#      published ports the profile asked for.
-#   2. Add the outbound network rules once. The sandbox refuses every address it
-#      has not been told about, so the image build needs the Debian mirrors and
-#      the Python package index named explicitly.
+#      create it, bind-mounting this checkout at its own host path so the path
+#      is the same inside the sandbox and out, with the memory, processor count
+#      and published ports the profile asked for.
+#   2. Make sure the sandbox is allowed to reach the addresses the build needs.
+#      A sandbox refuses every outbound address it has not been told about, so
+#      the Debian mirrors and the Python package index have to be named. We ask
+#      the sandbox tool about each address in turn and add the rules only when
+#      one of them is not allowed yet.
 #   3. Start the keeper, a small user service that holds one session open inside
 #      the sandbox so it does not put itself to sleep thirty seconds after the
 #      last session ends.
 #   4. Run deploy/deploy.sh inside the sandbox and exit with its exit code,
 #      unchanged, so a failing deploy still fails the stage.
 #
-# HOW IT IS CONFIGURED. Everything arrives in the environment, threaded in by the
-# deploy stage from the profile's `sandbox` block. This script never reads YAML.
+# HOW IT IS CONFIGURED. Everything arrives in the environment, threaded in by
+# the deploy stage from the profile's `sandbox` block. This script never reads
+# YAML.
 #   SANDBOX_NAME           the sandbox's name              (required)
 #   SANDBOX_MEMORY         memory size, as `sbx` accepts it, e.g. 6g
 #   SANDBOX_CPUS           how many processors, e.g. 4
 #   SANDBOX_PUBLISH        ports handed back to the host, comma-separated
 #   SANDBOX_ALLOW_NETWORK  addresses the sandbox may reach, comma-separated
+#
+# BEFORE THIS CAN WORK the sandbox daemon must already be running for this user
+# (`sbx daemon start -d --policy balanced`), the Docker sign-in must have been
+# done once on this box, and forge-sandbox-keeper@.service must be installed in
+# ~/.config/systemd/user/. See forge's ops/README.md.
 #
 # SAFETY. This script is run by forge at the attended deploy step. In the build
 # lane it is proven against fake `sbx` and `systemctl` programs placed first on
@@ -63,18 +78,10 @@ fi
 # The keeper is a user service, one instance per sandbox name.
 KEEPER_UNIT="forge-sandbox-keeper@${SANDBOX_NAME}"
 
-# Where we remember that the network rules have been applied. `sbx` may not be
-# able to list the rules for one sandbox; when it cannot, this file is how we
-# know not to apply them a second time. It is build-time state, not source: it
-# lives under .guardkit/ with the rest of the machine-local build state and is
-# never committed.
-MARKER_DIR="${REPO_ROOT}/.guardkit/tmp"
-MARKER_FILE="${MARKER_DIR}/sandbox-network-rules-${SANDBOX_NAME}"
-
 # --- step 1: the sandbox exists ---------------------------------------------
 
 # True when `sbx ls` names this sandbox. Matches a whole field so a sandbox
-# called "api-test-deploy" is not confused with "api-test-deploy-2".
+# called "widget-deploy" is not confused with "widget-deploy-2".
 sandbox_exists() {
   local listing
   listing="$(sbx ls 2>/dev/null || true)"
@@ -105,38 +112,55 @@ create_sandbox() {
   "${argv[@]}"
 }
 
-# --- step 2: the network rules, once ----------------------------------------
+# --- step 2: the outbound addresses, allowed once ---------------------------
 
-# True when the rules are already in place. We ask `sbx` first: if it can list
-# the rules for this sandbox and every rule we want is there, there is nothing to
-# do. If `sbx` cannot answer that question, we fall back to the marker file.
+# How an entry from the profile's list is asked about. The sandbox tool judges a
+# bare host name as if it were being reached over HTTPS on port 443, but the
+# Debian mirrors are fetched over plain HTTP, so a bare host is asked about as
+# "http://<host>". An entry that already names a port, such as
+# "172.30.1.253:4000", is asked about exactly as written, and so is an entry
+# that already begins with a scheme.
+check_target_for() {
+  local entry="$1"
+  if [[ "${entry}" == *"://"* || "${entry}" =~ :[0-9]+$ ]]; then
+    printf '%s' "${entry}"
+  else
+    printf 'http://%s' "${entry}"
+  fi
+}
+
+# True when every address in the list is already allowed for this sandbox.
+#
+# We ask the sandbox tool itself, one address at a time:
+#   sbx policy check network --sandbox <name> <target>
+# which is read-only — it changes nothing, it only answers. WE READ THE ANSWER
+# FROM THE EXIT CODE: zero means the address is allowed, anything else means it
+# is not. Anything else also covers a tool that cannot answer at all, and that
+# is the safe way round: we then add the rules, which is harmless if they are
+# already there, rather than skipping them and letting the build fail.
 network_rules_present() {
   if [[ -z "${SANDBOX_ALLOW_NETWORK}" ]]; then
     return 0 # nothing was asked for
   fi
-  local listing rule
+  local entry target
   local -a rules=()
   IFS=',' read -r -a rules <<<"${SANDBOX_ALLOW_NETWORK}"
-  if listing="$(sbx policy ls --sandbox "${SANDBOX_NAME}" 2>/dev/null)"; then
-    for rule in "${rules[@]}"; do
-      if [[ -n "${rule}" ]] && ! printf '%s' "${listing}" | grep -qF -- "${rule}"; then
-        return 1
-      fi
-    done
-    return 0
-  fi
-  # `sbx` has no per-sandbox rule list on this version: use our own note.
-  if [[ -f "${MARKER_FILE}" ]] && grep -qxF -- "${SANDBOX_ALLOW_NETWORK}" "${MARKER_FILE}"; then
-    return 0
-  fi
-  return 1
+  for entry in "${rules[@]}"; do
+    if [[ -z "${entry}" ]]; then
+      continue
+    fi
+    target="$(check_target_for "${entry}")"
+    if ! sbx policy check network --sandbox "${SANDBOX_NAME}" "${target}" >/dev/null 2>&1; then
+      log "the sandbox is not yet allowed to reach ${target}"
+      return 1
+    fi
+  done
+  return 0
 }
 
 allow_network() {
   log "allowing outbound addresses for ${SANDBOX_NAME}: ${SANDBOX_ALLOW_NETWORK}"
   sbx policy allow network --sandbox "${SANDBOX_NAME}" "${SANDBOX_ALLOW_NETWORK}"
-  mkdir -p "${MARKER_DIR}"
-  printf '%s\n' "${SANDBOX_ALLOW_NETWORK}" >"${MARKER_FILE}"
 }
 
 # --- step 4: the deploy itself, inside the sandbox --------------------------
@@ -144,7 +168,8 @@ allow_network() {
 # A bare `-e NAME` tells sbx to take that variable's value from this script's own
 # environment, so the mode signal the deploy stage sets (a normal deploy, the
 # candidate leg, promote, revert, or the candidate teardown) reaches deploy.sh
-# inside the sandbox unchanged.
+# inside the sandbox unchanged. A name that is not set arrives empty, which is
+# exactly what deploy.sh already expects when the signal is off.
 run_deploy_inside() {
   local rc=0
   log "running deploy/deploy.sh inside ${SANDBOX_NAME} (working directory ${REPO_ROOT})"
