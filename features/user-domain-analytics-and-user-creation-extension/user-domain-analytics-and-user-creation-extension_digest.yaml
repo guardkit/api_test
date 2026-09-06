@@ -1,0 +1,67 @@
+feature: user-domain-analytics-and-user-creation-extension
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/count-by-domain
+scenarios:
+- title: Querying user domain counts on a fresh database returns an empty list
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: When the database is brand new and empty, asking for user counts by domain
+    returns an empty list rather than failing.
+- title: Querying user domain counts on an existing database returns counts for each domain
+  tags:
+  - '@key-example'
+  sentence: When the database already contains users, asking for user counts by domain
+    returns a count for every domain that has users.
+- title: Creating a new user on a fresh database succeeds
+  tags:
+  - '@key-example'
+  sentence: When the database is brand new and empty, creating a new user with a
+    valid email address works and the user appears in the user list.
+- title: A fresh database returns an empty array for domain counts
+  tags:
+  - '@boundary'
+  sentence: When the database is brand new and empty, the response for domain counts
+    is an empty list.
+- title: A database with exactly one domain returns a single count entry
+  tags:
+  - '@boundary'
+  sentence: When the database contains users from only one email domain, the
+    response lists that domain with a count greater than zero.
+- title: Creating a user without a required field fails
+  tags:
+  - '@negative'
+  sentence: When attempting to create a user without providing all required
+    information, the request is rejected and the response indicates what is
+    missing.
+- title: Querying with an invalid domain filter returns an error
+  tags:
+  - '@negative'
+  sentence: When asking for domain counts using an invalid filter, the request
+    is rejected and the response indicates the filter is invalid.
+- title: Concurrent user creation on a fresh database handles race conditions
+  tags:
+  - '@edge-case'
+  sentence: When two users attempt to create themselves at the exact same time
+    on a fresh database, both are created successfully and the database
+    contains both users.
+- title: Creating a user with a duplicate email on a fresh database fails
+  tags:
+  - '@edge-case'
+  sentence: When a user with an email that already exists attempts to create
+    themselves on a fresh database, the request is rejected and the response
+    indicates the email is already in use.
+assumptions:
+- id: ASSUM-001
+  text: GET /users/count-by-domain returns an empty list when no users exist
+  basis: Inferred from problem statement; not explicitly stated whether empty list
+    or 404 is expected
+- id: ASSUM-002
+  text: POST /users requires a valid email address in the request body
+  basis: Inferred from domain context; not stated in input
+- id: ASSUM-003
+  text: The response body for an empty domain count is an empty JSON array
+  basis: Inferred from problem statement; not explicitly stated whether empty
+    list or 404 is expected

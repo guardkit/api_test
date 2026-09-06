@@ -15,7 +15,12 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    """Schema for creating a new user."""
+    """Schema for creating a new user.
+
+    Automatically derives the domain from the email address.
+    """
+
+    domain: str | None = None
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -27,6 +32,13 @@ class UserCreate(UserBase):
             ]
         }
     )
+
+    @model_validator(mode="after")
+    def populate_domain(self) -> UserCreate:
+        """Derive domain from email address."""
+        if self.domain is None and self.email:
+            self.domain = self.email.split("@")[-1].lower()
+        return self
 
 
 class DomainCountResponse(BaseModel):
@@ -75,6 +87,7 @@ class UserPublic(BaseModel):
 
     id: str
     email: EmailStr
+    domain: str | None = None
     name: str | None = None
     full_name: str | None = None
     is_active: bool = True

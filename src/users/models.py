@@ -21,6 +21,7 @@ class User(DeclarativeBase):
     Attributes:
         id: UUID primary key with server-default uuid4
         email: Unique, indexed string (not nullable)
+        domain: Optional domain extracted from email, indexed
         full_name: Optional string
         is_active: Boolean, default True
         created_at: Timestamp with timezone, server-default now()
@@ -41,6 +42,11 @@ class User(DeclarativeBase):
         String,
         nullable=False,
         unique=True,
+        index=True,
+    )
+    domain: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
         index=True,
     )
     full_name: Mapped[str | None] = mapped_column(String, nullable=True)
