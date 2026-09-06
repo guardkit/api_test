@@ -1,14 +1,15 @@
 ---
-id: TASK-8388-002
-title: Implement user CRUD and analytics logic
-task_type: feature
-parent_review: TASK-REV-8388
-feature_id: FEAT-8388
-wave: 2
-implementation_mode: task-work
 complexity: 6
 dependencies:
-  - TASK-8388-001
+- TASK-8388-001
+feature_id: FEAT-8388
+id: TASK-8388-002
+implementation_mode: task-work
+parent_review: TASK-REV-8388
+status: design_approved
+task_type: feature
+title: Implement user CRUD and analytics logic
+wave: 2
 ---
 
 # Implement user CRUD and analytics logic
