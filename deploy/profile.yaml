@@ -13,10 +13,34 @@ format_version: "1.0"
 env_id: local
 compose:
   file: docker-compose.yml
-  # The vetted deploy wrapper the deploy_compose step runs (never inline shell).
-  # It snapshots the running image as the rollback tag then `up -d --build`;
-  # in revert mode it re-tags the rollback image and `up -d --no-build`.
-  script: deploy/deploy.sh
+  # The vetted wrapper the deploy_compose step runs (never inline shell). It puts
+  # the sandbox described below in place, then runs deploy/deploy.sh INSIDE it and
+  # exits with that script's exit code. deploy/deploy.sh itself is unchanged: it
+  # snapshots the running image as the rollback tag then `up -d --build`, and in
+  # revert mode re-tags the rollback image and `up -d --no-build`. It now talks to
+  # the Docker engine inside the sandbox instead of the one on the host.
+  script: deploy/sandbox-deploy.sh
+# The Docker Sandbox this repository deploys into (Rich's decision, 2026-09-06:
+# every merge deploys the feature into a microVM with its own kernel and its own
+# Docker engine, made by Docker's `sbx` tool). One long-lived sandbox per
+# repository. The deploy stage threads these settings to deploy/sandbox-deploy.sh
+# as SANDBOX_NAME, SANDBOX_MEMORY, SANDBOX_CPUS, SANDBOX_PUBLISH (comma-joined)
+# and SANDBOX_ALLOW_NETWORK (comma-joined); the wrapper never parses this file.
+#   publish       -- the live app port and the candidate port, both handed back to
+#                    the host's loopback so the health check and the live gate
+#                    keep running from the host exactly as they do today.
+#   allow_network -- the sandbox refuses every outbound address unless it is
+#                    named here. These five let the image build: the Debian
+#                    mirrors and the Python package index. A repository whose app
+#                    calls the model door on the host adds the host's own LAN
+#                    address and port here (the name host.docker.internal
+#                    resolves to an address the policy blocks).
+sandbox:
+  name: api-test-deploy
+  memory: 6g
+  cpus: 4
+  publish: ["127.0.0.1:8901:8901", "127.0.0.1:8902:8902"]
+  allow_network: ["deb.debian.org", "security.debian.org", "*.debian.org", "pypi.org", "files.pythonhosted.org"]
 hosts:
   - host: localhost
     role: app

@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+#
+# Fake `sbx` for the sandbox-deploy dry-run harness. It records every call, with
+# its exact arguments, to $FAKE_SBX_LOG and answers from environment variables
+# the test sets. It NEVER talks to the real sandbox tool or daemon, and never
+# creates, starts, stops or removes anything.
+#
+#   FAKE_SBX_LS                 what `sbx ls` prints (empty = no sandboxes)
+#   FAKE_SBX_POLICY_LS_RC       exit code for `sbx policy ls` (0 = this version
+#                               can list one sandbox's rules; non-zero = it
+#                               cannot, which is the marker-file path)
+#   FAKE_SBX_POLICY_LS          what `sbx policy ls` prints when it succeeds
+#   FAKE_SBX_EXEC_RC            exit code for `sbx exec` (the inner deploy's
+#                               exit code, which the wrapper must pass through)
+#
+# `sbx exec` also records the values it can see for the variables named by the
+# bare `-e NAME` flags, which is how the tests prove the mode signal really
+# reaches the inner script rather than assuming it.
+set -u
+
+LOG="${FAKE_SBX_LOG:?FAKE_SBX_LOG unset}"
+printf 'sbx %s\n' "$*" >>"${LOG}"
+
+case "${1:-}" in
+  ls)
+    printf '%s' "${FAKE_SBX_LS:-}"
+    exit 0
+    ;;
+  create)
+    exit 0 # record-only (already logged above)
+    ;;
+  policy)
+    if [[ "${2:-}" == "ls" ]]; then
+      rc="${FAKE_SBX_POLICY_LS_RC:-0}"
+      if [[ "${rc}" == "0" ]]; then
+        printf '%s' "${FAKE_SBX_POLICY_LS:-}"
+        exit 0
+      fi
+      printf 'unknown flag --sandbox for "sbx policy ls"\n' >&2
+      exit "${rc}"
+    fi
+    exit 0 # `sbx policy allow network ...` -> record-only
+    ;;
+  exec)
+    # Record what each -e NAME would carry into the sandbox.
+    shift
+    while [[ $# -gt 0 ]]; do
+      if [[ "${1}" == "-e" ]]; then
+        name="${2:-}"
+        printf 'sbx-exec-env %s=%s\n' "${name}" "${!name-<unset>}" >>"${LOG}"
+        shift 2
+        continue
+      fi
+      shift
+    done
+    exit "${FAKE_SBX_EXEC_RC:-0}"
+    ;;
+esac
+exit 0

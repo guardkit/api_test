@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#
+# Fake `systemctl` for the sandbox-deploy dry-run harness. It records the call to
+# $FAKE_SYSTEMCTL_LOG and succeeds. It NEVER talks to the real service manager,
+# and starts, stops or reloads nothing.
+set -u
+
+LOG="${FAKE_SYSTEMCTL_LOG:?FAKE_SYSTEMCTL_LOG unset}"
+printf 'systemctl %s\n' "$*" >>"${LOG}"
+exit 0
