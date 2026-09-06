@@ -1,14 +1,15 @@
 ---
-id: TASK-8388-004
-title: Implement user creation endpoint
-task_type: feature
-parent_review: TASK-REV-8388
-feature_id: FEAT-8388
-wave: 3
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-8388-002
+- TASK-8388-002
+feature_id: FEAT-8388
+id: TASK-8388-004
+implementation_mode: task-work
+parent_review: TASK-REV-8388
+status: design_approved
+task_type: feature
+title: Implement user creation endpoint
+wave: 3
 ---
 
 # Implement user creation endpoint

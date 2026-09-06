@@ -1,20 +1,21 @@
 ---
-id: TASK-8388-003
-title: Add user domain analytics endpoints
-task_type: feature
-parent_review: TASK-REV-8388
-feature_id: FEAT-8388
-wave: 3
-implementation_mode: task-work
 complexity: 5
-dependencies:
-  - TASK-8388-002
 consumer_context:
-  - task: TASK-8388-002
-    consumes: user_domain_counts
-    framework: FastAPI
-    driver: SQLAlchemy
-    format_note: dictionary with domain names as keys and integer counts as values
+- consumes: user_domain_counts
+  driver: SQLAlchemy
+  format_note: dictionary with domain names as keys and integer counts as values
+  framework: FastAPI
+  task: TASK-8388-002
+dependencies:
+- TASK-8388-002
+feature_id: FEAT-8388
+id: TASK-8388-003
+implementation_mode: task-work
+parent_review: TASK-REV-8388
+status: design_approved
+task_type: feature
+title: Add user domain analytics endpoints
+wave: 3
 ---
 
 # Add user domain analytics endpoints
