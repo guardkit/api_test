@@ -1,0 +1,25 @@
+feature: User Domain Analytics and User Creation Extension
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: Querying user domain counts on a fresh database returns an empty list
+  assumption: GET /users/count-by-domain returns an empty list when no users exist
+  confidence: low
+  basis: Inferred from problem statement; not explicitly stated whether empty list
+    or 404 is expected
+  human_response: deferred
+- id: ASSUM-002
+  scenario: Creating a new user on a fresh database succeeds
+  assumption: POST /users requires a valid email address in the request body
+  confidence: low
+  basis: Inferred from domain context; not stated in input
+  human_response: deferred
+- id: ASSUM-003
+  scenario: A fresh database returns an empty array for domain counts
+  assumption: The response body for an empty domain count is an empty JSON array
+  confidence: low
+  basis: Inferred from problem statement; not explicitly stated whether empty list
+    or 404 is expected
+  human_response: deferred
