@@ -1,0 +1,77 @@
+id: FEAT-39F6
+name: Add deleted_at column to users table
+description: Add a nullable deleted_at timestamp column to the users table to support soft-delete operations.
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 4
+estimated_tasks: 4
+
+tasks:
+  - id: TASK-39F6-001
+    name: Add deleted_at column to users table
+    file_path: tasks/backlog/add-deleted-at-column/TASK-39F6-001-add-deleted-at-column.md
+    complexity: 4
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-39F6-002
+    name: Update user model and schemas
+    file_path: tasks/backlog/add-deleted-at-column/TASK-39F6-002-update-user-model.md
+    complexity: 3
+    dependencies:
+      - TASK-39F6-001
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-39F6-003
+    name: Update user CRUD operations
+    file_path: tasks/backlog/add-deleted-at-column/TASK-39F6-003-update-user-crud.md
+    complexity: 5
+    dependencies:
+      - TASK-39F6-002
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-39F6-004
+    name: Add acceptance tests
+    file_path: tasks/backlog/add-deleted-at-column/TASK-39F6-004-add-acceptance-tests.md
+    complexity: 4
+    dependencies:
+      - TASK-39F6-003
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+orchestration:
+  parallel_groups:
+    - - TASK-39F6-001
+    - - TASK-39F6-002
+    - - TASK-39F6-003
+    - - TASK-39F6-004
+  estimated_duration_minutes: 210
+  recommended_parallel: 1
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/add-deleted-at-column-to-users-table/add-deleted-at-column-to-users-table.feature"
+scenarios:
+  # stamped by the model — no rule (R1-R10) could decide this title
+  "The deleted_at column exists and is nullable":
+    verifier: "probe:process"
+  # stamped by the model — no rule (R1-R10) could decide this title
+  "A user record can have a null deleted_at value":
+    verifier: "probe:process"
+  # stamped by the model — no rule (R1-R10) could decide this title
+  "A user record can have a non-null deleted_at value":
+    verifier: "probe:process"
+  # stamped by the model — no rule (R1-R10) could decide this title
+  "The deleted_at column does not require a value":
+    verifier: "probe:process"
+  # stamped by the model — no rule (R1-R10) could decide this title
+  "The deleted_at column is not a boolean type":
+    verifier: "probe:process"
