@@ -1,0 +1,9 @@
+id: TASK-FEAT39F6FIX1
+name: "Repair of build-FEAT-39F6-20260907055525: after the merge, the candidate check\
+  \ in the Docker Sandbox failed 2 of 62 checks on a fresh Postgres \u2014 DELETE\
+  \ /users/{id} answered 503 where 204 was expected, in the Hurl twins delete-existing-user\
+  \ (line 40) and double-delete-honest-404 (line 35); the other 60 checks passed.\
+  \ The delete path this feature added works on the SQLite the tests use and fails\
+  \ on Postgres. Gate evidence: qa/gates/evidence/FEAT-39F6-local-20260907T083219Z/EVIDENCE.yaml\
+  \ in the api_test checkout; the merge report: forge receipts merge-build-FEAT-39F6-20260907055525/merge_deploy_report.json."
+parent_feature: FEAT-39F6
