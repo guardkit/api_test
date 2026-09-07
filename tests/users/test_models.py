@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -98,6 +97,44 @@ class TestUserModel:
 
         assert user.is_active is True
         assert user.created_at is not None
+
+    async def test_user_has_deleted_at_field(self, async_session: AsyncSession) -> None:
+        """AC-001: User model includes deleted_at field.
+
+        Verifies that the User ORM model has a deleted_at column
+        that is nullable and defaults to None.
+        """
+        user = User(
+            email="deleted-at-test@example.com",
+            full_name="Deleted At Test",
+        )
+
+        async_session.add(user)
+        await async_session.commit()
+        await async_session.refresh(user)
+
+        assert hasattr(user, "deleted_at")
+        assert user.deleted_at is None
+
+    async def test_user_deleted_at_can_be_set(
+        self, async_session: AsyncSession
+    ) -> None:
+        """Test that deleted_at can be set to a datetime value."""
+        user = User(
+            email="soft-delete@example.com",
+            full_name="Soft Delete Test",
+        )
+
+        async_session.add(user)
+        await async_session.commit()
+        await async_session.refresh(user)
+
+        # Set deleted_at to simulate soft-delete
+        user.deleted_at = datetime.now(UTC)
+        await async_session.commit()
+        await async_session.refresh(user)
+
+        assert user.deleted_at is not None
         assert user.updated_at is not None
 
     async def test_user_update(self, async_session: AsyncSession) -> None:
@@ -143,7 +180,9 @@ class TestUserModel:
         assert user.id in repr_str
         assert "repr@example.com" in repr_str
 
-    async def test_user_model_timestamps_auto_populated(self, async_session: AsyncSession) -> None:
+    async def test_user_model_timestamps_auto_populated(
+        self, async_session: AsyncSession
+    ) -> None:
         """Test that timestamps are auto-populated on creation."""
         user = User(
             email="timestamps@example.com",
@@ -159,7 +198,9 @@ class TestUserModel:
         assert user.updated_at is not None
         assert user.created_at == user.updated_at
 
-    async def test_user_model_is_active_default(self, async_session: AsyncSession) -> None:
+    async def test_user_model_is_active_default(
+        self, async_session: AsyncSession
+    ) -> None:
         """Test that is_active defaults to True."""
         user = User(
             email="default_active@example.com",

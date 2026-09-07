@@ -1,0 +1,18 @@
+feature: Add deleted_at column to users table
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: The deleted_at column exists and is nullable
+  assumption: The deleted_at column must be a nullable timestamp
+  confidence: low
+  basis: Inferred from problem statement; exact database type and nullability not
+    explicitly stated
+  human_response: deferred
+- id: ASSUM-002
+  scenario: A user record can have a null deleted_at value
+  assumption: The database supports nullable timestamp columns
+  confidence: low
+  basis: Inferred from problem statement; database engine not specified
+  human_response: deferred

@@ -131,8 +131,19 @@ router = APIRouter(prefix="/users", redirect_slashes=False)
 async def create_user(
     user_in: UserCreate, db: AsyncSession = Depends(get_db)
 ) -> UserPublic:
-    """Create a new user."""
-    user = await crud.create_user(db, user_in)
+    """Create a new user.
+
+    Returns 201 on success, 409 if the email already exists,
+    or 503 if the database is unavailable.
+    """
+    try:
+        user = await crud.create_user(db, user_in)
+    except SQLAlchemyError as exc:
+        logger.error("Database error while creating user: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
     return UserPublic.model_validate(user)
 
 
@@ -146,7 +157,10 @@ async def create_user(
 async def list_users(
     skip: int = 0, limit: str = "100", db: AsyncSession = Depends(get_db)
 ) -> UserList:
-    """List users with optional pagination."""
+    """List users with optional pagination.
+
+    Returns a paginated list of users, or 503 if the database is unavailable.
+    """
     try:
         limit = validate_limit(limit)
     except ValueError as exc:
@@ -154,8 +168,15 @@ async def list_users(
             status_code=400,
             detail=str(exc),
         ) from exc
-    users = await crud.get_users(db, skip=skip, limit=limit)
-    total = await crud.count_users(db)
+    try:
+        users = await crud.get_users(db, skip=skip, limit=limit)
+        total = await crud.count_users(db)
+    except SQLAlchemyError as exc:
+        logger.error("Database error while listing users: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
     return UserList(items=[UserPublic.model_validate(u) for u in users], total=total)
 
 

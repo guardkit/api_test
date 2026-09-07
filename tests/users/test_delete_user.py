@@ -35,10 +35,9 @@ class TestDeleteUserById:
         )
 
         assert response.status_code == HTTPStatus.NO_CONTENT
-        # Verify user is soft-deleted (deleted_at is set, user still exists)
+        # get_user filters out deleted users per AC-001
         existing = await crud.get_user(db_session, user.id)
-        assert existing is not None
-        assert existing.deleted_at is not None
+        assert existing is None
 
     @pytest.mark.asyncio
     async def test_delete_user_non_existent(
@@ -115,10 +114,9 @@ class TestDeleteUserById:
         )
         assert response1.status_code == HTTPStatus.NO_CONTENT
 
-        # Verify user is soft-deleted
+        # get_user filters out deleted users per AC-001
         existing = await crud.get_user(db_session, user.id)
-        assert existing is not None
-        assert existing.deleted_at is not None
+        assert existing is None
 
         # Second delete — user already soft-deleted, expect 404
         response2 = await async_client.delete(

@@ -1,0 +1,34 @@
+feature: add-deleted-at-column-to-users-table
+generated: '2026-07-09T14:32:00Z'
+scenarios:
+- title: The deleted_at column exists and is nullable
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: The database migration adds a timestamp column that can be left empty and
+    stores valid dates.
+- title: A user record can have a null deleted_at value
+  tags:
+  - '@boundary'
+  sentence: A user can exist without a deletion timestamp recorded.
+- title: A user record can have a non-null deleted_at value
+  tags:
+  - '@boundary'
+  sentence: A user can have a specific timestamp recorded for when they were deleted.
+- title: The deleted_at column does not require a value
+  tags:
+  - '@negative'
+  sentence: Creating a new user does not require providing a deletion timestamp.
+- title: The deleted_at column is not a boolean type
+  tags:
+  - '@negative'
+  sentence: The deletion column must store timestamps rather than simple true
+    or false values.
+assumptions:
+- id: ASSUM-001
+  text: The deleted_at column must be a nullable timestamp
+  basis: Inferred from problem statement; exact database type and nullability not
+    explicitly stated
+- id: ASSUM-002
+  text: The database supports nullable timestamp columns
+  basis: Inferred from problem statement; database engine not specified

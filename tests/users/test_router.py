@@ -245,9 +245,9 @@ class TestDeleteUser:
 
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-        # Verify user is still retrievable (soft-delete)
+        # get_user filters out deleted users per AC-001, so GET returns 404
         response = await async_client.get(f"/users/{created.id}")
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.NOT_FOUND
 
     @pytest.mark.asyncio
     async def test_delete_user_not_found(
@@ -619,9 +619,9 @@ class TestDeleteUserByEmail:
 
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-        # Verify user is still retrievable (soft-delete)
+        # get_user filters out deleted users per AC-001, so GET returns 404
         response = await async_client.get(f"/users/{created.id}")
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.NOT_FOUND
 
     @pytest.mark.asyncio
     async def test_by_email_delete_db_unavailable(
