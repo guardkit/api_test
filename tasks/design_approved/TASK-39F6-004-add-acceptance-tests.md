@@ -1,14 +1,15 @@
 ---
-id: TASK-39F6-004
-title: Add acceptance tests
-task_type: testing
-parent_review: TASK-REV-39F6
-feature_id: FEAT-39F6
-wave: 4
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-39F6-003
+- TASK-39F6-003
+feature_id: FEAT-39F6
+id: TASK-39F6-004
+implementation_mode: task-work
+parent_review: TASK-REV-39F6
+status: design_approved
+task_type: testing
+title: Add acceptance tests
+wave: 4
 ---
 
 ## Acceptance Criteria
