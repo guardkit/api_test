@@ -202,10 +202,9 @@ class TestDeleteUser:
 
         assert result is True
 
-        # Verify user is soft-deleted (deleted_at is set, user still exists)
+        # Verify user is soft-deleted (get_user filters out deleted users per AC-001)
         user = await crud.get_user(db_session, created.id)
-        assert user is not None
-        assert user.deleted_at is not None
+        assert user is None
 
     async def test_delete_user_not_found(self, db_session: AsyncSession) -> None:
         """Test deleting a non-existent user."""

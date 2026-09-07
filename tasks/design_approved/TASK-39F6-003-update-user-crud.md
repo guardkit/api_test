@@ -1,14 +1,15 @@
 ---
-id: TASK-39F6-003
-title: Update user CRUD operations
-task_type: feature
-parent_review: TASK-REV-39F6
-feature_id: FEAT-39F6
-wave: 3
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-39F6-002
+- TASK-39F6-002
+feature_id: FEAT-39F6
+id: TASK-39F6-003
+implementation_mode: task-work
+parent_review: TASK-REV-39F6
+status: design_approved
+task_type: feature
+title: Update user CRUD operations
+wave: 3
 ---
 
 ## Acceptance Criteria

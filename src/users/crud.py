@@ -55,7 +55,11 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = select(User).where(User.id == user_id)
+    stmt = (
+        select(User)
+        .where(User.id == user_id)
+        .where(User.deleted_at.is_(None))
+    )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -73,7 +77,12 @@ async def get_users(
     Returns:
         Sequence of User objects.
     """
-    stmt = select(User).offset(skip).limit(limit)
+    stmt = (
+        select(User)
+        .where(User.deleted_at.is_(None))
+        .offset(skip)
+        .limit(limit)
+    )
     result = await db.execute(stmt)
     return result.scalars().all()
 

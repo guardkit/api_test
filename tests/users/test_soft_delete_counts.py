@@ -49,10 +49,9 @@ class TestSoftDeleteCountReflection:
         deleted = await crud.delete_user(db_session, user1.id)
         assert deleted is True
 
-        # Verify the deleted user has deleted_at set
+        # get_user filters out deleted users per AC-001
         retrieved = await crud.get_user(db_session, user1.id)
-        assert retrieved is not None
-        assert retrieved.deleted_at is not None
+        assert retrieved is None
 
         # Verify count decreased
         final_count = await crud.count_users(db_session)
@@ -200,7 +199,7 @@ class TestSoftDeleteCountReflection:
     async def test_deleted_user_still_retrievable(
         self, db_session: AsyncSession
     ) -> None:
-        """Test that soft-deleted users are still retrievable via get_user."""
+        """Test that soft-deleted users are NOT retrievable via get_user (AC-001)."""
         user_in = UserCreate(email="audit@example.com", full_name="Audit")
         user = await crud.create_user(db_session, user_in)
         await db_session.flush()
@@ -209,11 +208,9 @@ class TestSoftDeleteCountReflection:
         # Soft-delete
         await crud.delete_user(db_session, user.id)
 
-        # User should still be retrievable
+        # get_user filters out deleted users per AC-001
         retrieved = await crud.get_user(db_session, user.id)
-        assert retrieved is not None
-        assert retrieved.email == "audit@example.com"
-        assert retrieved.deleted_at is not None
+        assert retrieved is None
 
     # Non-existent user deletion returns False
     @pytest.mark.asyncio
