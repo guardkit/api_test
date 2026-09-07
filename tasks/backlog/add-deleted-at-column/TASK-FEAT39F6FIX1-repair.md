@@ -1,6 +1,6 @@
 ---
 id: TASK-FEAT39F6FIX1
-title: Repair of build-FEAT-39F6-20260907055525
+title: Repair of build-FEAT-39F6-20260907055525-attempt2
 task_type: fix
 parent_review: TASK-REV-39F6
 feature_id: FEAT-39F6
@@ -10,14 +10,13 @@ complexity: 3
 dependencies: []
 ---
 
-# Repair of build-FEAT-39F6-20260907055525
+# Repair of build-FEAT-39F6-20260907055525-attempt2
 
 Repair of build-FEAT-39F6-20260907055525: after the merge, the candidate check in the Docker Sandbox failed 2 of 62 checks on a fresh Postgres — DELETE /users/{id} answered 503 where 204 was expected, in the Hurl twins delete-existing-user (line 40) and double-delete-honest-404 (line 35); the other 60 checks passed. The delete path this feature added works on the SQLite the tests use and fails on Postgres. Gate evidence: qa/gates/evidence/FEAT-39F6-local-20260907T083219Z/EVIDENCE.yaml in the api_test checkout; the merge report: forge receipts merge-build-FEAT-39F6-20260907055525/merge_deploy_report.json.
 
 ## What was observed
 
-- Result: merged-deploy-failed — FEAT-39F6 merged, but the deploy ended failed — nothing further was touched
-- Source build: build-FEAT-39F6-20260907055525 (feature FEAT-39F6, merged commit 9131bc6b495a)
+- Source build: build-FEAT-39F6-20260907055525-attempt2 (feature FEAT-39F6)
 - Checks: 60 of 62 passed
 - These checks failed:
   - hurl-twins::delete-existing-user::40: expected HTTP 204, observed actual value is <503>
@@ -25,7 +24,7 @@ Repair of build-FEAT-39F6-20260907055525: after the merge, the candidate check i
 
 ## Where the evidence is
 
-- Merge report: /var/forge/receipts/merge-build-FEAT-39F6-20260907055525/merge_deploy_report.json
+- Merge report: none was found under the receipts root
 - Gate evidence: qa/gates/evidence/FEAT-39F6-local-20260907T083219Z/EVIDENCE.yaml
 - Failure pack: none was recorded for this build
 
