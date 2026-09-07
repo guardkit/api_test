@@ -93,6 +93,7 @@ class UserPublic(BaseModel):
     is_active: bool = True
     created_at: str
     updated_at: str
+    deleted_at: str | None = None
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -105,12 +106,13 @@ class UserPublic(BaseModel):
                     "is_active": True,
                     "created_at": "2024-01-01T00:00:00Z",
                     "updated_at": "2024-01-01T00:00:00Z",
+                    "deleted_at": None,
                 }
             ]
         },
     )
 
-    @field_validator("created_at", "updated_at", mode="before")
+    @field_validator("created_at", "updated_at", "deleted_at", mode="before")
     @classmethod
     def format_datetime(cls, v: datetime | str) -> str:
         """Format datetime to ISO format string."""
@@ -182,6 +184,7 @@ class UserList(BaseModel):
                             "is_active": True,
                             "created_at": "2024-01-01T00:00:00Z",
                             "updated_at": "2024-01-01T00:00:00Z",
+                            "deleted_at": None,
                         }
                     ],
                     "total": 1,
@@ -209,6 +212,7 @@ class RecentUsersResponse(BaseModel):
                             "is_active": True,
                             "created_at": "2024-01-01T00:00:00Z",
                             "updated_at": "2024-01-01T00:00:00Z",
+                            "deleted_at": None,
                         }
                     ],
                     "total": 1,

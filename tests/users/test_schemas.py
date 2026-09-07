@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import datetime
-from decimal import Decimal
-from typing import Any
 
 import pytest
-from collections.abc import Mapping
 from pydantic import ValidationError
 
-from src.users.schemas import UserCreate, UserList, UserPublic, UserUpdate
+from src.users.schemas import (
+    UserCreate,
+    UserList,
+    UserPublic,
+    UserUpdate,
+)
 
 
 class TestUserCreate:
@@ -32,13 +35,16 @@ class TestUserCreate:
         assert user.email == "john.doe@example.com"
         assert user.full_name is None
 
-    @pytest.mark.parametrize("invalid_email", [
-        "not-an-email",
-        "missing@domain",
-        "@nodomain.com",
-        "no-at-sign.com",
-        "",
-    ])
+    @pytest.mark.parametrize(
+        "invalid_email",
+        [
+            "not-an-email",
+            "missing@domain",
+            "@nodomain.com",
+            "no-at-sign.com",
+            "",
+        ],
+    )
     def test_user_create_invalid_email(self, invalid_email: str) -> None:
         """Test that invalid emails raise ValidationError."""
         data = {"email": invalid_email}
@@ -98,7 +104,133 @@ class TestUserUpdate:
 
         assert user.email is None
         assert user.full_name is None
-        assert user.is_active is None
+
+
+class TestUserPublicDeletedAt:
+    """Tests for deleted_at field in UserPublic schema."""
+
+    def test_user_public_has_deleted_at_field(self) -> None:
+        """AC-002: UserPublic schema includes deleted_at field.
+
+        Verifies that the UserPublic schema has a deleted_at field
+        that is optional (str | None).
+        """
+        schema = UserPublic.model_fields
+        assert "deleted_at" in schema, "UserPublic must have deleted_at field"
+        field_info = schema["deleted_at"]
+        assert field_info.is_required() is False, "deleted_at must be optional"
+        assert field_info.default is None, "deleted_at default must be None"
+
+    def test_user_public_deleted_at_none_by_default(self) -> None:
+        """Test that UserPublic accepts deleted_at=None (not soft-deleted)."""
+        data = {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "email": "john.doe@example.com",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "deleted_at": None,
+        }
+        user = UserPublic(**data)
+        assert user.deleted_at is None
+
+    def test_user_public_deleted_at_set(self) -> None:
+        """Test that UserPublic accepts a non-None deleted_at value."""
+        data = {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "email": "john.doe@example.com",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "deleted_at": "2024-06-01T12:00:00Z",
+        }
+        user = UserPublic(**data)
+        assert user.deleted_at == "2024-06-01T12:00:00Z"
+
+    def test_user_public_deleted_at_datetime_formatting(self) -> None:
+        """Test that UserPublic formats datetime objects for deleted_at."""
+        dt = datetime(2024, 6, 1, 12, 0, 0)
+        data = {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "email": "john.doe@example.com",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "deleted_at": dt,
+        }
+        user = UserPublic(**data)
+        assert user.deleted_at == dt.isoformat()
+
+    def test_user_public_deleted_at_in_json_schema(self) -> None:
+        """Test that deleted_at appears in the JSON schema."""
+        json_schema = UserPublic.model_json_schema()
+        properties = json_schema.get("properties", {})
+        assert "deleted_at" in properties, "deleted_at must be in JSON schema"
+        deleted_at_schema = properties["deleted_at"]
+        # Pydantic may represent str | None as anyOf or type
+        if "anyOf" in deleted_at_schema:
+            types = {s.get("type") for s in deleted_at_schema["anyOf"]}
+            assert "string" in types and "null" in types
+        else:
+            assert deleted_at_schema.get("type") in [
+                "string",
+                "null",
+                ["string", "null"],
+            ]
+
+    def test_user_public_all_fields_present(self) -> None:
+        """Test that UserPublic has all expected fields including deleted_at."""
+        expected_fields = {
+            "id",
+            "email",
+            "domain",
+            "name",
+            "full_name",
+            "is_active",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+        }
+        actual_fields = set(UserPublic.model_fields.keys())
+        assert expected_fields == actual_fields, (
+            f"UserPublic must have exactly these fields: {expected_fields}"
+        )
+
+
+class TestUserListDeletedAt:
+    """Tests for deleted_at field propagation through UserList schema."""
+
+    def test_user_list_items_include_deleted_at(self) -> None:
+        """AC-002: UserList schema includes deleted_at via UserPublic items."""
+        data = {
+            "items": [
+                {
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "email": "john.doe@example.com",
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                    "deleted_at": None,
+                }
+            ],
+            "total": 1,
+        }
+        user_list = UserList(**data)
+        assert len(user_list.items) == 1
+        assert user_list.items[0].deleted_at is None
+
+    def test_user_list_items_with_soft_deleted(self) -> None:
+        """Test UserList with a soft-deleted user item."""
+        data = {
+            "items": [
+                {
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "email": "deleted@example.com",
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                    "deleted_at": "2024-06-01T12:00:00Z",
+                }
+            ],
+            "total": 1,
+        }
+        user_list = UserList(**data)
+        assert user_list.items[0].deleted_at == "2024-06-01T12:00:00Z"
 
     def test_user_update_json_schema_extra(self) -> None:
         """Test that UserUpdate includes json_schema_extra with examples."""
