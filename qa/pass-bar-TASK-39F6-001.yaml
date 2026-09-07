@@ -1,0 +1,18 @@
+format_version: '2.0'
+task_id: TASK-39F6-001
+registered_at:
+  sha: f6717cbbf47787645a576799d5b4de1b778a2736
+  date: '2026-09-07'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: add-deleted-at-column-to-users-table-AC-001
+  text: The deleted_at column exists and is nullable
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
