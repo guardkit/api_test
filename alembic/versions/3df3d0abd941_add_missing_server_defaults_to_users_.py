@@ -16,32 +16,33 @@ Revises: a143501c5e1f
 Create Date: 2026-08-14 23:26:51.211872
 
 """
-from typing import Sequence, Union
 
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '3df3d0abd941'
-down_revision: Union[str, None] = 'a143501c5e1f'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision: str = "3df3d0abd941"
+down_revision: str | None = "a143501c5e1f"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
     # Match the model: server_default=func.now() on both timestamp columns.
     # batch_alter_table -> SQLite recreates the table (the only way it can
     # add a column default); existing rows and data are preserved.
-    with op.batch_alter_table('users') as batch_op:
+    with op.batch_alter_table("users") as batch_op:
         batch_op.alter_column(
-            'created_at',
+            "created_at",
             existing_type=sa.DateTime(),
             existing_nullable=False,
             server_default=sa.func.now(),
         )
         batch_op.alter_column(
-            'updated_at',
+            "updated_at",
             existing_type=sa.DateTime(),
             existing_nullable=False,
             server_default=sa.func.now(),
@@ -50,15 +51,15 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     # Back to a143501c5e1f's (defective) shape: NOT NULL, no default.
-    with op.batch_alter_table('users') as batch_op:
+    with op.batch_alter_table("users") as batch_op:
         batch_op.alter_column(
-            'created_at',
+            "created_at",
             existing_type=sa.DateTime(),
             existing_nullable=False,
             server_default=None,
         )
         batch_op.alter_column(
-            'updated_at',
+            "updated_at",
             existing_type=sa.DateTime(),
             existing_nullable=False,
             server_default=None,

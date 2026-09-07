@@ -7,10 +7,10 @@ import os
 import sys
 from typing import TYPE_CHECKING
 
-from alembic import context
 from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 
+from alembic import context
 from src.db.base import DeclarativeBase
 
 # Get database URL from environment or use SQLite for testing
@@ -22,7 +22,6 @@ if _DATABASE_URL is None:
     _DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable
     from sqlalchemy import Connection
 
 # this is the Alembic Config object, which provides
@@ -120,9 +119,11 @@ def run_migrations() -> None:
 # Check if we're running in "dry-run" mode by looking at sys.argv
 # When running "alembic check", "revision", etc., the command name is passed in argv
 # These commands don't require a database connection
-_is_check_or_revision_command = (
-    len(sys.argv) >= 2
-    and sys.argv[1] in ("check", "history", "show", "revision")
+_is_check_or_revision_command = len(sys.argv) >= 2 and sys.argv[1] in (
+    "check",
+    "history",
+    "show",
+    "revision",
 )
 
 if _is_check_or_revision_command:
