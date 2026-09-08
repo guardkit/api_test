@@ -85,12 +85,9 @@ def test_users_table_migration_contains_columns() -> None:
     migration_file = project_root / "alembic" / "versions"
     migration_files = list(migration_file.glob("*.py"))
 
-    # Find the users table migration
-    users_migration = None
-    for f in migration_files:
-        if "users" in f.name.lower() or "user" in f.name.lower():
-            users_migration = f
-            break
+    # Find the migration that CREATES the users table (later migrations add
+    # columns to it and also carry "users" in their names).
+    users_migration = next((f for f in migration_files if "create_users_table" in f.name), None)
 
     assert users_migration is not None, "Users table migration should exist"
     content = users_migration.read_text()
@@ -109,11 +106,7 @@ def test_users_table_migration_has_unique_constraint() -> None:
     migration_file = project_root / "alembic" / "versions"
     migration_files = list(migration_file.glob("*.py"))
 
-    users_migration = None
-    for f in migration_files:
-        if "users" in f.name.lower():
-            users_migration = f
-            break
+    users_migration = next((f for f in migration_files if "create_users_table" in f.name), None)
 
     assert users_migration is not None, "Users table migration should exist"
     content = users_migration.read_text()
@@ -128,11 +121,7 @@ def test_users_table_migration_has_index() -> None:
     migration_file = project_root / "alembic" / "versions"
     migration_files = list(migration_file.glob("*.py"))
 
-    users_migration = None
-    for f in migration_files:
-        if "users" in f.name.lower():
-            users_migration = f
-            break
+    users_migration = next((f for f in migration_files if "create_users_table" in f.name), None)
 
     assert users_migration is not None, "Users table migration should exist"
     content = users_migration.read_text()

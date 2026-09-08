@@ -24,17 +24,6 @@ known_failures:
     since:
       date: "2026-09-08"
       sha: "0051d3e"
-  - test_id: "tests/test_alembic.py::test_users_table_migration_contains_columns"
-    reason: >-
-      Stale test, NOT a product defect: it reads the first migration file in
-      the versions folder and expects the users table's columns, but the
-      folder's first file by name is a later migration (the domain column).
-      Deselected by qa/run-suite.sh until the test is rewritten to find the
-      users-table migration by revision id.
-    env_condition: "any"
-    since:
-      date: "2026-09-08"
-      sha: "0051d3e"
   - test_id: "tests/test_middleware.py::TestMiddlewareIntegration::test_correlation_id_passed_through_response"
     reason: >-
       Cross-test event-loop teardown artifact, NOT a product defect. The module
