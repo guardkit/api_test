@@ -33,7 +33,12 @@ services:
         ipv4_address: 172.31.100.10
 
   app:
-    runtime: runsc
+    # Sandbox first (2026-09-08): the oracle now runs INSIDE the repository's
+    # Docker Sandbox, a microVM with its own kernel and its own Docker engine,
+    # which has no gVisor. The sandbox is the isolation, so the runtime is a
+    # setting with the plain runtime as its default; a host engine that has
+    # gVisor can still ask for it with SMOKE_RUNTIME=runsc.
+    runtime: ${SMOKE_RUNTIME:-runc}
     # runsc ACTIVE since 2026-07-25 (Rich's attended install + the B1 oracle run
     # green twice under gVisor). The db is dialed by static IP below because
     # gVisor's netstack cannot reach Docker's embedded DNS on this internal
