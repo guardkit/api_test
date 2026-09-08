@@ -10,6 +10,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 PY="${PWD}/.venv/bin/python"
 [[ -x "$PY" ]] || { echo "qa/run-suite.sh: no interpreter at ${PY} — the work leg's bootstrap makes it" >&2; exit 2; }
+# The suite's own needs (the app's requirements and the test extras: pytest,
+# pytest-forked, pyyaml, aiosqlite, httpx) are declared in pyproject; the
+# bootstrap may have installed only the app, so make sure of them here.
+"$PY" -m pip install -q -e ".[dev]" >/dev/null 2>&1 || { echo "qa/run-suite.sh: could not install the test extras (.[dev])" >&2; exit 2; }
 NAME="api-test-suite-pg-$$"
 # Docker picks a free loopback port (a fixed one collided with a container a
 # timed-out leg had left behind, 2026-09-08); SUITE_PG_PORT pins it if wanted.
