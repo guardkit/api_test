@@ -11,9 +11,12 @@ cd "$(dirname "$0")/.."
 PY="${PWD}/.venv/bin/python"
 [[ -x "$PY" ]] || { echo "qa/run-suite.sh: no interpreter at ${PY} — the work leg's bootstrap makes it" >&2; exit 2; }
 NAME="api-test-suite-pg-$$"
-PORT="${SUITE_PG_PORT:-5433}"
-docker run -d --rm --name "$NAME" -e POSTGRES_PASSWORD=test -e POSTGRES_DB=test -p "127.0.0.1:${PORT}:5432" postgres:16-alpine >/dev/null
+# Docker picks a free loopback port (a fixed one collided with a container a
+# timed-out leg had left behind, 2026-09-08); SUITE_PG_PORT pins it if wanted.
+docker run -d --rm --name "$NAME" -e POSTGRES_PASSWORD=test -e POSTGRES_DB=test -p "127.0.0.1:${SUITE_PG_PORT:-0}:5432" postgres:16-alpine >/dev/null
 trap 'docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT
+PORT="$(docker port "$NAME" 5432/tcp | head -1 | sed -E 's/.*:([0-9]+)$/\1/')"
+[[ -n "$PORT" ]] || { echo "qa/run-suite.sh: could not read the Postgres port" >&2; exit 2; }
 for _ in $(seq 1 60); do docker exec "$NAME" pg_isready -U postgres >/dev/null 2>&1 && break; sleep 1; done
 export DATABASE_URL="postgresql+asyncpg://postgres:test@localhost:${PORT}/test"
 export PATH="${PWD}/.venv/bin:${PATH}"
