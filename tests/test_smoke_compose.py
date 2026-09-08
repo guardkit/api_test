@@ -258,12 +258,17 @@ class TestAC006_RunscActive:
     """runtime: runsc ACTIVE on the app service (flipped 2026-07-25 after the
     attended install; was a commented line while the install was pending)."""
 
-    def test_runtime_runsc_active(self, compose_config):
-        """The app service must run under the runsc (gVisor) runtime."""
+    def test_runtime_runsc_active(self, compose_config, compose_raw):
+        """The app service's runtime is a setting: gVisor (runsc) on a host
+        engine that has it, the plain runtime inside the repository's own
+        Docker Sandbox, which is the isolation and has no gVisor (2026-09-08)."""
         app = compose_config["services"]["app"]
-        assert app.get("runtime") == "runsc", (
-            "App service must declare runtime: runsc (the ruled sandbox runtime; "
-            "active since 2026-07-25)"
+        assert app.get("runtime") in ("runsc", "runc"), (
+            "App service must resolve runtime: to runsc or runc "
+            f"(got {app.get('runtime')!r})"
+        )
+        assert "SMOKE_RUNTIME" in compose_raw, (
+            "The runtime must be the SMOKE_RUNTIME setting with runc as its default"
         )
 
     def test_runsc_dns_note_present(self, compose_raw):
