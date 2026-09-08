@@ -37,10 +37,29 @@ compose:
 #                    resolves to an address the policy blocks).
 sandbox:
   name: api-test-deploy
-  memory: 6g
-  cpus: 4
+  # Raised from 6g/4 on 2026-09-08: the sandbox now also carries the factory's
+  # two services and every build's install and test run (sandbox first).
+  memory: 12g
+  cpus: 6
   publish: ["127.0.0.1:8901:8901", "127.0.0.1:8902:8902"]
-  allow_network: ["deb.debian.org", "security.debian.org", "*.debian.org", "pypi.org", "files.pythonhosted.org"]
+  # The last five let the factory's services inside reach the host: the model
+  # router (4000), the bus (4222), the memory door (8005), the embedder (9000),
+  # and the memory database on another machine over Tailscale (5433).
+  allow_network: ["deb.debian.org", "security.debian.org", "*.debian.org", "pypi.org", "files.pythonhosted.org", "172.30.1.135:4000", "172.30.1.135:4222", "172.30.1.135:8005", "172.30.1.135:9000", "whitestocks.tailebf801.ts.net:5433"]
+  # The sandbox carries the factory (sandbox first, 2026-09-07; the spec's Part
+  # O rule 68): the deploy sidecar and the build runner run INSIDE it, on the
+  # factory's own clone of this repository, reached by forge-prod on these two
+  # loopback ports. The receipts root is mounted read-write (data the pipeline
+  # reads, never code it runs); forge's config lives beside it, so the whole
+  # state folder is the mount. The sandbox's own settings (the router's address
+  # and key, the bus, the memory leg) are a sops file rendered for the length of
+  # the attended create command only, never named here and never in a shell:
+  #   sops --config ~/.config/fleet-secrets/.sops.yaml exec-file \
+  #     ~/.config/fleet-secrets/forge/sandbox-api-test-deploy.enc.env \
+  #     'SANDBOX_ENV_FILE={} deploy/sandbox-deploy.sh'
+  sidecar_publish: "127.0.0.1:8925:8125"
+  runner_publish: "127.0.0.1:8924:8124"
+  receipts_path: "/home/richardwoollcott/forge-state"
 hosts:
   - host: localhost
     role: app
