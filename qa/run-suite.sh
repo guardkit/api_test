@@ -20,7 +20,11 @@ export PATH="${PWD}/.venv/bin:${PATH}"
 # Every deselected test below is ledgered in qa/known-failures.yaml with its
 # reason (a stale migration test; two cross-test event-loop teardown artefacts
 # that pass in isolation). Zero net-new failures against the ledger is the bar.
-exec "$PY" -m pytest -q --forked -p no:cacheprovider \
+# Not exec: the trap above must still run to remove the Postgres after the suite.
+set +e
+"$PY" -m pytest -q --forked -p no:cacheprovider \
   --deselect tests/test_alembic.py::test_users_table_migration_contains_columns \
   --deselect tests/test_middleware.py::TestMiddlewareIntegration::test_correlation_id_passed_through_response \
   --deselect tests/test_middleware.py::TestMiddlewareIntegration::test_multiple_requests_get_different_correlation_ids
+rc=$?
+exit "$rc"
