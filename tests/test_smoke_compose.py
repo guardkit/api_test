@@ -263,9 +263,11 @@ class TestAC006_RunscActive:
         engine that has it, the plain runtime inside the repository's own
         Docker Sandbox, which is the isolation and has no gVisor (2026-09-08)."""
         app = compose_config["services"]["app"]
-        assert app.get("runtime") in ("runsc", "runc"), (
-            "App service must resolve runtime: to runsc or runc "
-            f"(got {app.get('runtime')!r})"
+        runtime = app.get("runtime")
+        # The file is read raw, so the setting appears as its expression.
+        assert runtime in ("runsc", "${SMOKE_RUNTIME:-runc}"), (
+            "App service must declare runtime: as the SMOKE_RUNTIME setting with "
+            f"runc as its default (or runsc outright); got {runtime!r}"
         )
         assert "SMOKE_RUNTIME" in compose_raw, (
             "The runtime must be the SMOKE_RUNTIME setting with runc as its default"
