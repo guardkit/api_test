@@ -282,7 +282,18 @@ class TestTheWritesOutliveTheirSession:
                 writing,
                 UserCreate(email="outlives-delete@example.com", full_name="Outlives"),
             )
-            assert await crud.delete_user(writing, str(created.id)) is True
+
+        # The setup has to hold before the delete means anything: with no
+        # commit anywhere, nothing would persist and "gone" would be true for
+        # the wrong reason.
+        async with maker() as checking:
+            assert await crud.get_user(checking, str(created.id)) is not None, (
+                "the user to delete was never written down, so this test "
+                "would pass on an application that persists nothing"
+            )
+
+        async with maker() as deleting:
+            assert await crud.delete_user(deleting, str(created.id)) is True
 
         async with maker() as reading:
             found = await crud.get_user(reading, str(created.id))
