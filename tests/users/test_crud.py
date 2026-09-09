@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from src.users import crud
 from src.users.exceptions import UserAlreadyExistsError
@@ -234,3 +234,60 @@ class TestCountUsers:
         count = await crud.count_users(db_session)
 
         assert count == 5
+
+
+class TestTheWritesOutliveTheirSession:
+    """The pin the whole suite was missing (2026-09-09).
+
+    Every other test in this file runs inside one transaction that the
+    fixtures roll back, on a single connection, so a write that is never
+    committed still reads back — and the suite passes while the running
+    application is broken. It happened: a review of this repository asked
+    for the ``await db.commit()`` calls to be taken out of create and
+    delete, the change went through 835 green tests and the merge-ready
+    checks, and the candidate check on a real Postgres caught it at the
+    last gate — ``delete-existing-user`` line 43, expecting 404 after a
+    delete and getting 200, because the delete had never been written
+    down. ``get_db`` yields its session and never commits, so those calls
+    are the only thing that persists a write.
+
+    These two read back through a SECOND session on the same engine, which
+    is what an HTTP request does, so removing a commit fails here first.
+    """
+
+    async def test_a_created_user_is_there_for_the_next_request(
+        self, db_engine: AsyncEngine
+    ) -> None:
+        maker = async_sessionmaker(bind=db_engine, expire_on_commit=False)
+        async with maker() as writing:
+            created = await crud.create_user(
+                writing,
+                UserCreate(email="outlives-create@example.com", full_name="Outlives"),
+            )
+
+        async with maker() as reading:
+            found = await crud.get_user(reading, str(created.id))
+        assert found is not None, (
+            "the created user was not written down: a later request would not "
+            "see it (the session dependency does not commit — crud does)"
+        )
+        assert found.email == "outlives-create@example.com"
+
+    async def test_a_deleted_user_is_gone_for_the_next_request(
+        self, db_engine: AsyncEngine
+    ) -> None:
+        maker = async_sessionmaker(bind=db_engine, expire_on_commit=False)
+        async with maker() as writing:
+            created = await crud.create_user(
+                writing,
+                UserCreate(email="outlives-delete@example.com", full_name="Outlives"),
+            )
+            assert await crud.delete_user(writing, str(created.id)) is True
+
+        async with maker() as reading:
+            found = await crud.get_user(reading, str(created.id))
+        assert found is None, (
+            "the delete was not written down: the next request still sees the "
+            "user, which is what the delete-existing-user twin catches as a "
+            "200 where it expects a 404"
+        )
