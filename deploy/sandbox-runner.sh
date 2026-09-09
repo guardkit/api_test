@@ -203,6 +203,30 @@ else
   log "install proven: forge, guardkit and guardkitfactory import"
 fi
 
+# --- step 4b: the tools this repository's gates shell -----------------------
+#
+# The live gate shells `hurl` (qa/gates/hurl_twin_gate.py looks it up on PATH).
+# Since the gates moved inside the sandbox, there is no hurl in here: the
+# estate's own binary is built against libraries this Ubuntu does not carry,
+# and the sandbox is deliberately fenced off from the release host it would
+# be downloaded from. So `hurl` is a two-line script that runs the pinned
+# image, which the sandbox's own Docker can fetch. The container is thrown
+# away after each run, writes as this user rather than as root, and shares the
+# sandbox's network so a candidate on its own port is reachable. Found the
+# hard way on 2026-09-09: the first candidate check that ever ran refused the
+# merge with "hurl binary not found on PATH", 7 of 8 gates passing.
+HURL_IMAGE="ghcr.io/orange-opensource/hurl:8.0.1"
+mkdir -p "${HOME}/.local/bin"
+cat >"${HOME}/.local/bin/hurl" <<HURL_SHIM
+#!/bin/sh
+exec docker run --rm --network host \
+  --user "\$(id -u):\$(id -g)" \
+  -v "\$PWD:\$PWD" -v /tmp:/tmp -w "\$PWD" \
+  ${HURL_IMAGE} "\$@"
+HURL_SHIM
+chmod 755 "${HOME}/.local/bin/hurl"
+log "gate tools: hurl runs from ${HURL_IMAGE} (this sandbox has no hurl binary)"
+
 if [[ "${SANDBOX_RUNNER_BOOTSTRAP_ONLY:-}" == "1" ]]; then
   log "bootstrap only: the venv is ready; not starting the services"
   exit 0
