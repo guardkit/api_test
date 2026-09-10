@@ -1,0 +1,64 @@
+# --------------------------------------------------------------------------
+# MACHINE-DERIVED PASS BAR — not human-authored.
+#
+# Minted by:     the review leg (guardkit task-review),
+#                guardkit/orchestrator/pass_bar_mint.py
+# Parent review: TASK-FEAT39F6FIX1
+# Fix task:      TASK-ROBF-002-add-try-except-around-db-flush-and-await-db-commit.md
+# Derived from:  that fix task's '## Acceptance Criteria' section, at the
+#                moment the fix task was written — so this bar exists
+#                BEFORE any work leg runs (qa.enforce_tier1's
+#                bar-before-implementation law, held mechanically).
+#
+# Judgements this derivation had to make, stated so they can be corrected:
+#  - auth_surface_bearing: false — no auth-surface token matched the fix task's text/files, so only the universal negative path is declared (PB-14: an authless fix must not fabricate four auth paths it has no surface for). If this fix does touch an auth surface, widen the bar by hand.
+#  - every criterion is classed `machine`: a machine derivation has no
+#    operator runbook to route an operator criterion to (F1/ST-12), and a
+#    criterion with nowhere to route is a silently-dropped criterion.
+#  - evidence_kind `log`: what a checker loop actually
+#    produces for a fix task. The two live kinds (screenshot,
+#    operator_signoff) would make every derived bar runtime-surface-bearing
+#    at feature-complete — a fabricated gate.
+#  - preconditions ['suite_green_vs_ledger']: analyze_clean /
+#    build_artifact are repo-shaped claims a fix-task file cannot evidence.
+#
+# This is a MINIMAL bar. Widening it — operator criteria, live evidence,
+# extra negative paths — is a human/Coach act, not this minter's.
+# --------------------------------------------------------------------------
+format_version: '2.0'
+task_id: TASK-ROBF-002-add-try-except-around-db-flush-and-await-db-commit
+registered_at:
+  sha: ca522697eff05ba666883990a1eee72ca7695167
+  date: '2026-09-10'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+criteria:
+- id: AC-1
+  text: Implementation complete
+  class: machine
+  evidence_kind: log
+- id: AC-2
+  text: Tests passing
+  class: machine
+  evidence_kind: log
+- id: AC-3
+  text: Code reviewed
+  class: machine
+  evidence_kind: log
+- id: AC-4
+  text: Documentation updated
+  class: machine
+  evidence_kind: log
+- id: AC-ANTISTUB-1
+  text: All primary deliverable functions contain meaningful implementation logic
+    (no stubs, pass-only bodies, or TODOs)
+  class: machine
+  evidence_kind: log
+- id: AC-ANTISTUB-2
+  text: At least one test exercises a primary function end-to-end without mocking
+    its core logic
+  class: machine
+  evidence_kind: log
+negative_paths:
+- dependency_down_degradation

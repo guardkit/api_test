@@ -140,3 +140,34 @@ class TestDeleteUserById:
         assert response.status_code == HTTPStatus.BAD_REQUEST
         data = response.json()
         assert "detail" in data
+
+
+class TestDeleteUserDatabaseError:
+    """Tests for delete_user database error handling."""
+
+    @pytest.mark.asyncio
+    async def test_delete_user_db_error_raises_and_rollback(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that SQLAlchemyError during flush/commit is logged and re-raised.
+
+        The delete_user function should catch SQLAlchemyError, log it,
+        rollback the session, and re-raise the exception — matching the
+        error-handling pattern used in create_user().
+        """
+        from sqlalchemy.exc import SQLAlchemyError
+
+        # Create a user to delete
+        user_in = UserCreate(email="db-error@example.com", full_name="DB Error")
+        user = await crud.create_user(db_session, user_in)
+        await db_session.flush()
+        await db_session.refresh(user)
+
+        # Make flush raise a SQLAlchemyError
+        async def fail_flush() -> None:
+            raise SQLAlchemyError("Simulated database failure")
+
+        db_session.flush = fail_flush  # type: ignore[assignment]
+
+        with pytest.raises(SQLAlchemyError, match="Simulated database failure"):
+            await crud.delete_user(db_session, user.id)

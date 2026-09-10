@@ -148,6 +148,21 @@ class TestGetUserByEmail:
 
         assert user is None
 
+    async def test_get_user_by_email_excludes_deleted(
+        self, db_session: AsyncSession
+    ) -> None:
+        """Test that get_user_by_email excludes soft-deleted users."""
+        user_in = UserCreate(email="deleted@example.com", full_name="Deleted User")
+        created = await crud.create_user(db_session, user_in)
+
+        # Soft-delete the user
+        await crud.delete_user(db_session, created.id)
+
+        # get_user_by_email should not return deleted users
+        user = await crud.get_user_by_email(db_session, "deleted@example.com")
+
+        assert user is None
+
 
 class TestUpdateUser:
     """Tests for update_user function."""

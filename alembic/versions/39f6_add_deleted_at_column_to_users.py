@@ -32,7 +32,7 @@ def upgrade() -> None:
     """
     op.add_column(
         "users",
-        sa.Column("deleted_at", sa.DateTime(), nullable=True),
+        sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
     )
 
 
