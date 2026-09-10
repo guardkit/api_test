@@ -1,0 +1,12 @@
+{
+  "ac_paths": false,
+  "rules": [
+    {
+      "id": "architecture-rules",
+      "type": "assert_command",
+      "command": "/home/agent/.forge-venv/bin/python -m guardkit.orchestrator.arch_conformance --repo . --since ca522697eff05ba666883990a1eee72ca7695167",
+      "expected_exit": 0,
+      "timeout": 120
+    }
+  ]
+}

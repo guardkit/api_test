@@ -1,0 +1,14 @@
+{
+  "test": "qa/run-suite.sh",
+  "install": null,
+  "typecheck": null,
+  "lint": null,
+  "build": null,
+  "test_timeout": 900,
+  "install_timeout": 300,
+  "absent_substrings": null,
+  "ran_marker_regex": null,
+  "requires_ran_marker": null,
+  "runtime": null,
+  "components": null
+}

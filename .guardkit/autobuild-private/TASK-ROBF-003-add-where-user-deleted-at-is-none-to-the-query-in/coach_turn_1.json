@@ -1,0 +1,8 @@
+{
+  "task_id": "TASK-ROBF-003-add-where-user-deleted-at-is-none-to-the-query-in",
+  "turn": 1,
+  "decision": "approve",
+  "issues": [],
+  "contract": "v4",
+  "findings_provenance": "coach-ft-v4"
+}

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.users.exceptions import UserAlreadyExistsError
@@ -97,7 +98,11 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = select(User).where(User.email == email)
+    stmt = (
+        select(User)
+        .where(User.email == email)
+        .where(User.deleted_at.is_(None))
+    )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -159,9 +164,15 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
 
     user.deleted_at = datetime.now(UTC)
     db.add(user)
-    await db.flush()
-    await db.commit()
-    return True
+    try:
+        await db.flush()
+        await db.commit()
+        return True
+    except SQLAlchemyError:
+        await db.rollback()
+        logger = logging.getLogger(__name__)
+        logger.exception("Database error while deleting user %s", user_id)
+        raise
 
 
 async def count_users(db: AsyncSession) -> int:

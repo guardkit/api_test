@@ -1,0 +1,16 @@
+{
+  "task_id": "TASK-ROBF-001-add-timezone-true-to-the-deleted-at-column-in-src",
+  "turn": 2,
+  "decision": "feedback",
+  "issues": [
+    {
+      "type": "finding",
+      "severity": "major",
+      "description": "gathering_status=\"partial_gate_abort\" \u2014 evidence gathering aborted on a quality gate failure; tests.tests_run=null, tests.tests_failed=2, tests.all_passed=false, coverage.coverage_met=false, coverage.line_coverage=null, coverage.branch_coverage=null \u2014 the measured test and coverage signals are null or failing, and the gathering_status indicates the run was aborted on a failure",
+      "suggestion": "",
+      "requirement": ""
+    }
+  ],
+  "contract": "v4",
+  "findings_provenance": "coach-ft-v4"
+}
