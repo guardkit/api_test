@@ -510,7 +510,19 @@ class TestDeleteUserByEmail:
     async def test_by_email_delete_success(
         self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
     ) -> None:
-        """Test that deleting by email returns 204 and the user is gone."""
+        """Deleting by email returns 204 and the user is then absent.
+
+        Rich's ruling, 2026-09-10: the approved twin is the specification.
+        qa/twins/users-delete-by-email/double-delete-honest-404.hurl and
+        qa/twins/users-delete-user/delete-existing-user.hurl both say a
+        lookup after a delete reports an honest absence, and they carry his
+        approval of 2026-07-28 (ASSUM-003, "404 honest absence"). This test
+        used to assert the opposite, so the two could never both pass: every
+        run that satisfied the twin turned this suite red at the merge-ready
+        checks, and every run that satisfied this suite failed the twin at
+        the candidate check. Soft-delete is how the row is kept for the audit
+        trail, not a promise that a deleted user still answers.
+        """
         user_in = UserCreate(email="deletebyemail@example.com", full_name="Delete By Email")
         await crud.create_user(db_session, user_in)
 
@@ -521,11 +533,11 @@ class TestDeleteUserByEmail:
         assert response.status_code == HTTPStatus.NO_CONTENT
         assert response.text == ""
 
-        # With soft-delete, user still exists and is retrievable
+        # The row is kept for the audit trail; the lookup reports it absent.
         response = await async_client.get(
             "/users/by-email", params={"email": "deletebyemail@example.com"}
         )
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.NOT_FOUND
 
     @pytest.mark.asyncio
     async def test_by_email_delete_unknown_returns_404(
@@ -576,7 +588,11 @@ class TestDeleteUserByEmail:
     async def test_by_email_delete_selective(
         self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
     ) -> None:
-        """Test that deleting by email removes only the matching user."""
+        """Deleting by email affects only the matching user.
+
+        The deleted one reports an honest absence and the others are
+        untouched (Rich's 2026-09-10 ruling — see the test above).
+        """
         for i in range(3):
             await crud.create_user(
                 db_session,
@@ -589,11 +605,12 @@ class TestDeleteUserByEmail:
         )
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-        # Verify the deleted user is still retrievable (soft-delete)
+        # The deleted one reports an honest absence (Rich, 2026-09-10 —
+        # the approved twin is the specification).
         response = await async_client.get(
             "/users/by-email", params={"email": "selective1@example.com"}
         )
-        assert response.status_code == HTTPStatus.OK
+        assert response.status_code == HTTPStatus.NOT_FOUND
 
         # Verify the other users are still retrievable
         for i in [0, 2]:
