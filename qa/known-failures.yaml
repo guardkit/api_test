@@ -7,50 +7,127 @@
 # Suite of record (unchanged, points at the standing api-test-pg-factory1 DB):
 #   DATABASE_URL="postgresql+asyncpg://postgres:test@localhost:5433/test" \
 #     .venv/bin/python -m pytest -q --forked
-# Observed baseline 2026-07-12 @ e5ff1c8: 170 passed, 2 failed (the two below).
+# Observed baseline 2026-09-12 @ dc32caf: 805 passed, 20 failed (the twenty below),
+# measured twice with the same result. The previous line claimed "170 passed, 2 failed",
+# measured 2026-07-12 @ e5ff1c8 — it was out by roughly 650 for two months, and the two
+# entries it listed no longer fail. It was wrong for a second reason: until dc32caf the
+# fixture ignored the DATABASE_URL this script exports and ran every test on in-memory
+# SQLite, so the suite of record had never once run against PostgreSQL.
+#
+# THE TWENTY ARE TWO CAUSES, NOT TWENTY PROBLEMS, and both are real:
+#   * fourteen — src/users/crud.py count_users_today compares a timezone-AWARE datetime
+#     against users.created_at, which is declared WITHOUT a timezone. SQLite tolerates it;
+#     PostgreSQL refuses the query, so GET /users/count-today answers 503 from its own
+#     database-error handler. VERIFIED AGAINST THE LIVE SERVICE on 2026-09-12: it returns
+#     503 "can't subtract offset-naive and offset-aware datetimes" right now. This is a
+#     SHIPPED DEFECT, not a test problem, and these entries must be struck when it is fixed.
+#   * six — tests that read the schema with SQLite's own PRAGMA command, which PostgreSQL
+#     cannot parse. What they check is real; they ask for it in a language only one of the
+#     two databases speaks, so they need rewriting rather than ledgering for ever.
 format_version: "1.0"
 suite_id: api_test-pytest-suite
 framework: pytest
 language: python
 expected:
-  passed: 170
+  passed: 805
 known_failures:
-  - test_id: "tests/test_middleware.py::TestMiddlewareIntegration::test_multiple_requests_get_different_correlation_ids"
+  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_all_users_created_today"
     reason: >-
-      The same cross-test event-loop teardown artefact as the entry above
-      (pooled asyncpg connections outliving the TestClient portal's loop);
-      passes in isolation. Deselected by qa/run-suite.sh.
-    env_condition: "local pytest suite via TestClient (--forked); passes when run in isolation"
-    since:
-      date: "2026-09-08"
-      sha: "0051d3e"
-  - test_id: "tests/test_middleware.py::TestMiddlewareIntegration::test_correlation_id_passed_through_response"
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_boundary_with_excluded_users"
     reason: >-
-      Cross-test event-loop teardown artifact, NOT a product defect. The module
-      -global async SQLAlchemy engine (src/db/session.py) pools asyncpg
-      connections that outlive the Starlette TestClient portal's event loop;
-      when a later TestClient run tears its loop down, a pooled connection's
-      callback fires against the closed loop ("RuntimeError: Event loop is
-      closed"). Amplified by environment drift from unpinned dependency floors.
-      The test passes in isolation.
-    env_condition: "local pytest suite via TestClient (--forked); passes when run in isolation"
-    since:
-      date: "2026-07-12"
-      sha: "e5ff1c8"
-    owner: "richwoollcott"
-    review_by: "2026-08-12"
-    tracking_ref: "api_test NullPool harness fix (factory-2 handoff §4 park list)"
-  - test_id: "tests/test_middleware.py::TestMiddlewareIntegration::test_multiple_requests_get_different_correlation_ids"
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_endpoint_zero_users"
     reason: >-
-      Same mechanism as the sibling entry: the module-global async engine pools
-      asyncpg connections across TestClient portal event loops, so a pooled
-      connection's teardown callback fires against an already-closed loop
-      ("RuntimeError: Event loop is closed"). Environment drift from unpinned
-      floors makes it manifest. The test passes in isolation.
-    env_condition: "local pytest suite via TestClient (--forked); passes when run in isolation"
-    since:
-      date: "2026-07-12"
-      sha: "e5ff1c8"
-    owner: "richwoollcott"
-    review_by: "2026-08-12"
-    tracking_ref: "api_test NullPool harness fix (factory-2 handoff §4 park list)"
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_user_at_end_of_day"
+    reason: >-
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_user_at_midnight"
+    reason: >-
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_zero_users"
+    reason: >-
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountTodayEndpoint::test_count_today_empty_db"
+    reason: >-
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountTodayEndpoint::test_count_today_response_json_structure"
+    reason: >-
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountTodayEndpoint::test_count_today_returns_200"
+    reason: >-
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountTodayEndpoint::test_count_today_with_users_today"
+    reason: >-
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountUsersTodayCrud::test_count_users_today_empty"
+    reason: >-
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountUsersTodayCrud::test_count_users_today_excludes_yesterday"
+    reason: >-
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_count_today.py::TestCountUsersTodayCrud::test_count_users_today_with_today_users"
+    reason: >-
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/users/test_soft_delete_counts.py::TestSoftDeleteCountReflection::test_count_today_decreases_after_soft_delete"
+    reason: >-
+      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
+      strike this entry when the column and the query are made to agree, do not
+      let it become permanent.
+  - test_id: "tests/acceptance/test_deleted_at_acceptance.py::TestDeletedAtColumnExistence::test_deleted_at_column_exists_in_table"
+    reason: >-
+      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
+      (cause two above). The check is worth keeping; it needs asking in a way both
+      databases understand.
+  - test_id: "tests/acceptance/test_deleted_at_acceptance.py::TestDeletedAtColumnExistence::test_deleted_at_column_is_nullable"
+    reason: >-
+      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
+      (cause two above). The check is worth keeping; it needs asking in a way both
+      databases understand.
+  - test_id: "tests/acceptance/test_deleted_at_acceptance.py::TestDeletedAtNotBoolean::test_deleted_at_column_type_is_not_boolean"
+    reason: >-
+      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
+      (cause two above). The check is worth keeping; it needs asking in a way both
+      databases understand.
+  - test_id: "tests/test_deleted_at_migration.py::test_deleted_at_column_nullable_in_schema"
+    reason: >-
+      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
+      (cause two above). The check is worth keeping; it needs asking in a way both
+      databases understand.
+  - test_id: "tests/test_deleted_at_migration.py::test_deleted_at_column_type_in_schema"
+    reason: >-
+      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
+      (cause two above). The check is worth keeping; it needs asking in a way both
+      databases understand.
+  - test_id: "tests/test_deleted_at_migration.py::test_migration_applied_creates_column"
+    reason: >-
+      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
+      (cause two above). The check is worth keeping; it needs asking in a way both
+      databases understand.
