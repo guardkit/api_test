@@ -4,10 +4,15 @@
 # green": an un-ledgered failure fails the gate; an unexpectedly-passing ledger
 # entry is a stale-ledger finding. Zero net-new vs this ledger is the bar.
 #
-# Suite of record (unchanged, points at the standing api-test-pg-factory1 DB):
-#   DATABASE_URL="postgresql+asyncpg://postgres:test@localhost:5433/test" \
-#     .venv/bin/python -m pytest -q --forked
-# Observed baseline 2026-09-12 @ dc32caf: 805 passed, 20 failed (the twenty below),
+# Suite of record: qa/run-suite.sh (named in .guardkit/config.yaml as
+# toolchain.test). It starts a throwaway PostgreSQL of its own and points the
+# tests at it. Since 2026-09-12 a bare `.venv/bin/python -m pytest -q --forked`
+# gets a real PostgreSQL too, because the tests start one themselves when
+# nobody has named one (tests/suite_database.py) — so the figures below hold
+# for either command. They do NOT hold on SQLite, which is what
+# API_TEST_TESTS_USE_SQLITE=1 asks for.
+# Observed baseline 2026-09-12 @ the commit below: 818 passed, 20 failed (the twenty
+# below) — 805 of those passes plus the 13 that came with tests/suite_database.py,
 # measured twice with the same result. The previous line claimed "170 passed, 2 failed",
 # measured 2026-07-12 @ e5ff1c8 — it was out by roughly 650 for two months, and the two
 # entries it listed no longer fail. It was wrong for a second reason: until dc32caf the
@@ -29,7 +34,7 @@ suite_id: api_test-pytest-suite
 framework: pytest
 language: python
 expected:
-  passed: 805
+  passed: 818
 known_failures:
   - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_all_users_created_today"
     reason: >-

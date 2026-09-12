@@ -8,7 +8,6 @@ from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
 
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
@@ -22,8 +21,33 @@ from sqlalchemy.orm import sessionmaker
 
 from src.db.base import DeclarativeBase
 from src.db.dependencies import get_db as app_get_db
-from src.db.session import dispose_engine, init_engine
 from src.main import app
+from tests import WHAT_THIS_RUN_TESTS_AGAINST, WHY_THERE_IS_NO_DATABASE
+
+
+def pytest_configure() -> None:
+    """Stop the run plainly when no real database could be had.
+
+    The database was settled in tests/__init__.py, which runs before this file
+    imports the application — it has to, because the application reads its
+    settings once, at import. All that is left here is to turn a failure into
+    one sentence rather than an import traceback.
+
+    Raises:
+        UsageError: When a real database was wanted and could not be had.
+    """
+    if WHY_THERE_IS_NO_DATABASE is not None:
+        raise pytest.UsageError(WHY_THERE_IS_NO_DATABASE)
+
+
+def pytest_report_header() -> str:
+    """Say in the run's header which database the tests are using.
+
+    Returns:
+        str: One plain line for the top of the test output.
+    """
+    return WHAT_THIS_RUN_TESTS_AGAINST
+
 
 # The in-memory database the tests have always used when nothing else is asked
 # for. A developer who runs pytest with no environment set gets exactly this.
@@ -259,6 +283,7 @@ async def override_get_db(
     Yields:
         None: After the test completes, the dependency override is removed.
     """
+
     # Override the dependency
     async def test_get_db() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
