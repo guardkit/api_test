@@ -947,6 +947,95 @@ HTTP/1.1 204 No Content
 
 ---
 
+### Users Created Per Day
+
+#### GET /stats/users-created-per-day
+
+Returns user creation counts for the last 7 days, ordered oldest first.
+Days with no new users are reported with a count of zero. The response
+always contains exactly 7 data points covering the most recent 7-day
+window (today going back 6 days).
+
+**Tags**: `stats`
+
+**Authentication**: None required
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+[
+  {
+    "date": "YYYY-MM-DD",
+    "count": 0
+  }
+]
+```
+
+**Field Descriptions**:
+- `date` (string): The date in YYYY-MM-DD format, covering the last 7 days from today.
+- `count` (integer): Number of users created on that date. Zero if no users were created.
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/stats/users-created-per-day
+```
+
+**Example Response**:
+```json
+[
+  {
+    "date": "2024-01-01",
+    "count": 3
+  },
+  {
+    "date": "2024-01-02",
+    "count": 0
+  },
+  {
+    "date": "2024-01-03",
+    "count": 7
+  },
+  {
+    "date": "2024-01-04",
+    "count": 2
+  },
+  {
+    "date": "2024-01-05",
+    "count": 0
+  },
+  {
+    "date": "2024-01-06",
+    "count": 5
+  },
+  {
+    "date": "2024-01-07",
+    "count": 1
+  }
+]
+```
+
+**Status Codes**:
+- `200 OK`: User creation statistics retrieved successfully. The response always contains exactly 7 data points.
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported).
+
+**Use Cases**:
+- Tracking user acquisition trends over the past week
+- Identifying days with unusually high or zero user registrations
+- Monitoring the impact of marketing campaigns on user sign-ups
+- Capacity planning based on daily user growth patterns
+
+**Implementation Notes**:
+- The endpoint always returns exactly 7 entries regardless of how many users exist
+- Days with no user creations are included with a count of zero
+- The response is ordered oldest first (6 days ago to today)
+- The underlying query groups user records by their `created_at` date
+- This endpoint does not require authentication and is publicly accessible
+- Only the GET HTTP method is supported; other methods return 405
+
+---
+
 ## Rate Limiting
 
 Currently, no rate limiting is enforced. This may be added in future versions.

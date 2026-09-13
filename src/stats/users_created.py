@@ -34,6 +34,12 @@ class UsersCreatedPerDay(BaseModel):
     "/stats/users-created-per-day",
     response_model=list[UsersCreatedPerDay],
     summary="Users created per day (last 7 days)",
+    description=(
+        "Returns user creation counts for the last 7 days, ordered oldest first. "
+        "Days with no new users are reported with a count of zero. "
+        "The response always contains exactly 7 data points covering the most recent "
+        "7-day window (today going back 6 days)."
+    ),
 )
 async def get_users_created_per_day(
     db: AsyncSession = Depends(get_db),
