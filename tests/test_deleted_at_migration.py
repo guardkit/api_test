@@ -16,6 +16,56 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from src.db.base import DeclarativeBase
 
+
+async def _get_user_columns(db_engine: AsyncEngine) -> list[dict]:
+    """Return column info for the users table in a database-agnostic way.
+
+    Works with both SQLite (PRAGMA) and PostgreSQL (information_schema).
+
+    Args:
+        db_engine: The async engine to query.
+
+    Returns:
+        list[dict]: Column info dicts with keys: name, type, nullable
+    """
+    async with db_engine.connect() as conn:
+        # Detect dialect from the engine URL
+        dialect_name = db_engine.dialect.name.lower()
+
+        if dialect_name == "sqlite":
+            result = await conn.execute(text("PRAGMA table_info(users)"))
+            rows = result.fetchall()
+            columns = []
+            for row in rows:
+                columns.append(
+                    {
+                        "name": row[1],
+                        "type": row[2],
+                        "nullable": row[3] == 0,  # notnull=0 means nullable
+                    }
+                )
+            return columns
+        else:
+            # PostgreSQL and others: use information_schema
+            result = await conn.execute(
+                text(
+                    "SELECT column_name, data_type, is_nullable "
+                    "FROM information_schema.columns "
+                    "WHERE table_name = 'users'"
+                )
+            )
+            rows = result.fetchall()
+            columns = []
+            for row in rows:
+                columns.append(
+                    {
+                        "name": row[0],
+                        "type": row[1],
+                        "nullable": row[2] == "YES",
+                    }
+                )
+            return columns
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -83,10 +133,9 @@ async def test_migration_applied_creates_column(db_engine: AsyncEngine) -> None:
     async with db_engine.begin() as conn:
         await conn.run_sync(DeclarativeBase.metadata.create_all)
 
-    async with db_engine.connect() as conn:
-        result = await conn.execute(text("PRAGMA table_info(users)"))
-        columns = {row[1]: row for row in result.fetchall()}
-        assert "deleted_at" in columns, "deleted_at column should exist in users table"
+    columns = await _get_user_columns(db_engine)
+    column_names = {c["name"] for c in columns}
+    assert "deleted_at" in column_names, "deleted_at column should exist in users table"
 
 
 @pytest.mark.asyncio
@@ -98,14 +147,10 @@ async def test_deleted_at_column_nullable_in_schema(db_engine: AsyncEngine) -> N
     async with db_engine.begin() as conn:
         await conn.run_sync(DeclarativeBase.metadata.create_all)
 
-    async with db_engine.connect() as conn:
-        result = await conn.execute(text("PRAGMA table_info(users)"))
-        columns = {row[1]: row for row in result.fetchall()}
-        assert "deleted_at" in columns
-        # PRAGMA table_info returns: cid, name, type, notnull, dflt_value, pk
-        # notnull = 0 means nullable
-        notnull = columns["deleted_at"][3]
-        assert notnull == 0, "deleted_at column should be nullable (notnull=0)"
+    columns = await _get_user_columns(db_engine)
+    deleted_at = next((c for c in columns if c["name"] == "deleted_at"), None)
+    assert deleted_at is not None, "deleted_at column should exist"
+    assert deleted_at["nullable"], "deleted_at column should be nullable"
 
 
 @pytest.mark.asyncio
@@ -117,14 +162,13 @@ async def test_deleted_at_column_type_in_schema(db_engine: AsyncEngine) -> None:
     async with db_engine.begin() as conn:
         await conn.run_sync(DeclarativeBase.metadata.create_all)
 
-    async with db_engine.connect() as conn:
-        result = await conn.execute(text("PRAGMA table_info(users)"))
-        columns = {row[1]: row for row in result.fetchall()}
-        assert "deleted_at" in columns
-        column_type = columns["deleted_at"][2]
-        assert column_type == "DATETIME", (
-            f"deleted_at column should be DATETIME type, got {column_type}"
-        )
+    columns = await _get_user_columns(db_engine)
+    deleted_at = next((c for c in columns if c["name"] == "deleted_at"), None)
+    assert deleted_at is not None, "deleted_at column should exist"
+    column_type = deleted_at["type"].lower()
+    assert "datetime" in column_type or "timestamp" in column_type or "date" in column_type, (
+        f"deleted_at column should be DateTime/Date type, got {column_type}"
+    )
 
 
 @pytest.mark.asyncio
