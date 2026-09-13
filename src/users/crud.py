@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -56,11 +56,7 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.id == user_id)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.id == user_id).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -78,12 +74,7 @@ async def get_users(
     Returns:
         Sequence of User objects.
     """
-    stmt = (
-        select(User)
-        .where(User.deleted_at.is_(None))
-        .offset(skip)
-        .limit(limit)
-    )
+    stmt = select(User).where(User.deleted_at.is_(None)).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -98,11 +89,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.email == email)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.email == email).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -276,6 +263,71 @@ async def count_users_by_domain(
     result = await db.execute(stmt)
     rows = result.fetchall()
     return [{"domain": row.domain, "count": row.count} for row in rows]
+
+
+async def user_creation_count(db: AsyncSession) -> list[dict[str, object]]:
+    """Return user creation counts for the last 7 days.
+
+    Generates exactly 7 data points covering ``today`` back through
+    ``today - 6 days``, inclusive. Each data point is a dict with
+    ``date`` (a ``date`` object) and ``count`` (an ``int``). Days with
+    no user creations get a count of zero. Results are ordered from
+    oldest to newest.
+
+    Uses a single grouped query to fetch actual counts, then fills in
+    zeros for any dates that have no rows. This approach handles
+    systems that have been running for fewer than 7 days gracefully.
+
+    Args:
+        db: The async database session.
+
+    Returns:
+        List of dicts with ``date`` and ``count`` keys, ordered oldest
+        to newest. Always contains exactly 7 entries.
+    """
+    today = date.today()
+    date_range = [today - timedelta(days=i) for i in reversed(range(7))]
+
+    # Build the start-of-day boundaries for the 7-day window.
+    start_boundaries: list[tuple[datetime, datetime]] = []
+    for d in date_range:
+        start = datetime(d.year, d.month, d.day)
+        end = datetime(d.year, d.month, d.day) + timedelta(days=1)
+        start_boundaries.append((start, end))
+
+    # Build a single OR condition across all 7 day boundaries.
+    day_filters = [
+        (User.created_at >= start) & (User.created_at < end)
+        for start, end in start_boundaries
+    ]
+    or_filter = day_filters[0]
+    for cond in day_filters[1:]:
+        or_filter = or_filter | cond
+
+    stmt = (
+        select(
+            func.date(User.created_at).label("day"),
+            func.count().label("cnt"),
+        )
+        .select_from(User)
+        .where(User.deleted_at.is_(None))
+        .where(or_filter)
+        .group_by(func.date(User.created_at))
+    )
+
+    result = await db.execute(stmt)
+    rows = result.fetchall()
+
+    # Map actual counts into a dict keyed by date.
+    actual_counts: dict[date, int] = {}
+    for row in rows:
+        day_val = row.day
+        if isinstance(day_val, datetime):
+            day_val = day_val.date()
+        actual_counts[day_val] = row.cnt
+
+    # Build the final ordered list, filling zeros for missing days.
+    return [{"date": d, "count": actual_counts.get(d, 0)} for d in date_range]
 
 
 async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
