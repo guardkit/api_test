@@ -3,9 +3,35 @@
 from __future__ import annotations
 
 import subprocess
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+import src.version.utils as version_utils
 from src.version.utils import get_git_commit_hash
+
+
+@pytest.fixture
+def inside_a_repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Put the module somewhere with a .git above it, for this test only.
+
+    get_git_commit_hash walks UP from its own file looking for .git, and
+    returns "unknown" WITHOUT running git when it finds none. So a test that
+    asserts git was called is really asserting something about where the file
+    happens to sit on disk — true in a clone, and not guaranteed anywhere
+    else. It cost turns in two factory builds on 2026-09-13, failing inside a
+    build worktree while passing in the clone and passing when run alone.
+
+    This gives those tests the precondition they were always assuming, so they
+    test the function rather than the layout of the machine.
+    """
+    repo = tmp_path / "repo"
+    (repo / "src" / "version").mkdir(parents=True)
+    (repo / ".git").mkdir()
+    monkeypatch.setattr(
+        version_utils, "__file__", str(repo / "src" / "version" / "utils.py")
+    )
 
 
 def test_get_git_commit_hash_returns_40_characters() -> None:
@@ -65,7 +91,7 @@ def test_get_git_commit_hash_returns_unknown_when_no_git_directory() -> None:
         assert result == "unknown"
 
 
-def test_get_git_commit_hash_uses_correct_git_command() -> None:
+def test_get_git_commit_hash_uses_correct_git_command(inside_a_repository: None) -> None:
     """Test that get_git_commit_hash uses the correct git command."""
     with patch("subprocess.run") as mock_run:
         mock_result = MagicMock()
@@ -84,7 +110,7 @@ def test_get_git_commit_hash_uses_correct_git_command() -> None:
         assert call_args[1]["timeout"] == 5
 
 
-def test_get_git_commit_hash_strips_whitespace() -> None:
+def test_get_git_commit_hash_strips_whitespace(inside_a_repository: None) -> None:
     """Test that get_git_commit_hash strips whitespace from git output."""
     with patch("subprocess.run") as mock_run:
         mock_result = MagicMock()
