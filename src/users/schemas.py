@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date as calendar_date
+from datetime import datetime, timedelta
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 
 class UserBase(BaseModel):
@@ -216,6 +224,122 @@ class RecentUsersResponse(BaseModel):
                         }
                     ],
                     "total": 1,
+                }
+            ]
+        }
+    )
+
+
+DEFAULT_USER_CREATION_WINDOW_DAYS: int = 7
+"""How many days of creation history the analytics endpoint answers for."""
+
+
+class UserCreationDayCount(BaseModel):
+    """Schema for one day of user-creation analytics.
+
+    A day with no creations is a day with a count of zero, not a missing entry.
+    """
+
+    date: calendar_date = Field(
+        description="Calendar day the count belongs to, in UTC."
+    )
+    count: int = Field(ge=0, description="How many users were created that day.")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "date": "2026-07-02",
+                    "count": 3,
+                }
+            ]
+        }
+    )
+
+
+class UserCreationStats(BaseModel):
+    """Response shape for user creations per day.
+
+    The days are held oldest first and cover one window of consecutive days, so
+    a reader can plot them straight away. ``total`` is derived from the days and
+    cannot be set separately.
+    """
+
+    days: list[UserCreationDayCount] = Field(
+        default_factory=list,
+        description="Per-day creation counts, oldest day first.",
+    )
+    total: int = Field(
+        default=0,
+        ge=0,
+        description="Derived: how many users the returned days account for.",
+    )
+
+    @model_validator(mode="after")
+    def order_days_oldest_first(self) -> UserCreationStats:
+        """Put the days in order, and refuse a response that repeats one.
+
+        ``total`` is recomputed here rather than trusted, so a response cannot
+        disagree with the days it carries.
+
+        Raises:
+            ValueError: When the same day appears more than once, which means the
+                query behind the response grouped wrongly.
+
+        Returns:
+            UserCreationStats: The same stats, with its days ordered.
+        """
+        seen: set[calendar_date] = set()
+        for day in self.days:
+            if day.date in seen:
+                raise ValueError(
+                    f"day {day.date.isoformat()} appears twice in the response"
+                )
+            seen.add(day.date)
+        self.days.sort(key=lambda day: day.date)
+        self.total = sum(day.count for day in self.days)
+        return self
+
+    @classmethod
+    def zero_filled_window(
+        cls,
+        start_day: calendar_date,
+        window_days: int = DEFAULT_USER_CREATION_WINDOW_DAYS,
+    ) -> UserCreationStats:
+        """Build a window of consecutive days that all answer with zero.
+
+        Serves the case where nothing was created: the window is still fully
+        described, oldest day first.
+
+        Args:
+            start_day: The oldest day of the window.
+            window_days: How many days the window spans.
+
+        Returns:
+            UserCreationStats: The zero-filled window.
+
+        Raises:
+            ValueError: When the window spans fewer than one day.
+        """
+        if window_days < 1:
+            raise ValueError(f"window_days must be at least one, got {window_days}")
+
+        return cls(
+            days=[
+                UserCreationDayCount(date=start_day + timedelta(days=offset), count=0)
+                for offset in range(window_days)
+            ]
+        )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "days": [
+                        {"date": "2026-07-02", "count": 3},
+                        {"date": "2026-07-03", "count": 0},
+                    ],
+                    "total": 3,
                 }
             ]
         }
