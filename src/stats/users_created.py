@@ -11,10 +11,10 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.dependencies import get_db
+from src.stats.crud import get_users_created_per_day_counts
 
 router = APIRouter(tags=["stats"])
 
@@ -58,19 +58,8 @@ async def get_users_created_per_day(
     all_dates: list[date] = [today - timedelta(days=i) for i in range(6, -1, -1)]
     date_to_count: dict[str, int] = {d.isoformat(): 0 for d in all_dates}
 
-    # Query: count users created on each date in the last 7 days
-    query = text(
-        "SELECT CAST(created_at AS DATE) AS day, COUNT(*) AS cnt "
-        "FROM users "
-        "WHERE created_at >= :start AND created_at < :end "
-        "GROUP BY CAST(created_at AS DATE) "
-        "ORDER BY day ASC"
-    )
-    result = await db.execute(
-        query,
-        {"start": start_date, "end": today + timedelta(days=1)},
-    )
-    rows: Sequence[Sequence] = result.fetchall()
+    # Delegate to CRUD layer
+    rows = await get_users_created_per_day_counts(db, start_date, today + timedelta(days=1))
     for row in rows:
         day_str = str(row[0])
         cnt = int(row[1])
