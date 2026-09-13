@@ -1,0 +1,87 @@
+id: FEAT-BD8F
+name: "Get Users Created Per Day"
+description: "Implement endpoint to retrieve user creation counts for the last 7 days"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-BD8F-001
+    name: "Create analytics models and schemas"
+    file_path: "tasks/backlog/get-users-per-day/TASK-BD8F-001-create-analytics-models.md"
+    complexity: 4
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-BD8F-002
+    name: "Implement analytics crud"
+    file_path: "tasks/backlog/get-users-per-day/TASK-BD8F-002-implement-analytics-crud.md"
+    complexity: 5
+    dependencies:
+      - TASK-BD8F-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-BD8F-003
+    name: "Create analytics router"
+    file_path: "tasks/backlog/get-users-per-day/TASK-BD8F-003-create-analytics-router.md"
+    complexity: 3
+    dependencies:
+      - TASK-BD8F-002
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-BD8F-004
+    name: "Add analytics tests"
+    file_path: "tasks/backlog/get-users-per-day/TASK-BD8F-004-add-analytics-tests.md"
+    complexity: 4
+    dependencies:
+      - TASK-BD8F-003
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-BD8F-005
+    name: "Update API documentation"
+    file_path: "tasks/backlog/get-users-per-day/TASK-BD8F-005-update-api-docs.md"
+    complexity: 2
+    dependencies:
+      - TASK-BD8F-004
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+orchestration:
+  parallel_groups:
+    - - TASK-BD8F-001
+    - - TASK-BD8F-002
+    - - TASK-BD8F-003
+    - - TASK-BD8F-004
+    - - TASK-BD8F-005
+  estimated_duration_minutes: 225
+  recommended_parallel: 2
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/get-users-created-per-day/get-users-created-per-day.feature"
+scenarios:
+  "A request to the endpoint returns exactly seven days of data ordered oldest first":
+    verifier: "hurl"
+  "The oldest day in the response is exactly seven days ago":
+    verifier: "hurl"
+  "The newest day in the response is yesterday":
+    verifier: "hurl"
+  "A POST request to the endpoint is rejected":
+    verifier: "hurl"
+  "A request without authentication is rejected":
+    verifier: "hurl"
+  "The endpoint returns zero counts for all days when no users were created":
+    verifier: "hurl"
+  "The endpoint returns zero counts for all days when the user table is empty":
+    verifier: "hurl"
