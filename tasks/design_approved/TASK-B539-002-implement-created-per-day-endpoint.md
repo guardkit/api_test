@@ -1,14 +1,15 @@
 ---
-id: TASK-B539-002
-title: Implement GET /users/created-per-day endpoint
-task_type: feature
-parent_review: TASK-REV-B539
-feature_id: FEAT-B539
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-B539-001
+- TASK-B539-001
+feature_id: FEAT-B539
+id: TASK-B539-002
+implementation_mode: task-work
+parent_review: TASK-REV-B539
+status: design_approved
+task_type: feature
+title: Implement GET /users/created-per-day endpoint
+wave: 2
 ---
 
 # Implement GET /users/created-per-day endpoint
