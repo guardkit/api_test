@@ -1,15 +1,15 @@
 ---
-id: TASK-BD8F-004
-title: Add analytics tests
-task_type: testing
-parent_review: TASK-REV-BD8F
-feature_id: FEAT-BD8F
-wave: 4
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-BD8F-003
-status: pending
+- TASK-BD8F-003
+feature_id: FEAT-BD8F
+id: TASK-BD8F-004
+implementation_mode: task-work
+parent_review: TASK-REV-BD8F
+status: design_approved
+task_type: testing
+title: Add analytics tests
+wave: 4
 ---
 
 ## Description
