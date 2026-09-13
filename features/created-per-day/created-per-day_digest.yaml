@@ -1,0 +1,38 @@
+feature: created-per-day
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/created-per-day
+scenarios:
+- title: A request to the daily counts endpoint returns exactly 7 days of data ordered oldest first
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A request to the daily counts endpoint returns exactly seven days of data, starting from the oldest day and ending with the most recent day.
+- title: The endpoint returns exactly 7 days of data when the system has been running for at least 7 days
+  tags:
+  - '@boundary'
+  sentence: When the system has been running for at least seven days, the endpoint still returns exactly seven days of data.
+- title: The endpoint returns exactly 7 days of data when the system has been running for more than 7 days
+  tags:
+  - '@boundary'
+  sentence: When the system has been running for more than seven days, the endpoint still returns exactly seven days of data.
+- title: A request to a non-existent endpoint returns a failure
+  tags:
+  - '@negative'
+  sentence: A request to an endpoint that does not exist will fail.
+- title: The endpoint returns a failure when the service is unavailable
+  tags:
+  - '@negative'
+  sentence: If the service is unavailable, the endpoint will return a failure.
+- title: The endpoint returns 7 data points even when the system has been running for less than 7 days
+  tags:
+  - '@edge-case'
+  sentence: Even if the system has been running for less than seven days, the endpoint still returns seven data points, using zero for any missing days.
+assumptions:
+- id: ASSUM-001
+  text: The endpoint returns exactly 7 data points covering the most recent 7-day window
+  basis: Inferred from request description; not explicitly stated whether the window is rolling or fixed
+- id: ASSUM-002
+  text: If the system has been running for less than 7 days, the endpoint returns 7 data points with zero counts for missing days
+  basis: Open question in input; no explicit decision on how to handle short-running systems
