@@ -1,14 +1,15 @@
 ---
-id: TASK-9230-002
-title: Implement statistics calculation logic
-task_type: feature
-parent_review: TASK-REV-9230
-feature_id: FEAT-9230
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-9230-001
+- TASK-9230-001
+feature_id: FEAT-9230
+id: TASK-9230-002
+implementation_mode: task-work
+parent_review: TASK-REV-9230
+status: design_approved
+task_type: feature
+title: Implement statistics calculation logic
+wave: 2
 ---
 
 ## Description

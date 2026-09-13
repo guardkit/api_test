@@ -6,7 +6,6 @@ counts over the last 7 days.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends
@@ -59,7 +58,9 @@ async def get_users_created_per_day(
     date_to_count: dict[str, int] = {d.isoformat(): 0 for d in all_dates}
 
     # Delegate to CRUD layer
-    rows = await get_users_created_per_day_counts(db, start_date, today + timedelta(days=1))
+    rows = await get_users_created_per_day_counts(
+        db, start_date, today + timedelta(days=1)
+    )
     for row in rows:
         day_str = str(row[0])
         cnt = int(row[1])
