@@ -1,0 +1,19 @@
+format_version: '2.0'
+task_id: TASK-B539-004
+registered_at:
+  sha: d30f0d5473d949a134df7a3cf7155dbcd149bc62
+  date: '2026-09-13'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: created-per-day-AC-001
+  text: A request to the daily counts endpoint returns exactly 7 days of data ordered
+    oldest first
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
