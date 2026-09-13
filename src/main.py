@@ -22,7 +22,7 @@ from src.stats.router import StatsCounterMiddleware
 from src.stats.router import router as stats_router
 from src.time.router import router as time_router
 from src.uptime.router import router as uptime_router
-from src.users.router import recent_router
+from src.users.router import analytics_router, recent_router
 from src.users.router import router as users_router
 from src.version.router import router as version_router
 from src.whoami.router import router as whoami_router
@@ -82,6 +82,10 @@ app = FastAPI(
             "description": "User management endpoints",
         },
         {
+            "name": "analytics",
+            "description": "User creation analytics endpoints",
+        },
+        {
             "name": "whoami",
             "description": "Service identification endpoints",
         },
@@ -126,6 +130,11 @@ app.include_router(health_router)
 
 # Include whoami router with empty prefix so endpoint is at /whoami
 app.include_router(whoami_router, tags=["whoami"])
+
+# Include the users analytics router ahead of the users router: the literal
+# "/users/created-per-day" has to be matched before the users router's
+# "/users/{user_id}", which would otherwise swallow it and answer 400.
+app.include_router(analytics_router, tags=["analytics"])
 
 # Include users router (prefix already set in router.py)
 app.include_router(users_router, tags=["users"])

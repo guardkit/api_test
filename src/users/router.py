@@ -13,13 +13,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.dependencies import get_db
 from src.users import crud
-from src.users.calculations import calculate_days_since_created
+from src.users.calculations import (
+    calculate_days_since_created,
+    recent_creation_window_end,
+)
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
+    DEFAULT_USER_CREATION_WINDOW_DAYS,
     DomainCountResponse,
     RecentUsersResponse,
     UserCountResponse,
     UserCreate,
+    UserCreationStats,
     UserList,
     UserPublic,
     UserSummaryResponse,
@@ -586,3 +591,65 @@ async def delete_user(
     if not deleted:
         raise UserNotFoundError(user_id=validated_user_id)
     return Response(status_code=204)
+
+
+# Analytics over the users table, on its own router so the counting endpoints
+# stay apart from the CRUD ones. This router must be included ahead of the users
+# router in src/main.py: "/users/created-per-day" would otherwise be swallowed by
+# the literal-looking "/users/{user_id}" route, which answers 400 for it.
+analytics_router = APIRouter(prefix="/users", redirect_slashes=False)
+
+
+@analytics_router.get(
+    "/created-per-day",
+    response_model=UserCreationStats,
+    tags=["users", "analytics"],
+    summary="Get users created per day",
+    description=(
+        "Returns the number of users created on each of the last seven calendar "
+        "days, oldest day first, with the total the days account for. The window "
+        "ends yesterday: today is still in progress and is not answered for. A "
+        "day with no creations carries a count of zero rather than going missing. "
+        "Soft-deleted users are not counted as creations. Requires the "
+        "``X-Auth-Token`` header."
+    ),
+    responses={
+        403: {"description": "Unauthorized: valid authentication token required"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_users_created_per_day(
+    request: Request, db: AsyncSession = Depends(get_db)
+) -> UserCreationStats:
+    """Get the number of users created on each day of the recent window.
+
+    Requires authentication via the ``X-Auth-Token`` header.
+
+    Returns seven consecutive days ending yesterday, oldest day first, or 503 if
+    the database is unavailable.
+
+    Args:
+        request: The incoming request, for the authentication check.
+        db: The async database session.
+
+    Returns:
+        UserCreationStats: One entry per day of the window, oldest first, and the
+        total those days account for.
+
+    Raises:
+        HTTPException: 403 if the request is unauthorized, 503 if the database
+            refused the count.
+    """
+    require_auth(request)
+    try:
+        return await crud.get_users_created_per_day(
+            db,
+            window_days=DEFAULT_USER_CREATION_WINDOW_DAYS,
+            end_day=recent_creation_window_end(),
+        )
+    except SQLAlchemyError as exc:
+        logger.error("Database error while counting user creations per day: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
