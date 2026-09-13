@@ -56,11 +56,7 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.id == user_id)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.id == user_id).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -78,12 +74,7 @@ async def get_users(
     Returns:
         Sequence of User objects.
     """
-    stmt = (
-        select(User)
-        .where(User.deleted_at.is_(None))
-        .offset(skip)
-        .limit(limit)
-    )
+    stmt = select(User).where(User.deleted_at.is_(None)).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -98,11 +89,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.email == email)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.email == email).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -159,8 +146,6 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
     # Prevent double-delete: if already soft-deleted, return False
     if user.deleted_at is not None:
         return False
-
-    from datetime import UTC, datetime
 
     user.deleted_at = datetime.now(UTC)
     db.add(user)
@@ -291,3 +276,47 @@ async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
     stmt = select(User).order_by(User.created_at.desc()).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+async def count_users_created_per_day(
+    db: AsyncSession,
+) -> list[dict[str, str | int]]:
+    """Count users created per day for the last 7 days.
+
+    Returns exactly 7 data points covering the most recent 7-day window
+    (from 6 days ago through today), ordered oldest first. Days with no
+    new users are reported with a count of zero.
+
+    Args:
+        db: The async database session.
+
+    Returns:
+        List of dicts with 'date' (str, ISO format YYYY-MM-DD) and
+        'count' (int) keys, ordered from oldest to newest.
+    """
+    today = date.today()
+    results: list[dict[str, str | int]] = []
+
+    for i in range(6, -1, -1):
+        target_date = today - timedelta(days=i)
+        start = datetime(target_date.year, target_date.month, target_date.day)
+        next_day = target_date + timedelta(days=1)
+        end = datetime(next_day.year, next_day.month, next_day.day)
+
+        stmt = (
+            select(func.count())
+            .select_from(User)
+            .where(User.created_at >= start)
+            .where(User.created_at < end)
+            .where(User.deleted_at.is_(None))
+        )
+        result = await db.execute(stmt)
+        count_val = result.scalar_one() or 0
+        results.append(
+            {
+                "date": target_date.isoformat(),
+                "count": count_val,
+            }
+        )
+
+    return results

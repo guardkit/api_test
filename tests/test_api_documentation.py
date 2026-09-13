@@ -1419,3 +1419,152 @@ def test_api_documentation_domain_count_consistent_with_implementation(
         f"Documented fields {documented_fields} must match "
         f"DomainCountResponse fields {schema_fields}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Users Created Per Day endpoint documentation tests (TASK-9230-004)
+# ---------------------------------------------------------------------------
+
+
+def test_api_documentation_contains_users_created_per_day_endpoint(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes the users-created-per-day endpoint.
+
+    AC-001: OpenAPI spec updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+
+    # Verify endpoint path is documented
+    assert "/stats/users-created-per-day" in content, (
+        "Documentation must include the /stats/users-created-per-day endpoint"
+    )
+    assert "GET /stats/users-created-per-day" in content, (
+        "Documentation must specify GET as the HTTP method"
+    )
+
+
+def test_api_documentation_users_created_per_day_description(
+    api_docs_path: Path,
+) -> None:
+    """Test that the endpoint has a description in the documentation.
+
+    AC-001: OpenAPI spec updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+
+    # Verify the endpoint section exists
+    assert "Users Created Per Day" in content, (
+        "Documentation must include a 'Users Created Per Day' section"
+    )
+
+    # Verify description content
+    assert "last 7 days" in content.lower(), (
+        "Documentation must describe the 7-day window"
+    )
+    assert "oldest first" in content.lower(), "Documentation must describe ordering"
+
+
+def test_api_documentation_users_created_per_day_tags(
+    api_docs_path: Path,
+) -> None:
+    """Test that the endpoint is tagged correctly.
+
+    AC-001: OpenAPI spec updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+
+    # Verify the stats tag is mentioned
+    assert "`stats`" in content or "tags" in content.lower(), (
+        "Documentation must indicate the stats tag"
+    )
+
+
+def test_api_documentation_users_created_per_day_response_schema(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented response schema matches the UsersCreatedPerDay model.
+
+    AC-001: OpenAPI spec updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+
+    # Verify response schema section exists
+    assert "Response Schema" in content, (
+        "Documentation must include response schema for users-created-per-day"
+    )
+
+    # Verify the two fields from UsersCreatedPerDay are documented
+    assert '"date"' in content or "'date'" in content, (
+        "Documentation must include the 'date' field"
+    )
+    assert '"count"' in content or "'count'" in content, (
+        "Documentation must include the 'count' field"
+    )
+
+
+def test_api_documentation_users_created_per_day_example_request(
+    api_docs_path: Path,
+) -> None:
+    """Test that docs include an example request for users-created-per-day.
+
+    AC-002: Example response included in documentation
+    """
+    content = api_docs_path.read_text()
+
+    # Verify example request exists
+    assert "Example Request" in content, "Documentation must include an example request"
+    assert "curl" in content, "Documentation must include a curl example"
+    # The example must reference the endpoint
+    assert "/stats/users-created-per-day" in content, (
+        "Documentation example must reference the endpoint"
+    )
+
+
+def test_api_documentation_users_created_per_day_example_response(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documentation includes an example response.
+
+    AC-002: Example response included in documentation
+    """
+    content = api_docs_path.read_text()
+
+    # Verify example response exists
+    assert "Example Response" in content, "Documentation must include example responses"
+
+    # Verify the example contains date and count fields in JSON format
+    assert "date" in content.lower(), (
+        "Documentation must show the 'date' field in example response"
+    )
+    assert "count" in content.lower(), (
+        "Documentation must show the 'count' field in example response"
+    )
+
+
+def test_api_documentation_users_created_per_day_status_codes(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documentation includes status codes for the endpoint.
+
+    AC-002: Example response included in documentation
+    """
+    content = api_docs_path.read_text()
+
+    # Verify HTTP status codes are documented
+    assert "200" in content, "Documentation must document the 200 status code"
+    assert "405" in content, "Documentation must document the 405 method not allowed"
+
+
+def test_api_documentation_users_created_per_day_seven_days(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documentation mentions exactly 7 data points.
+
+    AC-002: Example response included in documentation
+    """
+    content = api_docs_path.read_text()
+
+    # Verify the documentation mentions 7 days/data points
+    assert "7" in content, "Documentation must mention the 7 data points"
+    assert "zero" in content.lower(), "Documentation must mention days with zero count"

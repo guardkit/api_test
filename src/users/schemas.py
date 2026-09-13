@@ -166,6 +166,24 @@ class UserSummaryResponse(BaseModel):
     )
 
 
+class DailyUserCount(BaseModel):
+    """Schema for a single day's user creation count."""
+
+    date: str
+    count: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "date": "2024-01-01",
+                    "count": 5,
+                }
+            ]
+        }
+    )
+
+
 class UserList(BaseModel):
     """Schema for paginated user list responses."""
 

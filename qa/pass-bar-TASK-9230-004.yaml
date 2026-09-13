@@ -1,0 +1,47 @@
+# --------------------------------------------------------------------------
+# DOCUMENTATION TASK — NOT A COPY OF THE FEATURE CHECKLIST
+#
+# The plan types TASK-9230-004 as a documentation task, and guardkit runs
+# no tests for that type (documentation profile: tests_required =
+# false). So the feature's machine criteria — how the running
+# endpoint behaves — are left off this bar: this task edits
+# documents and could never produce that evidence. They are still
+# carried by the feature's other tasks and answered by the live gate.
+# The criteria below are the ones written on the task itself,
+# in tasks/backlog/get-users-created-per-day/TASK-9230-004-update-docs.md under '## Acceptance Criteria' — what the build
+# actually holds this task to.
+# They are classed 'machine' with evidence kind 'log' because there is
+# no operator runbook to route an operator criterion to, and the live
+# evidence kinds would arm the feature-complete runtime-surface gate
+# off a documentation task.
+#
+# Written by forge's planning driver on 2026-09-13.
+# --------------------------------------------------------------------------
+format_version: '2.0'
+task_id: TASK-9230-004
+registered_at:
+  sha: bd4cbf4c3d4686c670127f2dd52b6cff2157b23e
+  date: '2026-09-13'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: AC-1
+  text: OpenAPI spec updated with endpoint description
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+- id: AC-2
+  text: Example response included in documentation
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+- id: AC-3
+  text: All modified files pass project-configured lint/format checks with zero errors
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

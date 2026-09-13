@@ -1,0 +1,56 @@
+feature: get-users-created-per-day
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/created-per-day
+scenarios:
+- title: A successful request returns exactly seven days of data ordered oldest first
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: The service returns exactly seven historical days of user count statistics
+    starting with the oldest and ending today.
+- title: The response contains exactly seven data points
+  tags:
+  - '@boundary'
+  sentence: The service always returns exactly seven daily data points for the
+    recent week.
+- title: The response does not contain fewer than seven data points
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: The service never returns fewer than the expected seven recent daily
+    counts.
+- title: A POST request to the endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: The service refuses any attempt to send a post request to the
+    statistics endpoint.
+- title: Days with no new users are reported with a count of zero
+  tags:
+  - '@edge-case'
+  sentence: If nobody registered on a given day, the service reports that day
+    with a zero.
+- title: The oldest day in the response is exactly six days before today
+  tags:
+  - '@boundary'
+  sentence: The earliest day presented in the service response is always exactly
+    six days ago.
+- title: The newest day in the response is today
+  tags:
+  - '@boundary'
+  sentence: The most recent day presented in the service response is always
+    today.
+assumptions:
+- id: ASSUM-001
+  text: The response includes exactly 7 data points covering the most recent 7-day
+    window
+  basis: Inferred from feature description; not explicitly stated in input
+- id: ASSUM-002
+  text: Days with no new users are reported with a count of zero
+  basis: Open question in input; no policy on zero-count days
+- id: ASSUM-003
+  text: The response must contain data for the most recent 7-day window, including
+    days with no new users, and must order results oldest first
+  basis: Boundary conditions and edge case scenarios rely on this assumption;
+    it is not explicitly confirmed in the input

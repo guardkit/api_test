@@ -99,6 +99,7 @@ class StatsResponse(BaseModel):  # type: ignore[name-defined]
     service: str = Field(description="The name of the service")
     requests_served: int = Field(description="Total number of requests served")
     first_request_at: str | None = Field(
+        default=None,
         description="UTC ISO-8601 timestamp of the first recorded request, or null",
     )
 
