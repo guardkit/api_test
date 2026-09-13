@@ -20,6 +20,54 @@ from src.users.models import User
 from src.users.schemas import UserCreate
 
 
+async def _get_user_columns(db_engine: AsyncEngine) -> list[dict]:
+    """Return column info for the users table in a database-agnostic way.
+
+    Works with both SQLite (PRAGMA) and PostgreSQL (information_schema).
+
+    Args:
+        db_engine: The async engine to query.
+
+    Returns:
+        list[dict]: Column info dicts with keys: name, type, nullable
+    """
+    async with db_engine.connect() as conn:
+        dialect_name = db_engine.dialect.name.lower()
+
+        if dialect_name == "sqlite":
+            result = await conn.execute(text("PRAGMA table_info(users)"))
+            rows = result.fetchall()
+            columns = []
+            for row in rows:
+                columns.append(
+                    {
+                        "name": row[1],
+                        "type": row[2],
+                        "nullable": row[3] == 0,
+                    }
+                )
+            return columns
+        else:
+            result = await conn.execute(
+                text(
+                    "SELECT column_name, data_type, is_nullable "
+                    "FROM information_schema.columns "
+                    "WHERE table_name = 'users'"
+                )
+            )
+            rows = result.fetchall()
+            columns = []
+            for row in rows:
+                columns.append(
+                    {
+                        "name": row[0],
+                        "type": row[1],
+                        "nullable": row[2] == "YES",
+                    }
+                )
+            return columns
+
+
 class TestDeletedAtColumnExistence:
     """AC-001: Verify `deleted_at` column exists and is nullable in the schema."""
 
@@ -30,30 +78,23 @@ class TestDeletedAtColumnExistence:
         async with db_engine.begin() as conn:
             await conn.run_sync(User.metadata.create_all)
 
-        async with db_engine.connect() as conn:
-            result = await conn.execute(text("PRAGMA table_info(users)"))
-            columns = {row[1]: row for row in result.fetchall()}
+        columns = await _get_user_columns(db_engine)
+        column_names = {c["name"] for c in columns}
 
-        assert "deleted_at" in columns, (
+        assert "deleted_at" in column_names, (
             "The deleted_at column must exist in the users table"
         )
 
     async def test_deleted_at_column_is_nullable(self, db_engine: AsyncEngine) -> None:
-        """Verify the deleted_at column allows NULL values at the schema level.
-
-        In SQLite, PRAGMA table_info returns nullable as 1 for nullable columns.
-        """
+        """Verify the deleted_at column allows NULL values at the schema level."""
         async with db_engine.begin() as conn:
             await conn.run_sync(User.metadata.create_all)
 
-        async with db_engine.connect() as conn:
-            result = await conn.execute(text("PRAGMA table_info(users)"))
-            columns = {row[1]: row for row in result.fetchall()}
-
-        deleted_at_info = columns["deleted_at"]
-        # Column index 3 in PRAGMA table_info is 'notnull' (0 = nullable)
-        assert deleted_at_info[3] == 0, (
-            "The deleted_at column must be nullable (notnull=0)"
+        columns = await _get_user_columns(db_engine)
+        deleted_at = next((c for c in columns if c["name"] == "deleted_at"), None)
+        assert deleted_at is not None, "deleted_at column should exist"
+        assert deleted_at["nullable"], (
+            "The deleted_at column must be nullable"
         )
 
 
@@ -181,21 +222,19 @@ class TestDeletedAtNotBoolean:
         async with db_engine.begin() as conn:
             await conn.run_sync(User.metadata.create_all)
 
-        # Inspect the column type via SQLAlchemy's reflection
-        async with db_engine.connect() as conn:
-            result = await conn.execute(text("PRAGMA table_info(users)"))
-            columns = {row[1]: row for row in result.fetchall()}
+        columns = await _get_user_columns(db_engine)
+        deleted_at = next((c for c in columns if c["name"] == "deleted_at"), None)
+        assert deleted_at is not None, "deleted_at column should exist"
 
-        # In SQLite PRAGMA, column type is at index 2
-        column_type = columns["deleted_at"][2].lower()
+        column_type = deleted_at["type"].lower()
         assert "boolean" not in column_type, (
             "deleted_at column must not be of Boolean type"
         )
         assert (
             "datetime" in column_type
             or "timestamp" in column_type
-            or "time" in column_type
-        ), "deleted_at column should be a DateTime/Time type"
+            or "date" in column_type
+        ), "deleted_at column should be a DateTime/Date type"
 
     async def test_deleted_at_model_field_is_datetime_not_boolean(self) -> None:
         """Verify the SQLAlchemy model declares deleted_at as DateTime, not Boolean."""

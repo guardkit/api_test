@@ -11,128 +11,33 @@
 # nobody has named one (tests/suite_database.py) — so the figures below hold
 # for either command. They do NOT hold on SQLite, which is what
 # API_TEST_TESTS_USE_SQLITE=1 asks for.
-# Observed baseline 2026-09-12 @ the commit below: 818 passed, 20 failed (the twenty
-# below) — 805 of those passes plus the 13 that came with tests/suite_database.py,
-# measured twice with the same result. The previous line claimed "170 passed, 2 failed",
-# measured 2026-07-12 @ e5ff1c8 — it was out by roughly 650 for two months, and the two
-# entries it listed no longer fail. It was wrong for a second reason: until dc32caf the
-# fixture ignored the DATABASE_URL this script exports and ran every test on in-memory
-# SQLite, so the suite of record had never once run against PostgreSQL.
 #
-# THE TWENTY ARE TWO CAUSES, NOT TWENTY PROBLEMS, and both are real:
-#   * fourteen — src/users/crud.py count_users_today compares a timezone-AWARE datetime
-#     against users.created_at, which is declared WITHOUT a timezone. SQLite tolerates it;
-#     PostgreSQL refuses the query, so GET /users/count-today answers 503 from its own
-#     database-error handler. VERIFIED AGAINST THE LIVE SERVICE on 2026-09-12: it returns
-#     503 "can't subtract offset-naive and offset-aware datetimes" right now. This is a
-#     SHIPPED DEFECT, not a test problem, and these entries must be struck when it is fixed.
-#   * six — tests that read the schema with SQLite's own PRAGMA command, which PostgreSQL
-#     cannot parse. What they check is real; they ask for it in a language only one of the
-#     two databases speaks, so they need rewriting rather than ledgering for ever.
+# THE LEDGER IS EMPTY, AND THAT IS NEW (2026-09-13). Measured on the suite of
+# record against real PostgreSQL: 839 passed, 0 failed, 2 deselected.
+#
+# It held twenty entries this morning, and all twenty are struck because all
+# twenty now pass:
+#   * FOURTEEN were one shipped defect — src/users/crud.py count_users_today
+#     compared a timezone-AWARE datetime against users.created_at, which is
+#     declared WITHOUT a timezone. SQLite tolerated it; PostgreSQL refused the
+#     query, so GET /users/count-today answered 503 from its own
+#     database-error handler. Fixed by building the day's boundaries as naive
+#     datetimes to match the column.
+#   * SIX asked PostgreSQL a question in SQLite's PRAGMA dialect. Rewritten to
+#     read the schema in a way both databases understand (PRAGMA for SQLite,
+#     information_schema for PostgreSQL) — the checks are unchanged, only the
+#     way they ask.
+#
+# Both were written into this file with a note saying they must be STRUCK, not
+# kept. This is that.
+#
+# The two deselected tests in qa/run-suite.sh are unchanged and still carry
+# their reason there.
 format_version: "1.0"
 suite_id: api_test-pytest-suite
 framework: pytest
 language: python
 expected:
-  passed: 818
-known_failures:
-  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_all_users_created_today"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_boundary_with_excluded_users"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_endpoint_zero_users"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_user_at_end_of_day"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_user_at_midnight"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountTodayBoundaryConditions::test_count_today_zero_users"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountTodayEndpoint::test_count_today_empty_db"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountTodayEndpoint::test_count_today_response_json_structure"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountTodayEndpoint::test_count_today_returns_200"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountTodayEndpoint::test_count_today_with_users_today"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountUsersTodayCrud::test_count_users_today_empty"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountUsersTodayCrud::test_count_users_today_excludes_yesterday"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_count_today.py::TestCountUsersTodayCrud::test_count_users_today_with_today_users"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/users/test_soft_delete_counts.py::TestSoftDeleteCountReflection::test_count_today_decreases_after_soft_delete"
-    reason: >-
-      The timezone mismatch on users.created_at (cause one above). A SHIPPED DEFECT:
-      strike this entry when the column and the query are made to agree, do not
-      let it become permanent.
-  - test_id: "tests/acceptance/test_deleted_at_acceptance.py::TestDeletedAtColumnExistence::test_deleted_at_column_exists_in_table"
-    reason: >-
-      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
-      (cause two above). The check is worth keeping; it needs asking in a way both
-      databases understand.
-  - test_id: "tests/acceptance/test_deleted_at_acceptance.py::TestDeletedAtColumnExistence::test_deleted_at_column_is_nullable"
-    reason: >-
-      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
-      (cause two above). The check is worth keeping; it needs asking in a way both
-      databases understand.
-  - test_id: "tests/acceptance/test_deleted_at_acceptance.py::TestDeletedAtNotBoolean::test_deleted_at_column_type_is_not_boolean"
-    reason: >-
-      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
-      (cause two above). The check is worth keeping; it needs asking in a way both
-      databases understand.
-  - test_id: "tests/test_deleted_at_migration.py::test_deleted_at_column_nullable_in_schema"
-    reason: >-
-      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
-      (cause two above). The check is worth keeping; it needs asking in a way both
-      databases understand.
-  - test_id: "tests/test_deleted_at_migration.py::test_deleted_at_column_type_in_schema"
-    reason: >-
-      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
-      (cause two above). The check is worth keeping; it needs asking in a way both
-      databases understand.
-  - test_id: "tests/test_deleted_at_migration.py::test_migration_applied_creates_column"
-    reason: >-
-      Reads the schema with SQLite's PRAGMA command, which PostgreSQL cannot parse
-      (cause two above). The check is worth keeping; it needs asking in a way both
-      databases understand.
+  passed: 839
+# Empty on purpose: the suite of record is green against PostgreSQL.
+known_failures: []

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from http import HTTPStatus
 
 import pytest
@@ -31,7 +31,7 @@ class TestCountTodayBoundaryConditions:
     ) -> None:
         """Test count equals total when all users in DB were created today."""
         today = date.today()
-        now = datetime(today.year, today.month, today.day, 12, 0, 0, tzinfo=UTC)
+        now = datetime(today.year, today.month, today.day, 12, 0, 0)
 
         # Create multiple users, all with today's date
         for i in range(3):
@@ -54,7 +54,7 @@ class TestCountTodayBoundaryConditions:
     async def test_count_today_user_at_midnight(self, db_session: AsyncSession) -> None:
         """Test that a user created exactly at 00:00:00 UTC today is included."""
         today = date.today()
-        midnight = datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=UTC)
+        midnight = datetime(today.year, today.month, today.day, 0, 0, 0)
 
         user_in = UserCreate(
             email="midnight@example.com",
@@ -74,9 +74,7 @@ class TestCountTodayBoundaryConditions:
     ) -> None:
         """Test that a user created exactly at 23:59:59 UTC today is included."""
         today = date.today()
-        end_of_day = datetime(
-            today.year, today.month, today.day, 23, 59, 59, tzinfo=UTC
-        )
+        end_of_day = datetime(today.year, today.month, today.day, 23, 59, 59)
 
         user_in = UserCreate(
             email="endofday@example.com",
@@ -101,7 +99,7 @@ class TestCountTodayBoundaryConditions:
 
         # User created yesterday (should be excluded)
         yesterday_dt = datetime(
-            yesterday.year, yesterday.month, yesterday.day, 12, 0, 0, tzinfo=UTC
+            yesterday.year, yesterday.month, yesterday.day, 12, 0, 0
         )
         user_yesterday = await crud.create_user(
             db_session,
@@ -111,7 +109,7 @@ class TestCountTodayBoundaryConditions:
         await db_session.flush()
 
         # User created at 00:00:00 UTC today (should be included)
-        midnight = datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=UTC)
+        midnight = datetime(today.year, today.month, today.day, 0, 0, 0)
         user_midnight = await crud.create_user(
             db_session,
             UserCreate(email="midnight@example.com", full_name="Midnight"),
@@ -120,9 +118,7 @@ class TestCountTodayBoundaryConditions:
         await db_session.flush()
 
         # User created at 23:59:59 UTC today (should be included)
-        end_of_day = datetime(
-            today.year, today.month, today.day, 23, 59, 59, tzinfo=UTC
-        )
+        end_of_day = datetime(today.year, today.month, today.day, 23, 59, 59)
         user_eod = await crud.create_user(
             db_session,
             UserCreate(email="endofday@example.com", full_name="End of Day"),
@@ -131,9 +127,7 @@ class TestCountTodayBoundaryConditions:
         await db_session.flush()
 
         # User created tomorrow (should be excluded)
-        tomorrow_dt = datetime(
-            tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0, tzinfo=UTC
-        )
+        tomorrow_dt = datetime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0)
         user_tomorrow = await crud.create_user(
             db_session,
             UserCreate(email="tomorrow@example.com", full_name="Tomorrow"),
@@ -169,7 +163,7 @@ class TestCountUsersTodayCrud:
         """Test count includes users created today."""
         # Create users with today's date
         today = date.today()
-        now = datetime(today.year, today.month, today.day, 12, 0, 0, tzinfo=UTC)
+        now = datetime(today.year, today.month, today.day, 12, 0, 0)
 
         user_in = UserCreate(email="today@example.com", full_name="Today User")
         user = await crud.create_user(db_session, user_in)
@@ -189,7 +183,7 @@ class TestCountUsersTodayCrud:
         today = date.today()
         yesterday = today - timedelta(days=1)
         yesterday_dt = datetime(
-            yesterday.year, yesterday.month, yesterday.day, 12, 0, 0, tzinfo=UTC
+            yesterday.year, yesterday.month, yesterday.day, 12, 0, 0
         )
 
         user_in = UserCreate(email="yesterday@example.com", full_name="Yesterday User")
@@ -202,6 +196,26 @@ class TestCountUsersTodayCrud:
 
         count = await crud.count_users_today(db_session)
         assert count == 0
+
+    # AC-003: Test case for two users created today
+    async def test_count_users_today_two_users(self, db_session: AsyncSession) -> None:
+        """Test count returns 2 when exactly two users were created today."""
+        today = date.today()
+        now = datetime(today.year, today.month, today.day, 12, 0, 0)
+
+        # Create two users, both with today's date
+        for i in range(2):
+            user_in = UserCreate(
+                email=f"two-users-{i}@example.com",
+                full_name=f"Two Users User {i}",
+            )
+            user = await crud.create_user(db_session, user_in)
+            user.created_at = now
+            await db_session.flush()
+            await db_session.refresh(user)
+
+        count = await crud.count_users_today(db_session)
+        assert count == 2
 
 
 class TestCountTodayEndpoint:

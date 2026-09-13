@@ -204,9 +204,10 @@ async def count_users_today(db: AsyncSession) -> int:
     today = date.today()
     tomorrow = today + timedelta(days=1)
 
-    # Build start-of-today and start-of-tomorrow as timezone-aware datetimes
-    start_today = datetime(today.year, today.month, today.day, tzinfo=UTC)
-    start_tomorrow = datetime(tomorrow.year, tomorrow.month, tomorrow.day, tzinfo=UTC)
+    # Build start-of-today and start-of-tomorrow as naive datetimes
+    # to match the naive DateTime column type used by the User model.
+    start_today = datetime(today.year, today.month, today.day)
+    start_tomorrow = datetime(tomorrow.year, tomorrow.month, tomorrow.day)
 
     stmt = (
         select(func.count())
