@@ -815,8 +815,14 @@ same way — seven days of zeroes, not an empty array.
   of the window, oldest first, and the total those days account for.
 - `403 Forbidden`: Unauthorized. The request is missing the ``X-Auth-Token`` header or
   carries a token that does not match the configured one.
-- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported on this path).
-- `503 Service Unavailable`: Database error while counting creations.
+- `400 Bad Request`: `PUT` and `DELETE` on this path are matched by the
+  `/users/{user_id}` routes that this path is registered ahead of, and are refused as
+  a malformed user id: `User ID must be a valid UUID: 'created-per-day'`.
+- `405 Method Not Allowed`: HTTP method not allowed. Only `GET` is registered on this
+  path, so `POST` and `PATCH` reach no handler at all and the router answers
+  `Method Not Allowed`.
+- `503 Service Unavailable`: Database error while counting creations. The detail names
+  what failed, in the form `Database unavailable: <database message>`.
 
 **Use Cases**:
 - Tracking recent registration activity day by day
@@ -833,7 +839,10 @@ same way — seven days of zeroes, not an empty array.
 - `total` is recomputed from the days by the response model, so it always equals their
   sum; a response that repeats one day is refused rather than sent
 - The path is served by the analytics router (`src/users/router.py`) and is registered
-  ahead of `/users/{user_id}`, so it is never read as a malformed user ID
+  ahead of `/users/{user_id}`, so a `GET` is never read as a malformed user ID. The
+  write methods are not registered on this path: `POST` and `PATCH` match no route and
+  get `405 Method Not Allowed`, while `PUT` and `DELETE` match the
+  `/users/{user_id}` routes and are answered as a bad user id
 - The service-wide ETag and `If-None-Match` handling described in
   [ETag Support](#etag-support) applies to GET requests on this path
 

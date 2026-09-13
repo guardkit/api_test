@@ -28,23 +28,69 @@ from __future__ import annotations
 import inspect
 import json
 import re
+import subprocess
+import sys
 import types
 from datetime import date, timedelta
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
+import pytest
 from fastapi.routing import APIRoute
 from httpx import AsyncClient
+from sqlalchemy.exc import SQLAlchemyError
 
+from src.db.dependencies import get_db as app_get_db
 from src.main import app
 from src.users import router as users_router
 from src.users.calculations import recent_creation_window_end
+from src.users.models import User
 from src.users.router import analytics_router, get_users_created_per_day
 from src.users.schemas import DEFAULT_USER_CREATION_WINDOW_DAYS, UserCreationStats
 
 # tests/users/<this file> -> the repository root, where docs/ lives.
 API_DOCS_PATH = Path(__file__).resolve().parents[2] / "docs" / "API.md"
+
+# The Python files this task touches. Documentation is prose and cannot be linted;
+# the one Python file it comes with can, and the project's own toolchain is what
+# decides — see ``test_the_configured_lint_and_format_pass_on_this_task_s_files``.
+THIS_TASKS_PYTHON_FILES: tuple[Path, ...] = (Path(__file__).resolve(),)
+
+# Methods that write, and so are answered on this path by something other than the
+# analytics handler. A documentation claim is only worth testing if it covers every
+# way a caller can reach the path, not just the one the Gherkin happens to name.
+WRITE_METHODS: tuple[str, ...] = ("POST", "PUT", "PATCH", "DELETE")
+
+# Heads each shown example response, e.g.
+# **Example Response (Happy Path — seven days, oldest first)**:
+_EXAMPLE_MARKER = r"\*\*Example Response \(([^)]*)\)\*\*:?\s*```json\n(.*?)```"
+
+
+class _RefusingSession:
+    """A database session that fails the way an unreachable database fails.
+
+    Used to put the endpoint in the failure state its documentation describes, so the
+    shown 503 body can be compared with the one the application really answers.
+    """
+
+    async def execute(self, *_args: object, **_kwargs: object) -> NoReturn:
+        """Refuse every statement, as a refused connection does.
+
+        Raises:
+            SQLAlchemyError: Always, with the message a refused connection gives.
+        """
+        raise SQLAlchemyError("connection to server at localhost port 5432 failed")
+
+
+def refusing_session() -> object:
+    """Return the session the endpoint cannot get an answer out of.
+
+    Returns:
+        object: A session that raises on every statement it is handed.
+    """
+    return _RefusingSession()
+
 
 # Heads each shown example response, e.g.
 # **Example Response (Happy Path — seven days, oldest first)**:
@@ -381,6 +427,32 @@ class TestEndpointIsDocumented:
             "the documented token is not the one the router accepts"
         )
 
+    def test_the_timestamp_the_section_groups_by_is_the_naive_one_it_claims(
+        self,
+    ) -> None:
+        """AC-001: the column the section names really is the one it describes.
+
+        The section says the days are grouped from ``created_at``, which the model
+        stores as naive UTC, and draws a conclusion from that — SQLite and PostgreSQL
+        group the same way. The conclusion holds only while the column carries no
+        timezone, so the column is read from the model rather than taken on trust from
+        the prose.
+        """
+        section = endpoint_section(docs_text())
+        column = User.__table__.c["created_at"]
+
+        assert "created_at" in section, (
+            "the section must name the column the days are grouped from"
+        )
+        assert "naive" in section.lower(), (
+            "the section must say what kind of timestamp it groups by, because that "
+            "is what makes the answer the same on either database"
+        )
+        assert not getattr(column.type, "timezone", False), (
+            f"created_at is {column.type}: the section's claim that either database "
+            "groups alike depends on that column carrying no timezone"
+        )
+
 
 class TestExamplesAgreeWithTheApplication:
     """AC-002: the example request and responses are the real thing."""
@@ -519,6 +591,172 @@ class TestLiveResponsesMatchTheDocumentation:
         assert response.status_code == HTTPStatus.FORBIDDEN
         detail = str(response.json()["detail"])
         assert detail in section, f"the section omits the refusal: {detail}"
+
+    async def test_every_write_method_refusal_is_documented_in_the_words_it_gives(
+        self,
+        async_client: AsyncClient,
+    ) -> None:
+        """AC-001: what each write method is answered with on this path is written down.
+
+        Only GET is registered on the analytics path, so a write method lands either on
+        the router's method refusal or on the `/users/{user_id}` routes this path is
+        registered ahead of. Which of the two it is comes from the application's route
+        table at test time, so a claim that names one code for every method fails the
+        moment the application answers the others differently.
+        """
+        section = endpoint_section(docs_text())
+        listed = status_codes_block(section)
+        _, path = served_endpoint()
+
+        for method in WRITE_METHODS:
+            refused = await async_client.request(method, path)
+            assert refused.status_code != HTTPStatus.OK, f"{method} {path} answered 200"
+
+            code = str(refused.status_code)
+            assert code in listed, (
+                f"{method} {path} answers {code}, which the section does not list"
+            )
+            detail = str(refused.json().get("detail", ""))
+            assert detail, f"{method} {path} refused without saying why"
+            assert detail in section, (
+                f"{method} {path} is told {detail!r}, which the section omits"
+            )
+
+    async def test_the_documented_etag_promise_holds_on_this_path(
+        self,
+        async_client: AsyncClient,
+        override_get_db: None,
+    ) -> None:
+        """AC-001: the ETag the section says this path inherits really comes with it."""
+        section = endpoint_section(docs_text())
+        headers = documented_request_headers(section)
+        _, path = served_endpoint()
+
+        assert "ETag" in section, (
+            "the section no longer says what conditional requests do on this path"
+        )
+
+        answered = await async_client.get(path, headers=headers)
+        assert answered.status_code == HTTPStatus.OK
+        assert "ETag" in answered.headers, (
+            "the section promises an ETag on this path; the answer carries none"
+        )
+
+        conditional = await async_client.get(
+            path,
+            headers={**headers, "If-None-Match": answered.headers["ETag"]},
+        )
+        assert conditional.status_code == HTTPStatus.NOT_MODIFIED, (
+            "the section points at If-None-Match handling that this path does not do: "
+            f"{conditional.status_code}"
+        )
+
+    async def test_a_refused_count_answers_the_documented_503_shape(
+        self,
+        async_client: AsyncClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """AC-002: the shown 503 body is the shape a refused count really answers.
+
+        The database is put where the documentation's worst case puts it — reachable
+        in name, refusing in fact — and the answer is read back. The prefix the shown
+        detail opens with is taken from the documentation, so it is the document that
+        makes the promise and the application that has to keep it.
+        """
+        section = endpoint_section(docs_text())
+        _, path = served_endpoint()
+        shown = [
+            body
+            for label, body in documented_examples(section)
+            if label.startswith("503") and isinstance(body, dict)
+        ]
+
+        assert shown, "the section must show what a refused count answers with"
+        shown_detail = str(shown[0].get("detail", ""))
+        assert shown_detail, "the shown 503 body must say why the count failed"
+        colon = shown_detail.find(":")
+        prefix = shown_detail[: colon + 1] if colon != -1 else shown_detail
+
+        monkeypatch.setitem(app.dependency_overrides, app_get_db, refusing_session)
+        refused = await async_client.get(
+            path, headers=documented_request_headers(section)
+        )
+
+        assert refused.status_code == HTTPStatus.SERVICE_UNAVAILABLE, (
+            f"a refused count answered {refused.status_code}, not 503: {refused.text}"
+        )
+        live_detail = str(refused.json()["detail"])
+        assert live_detail.startswith(prefix), (
+            f"the live detail {live_detail!r} does not open with the documented "
+            f"{prefix!r}"
+        )
+
+
+class TestTheTaskPassesTheConfiguredChecks:
+    """AC-003/AC-004: the checks the project configures, run on this task's files."""
+
+    def test_the_configured_lint_and_format_pass_on_this_task_s_files(self) -> None:
+        """AC-003: the project's own linter and formatter, over the files it changed.
+
+        The check is the one the repository declares (`[tool.ruff]` in pyproject), run
+        from the repository root so it reads that configuration; nothing here repeats
+        a rule list that would silently disagree with it. The whole repository is
+        deliberately not swept — this criterion is about the files this task touched,
+        and the rest of the tree carries findings that belong to other tasks.
+
+        Raises:
+            AssertionError: If the configured check reports anything on a file this
+                task touched.
+        """
+        root = API_DOCS_PATH.parent.parent
+        ruff = Path(sys.executable).with_name("ruff")
+        if not ruff.is_file():
+            pytest.skip(
+                "ruff is not installed in this interpreter, so the project-configured "
+                "check cannot be run here; it is declared in pyproject extras [dev]"
+            )
+
+        for target in THIS_TASKS_PYTHON_FILES:
+            relative = target.relative_to(root)
+            for arguments in (["check", "--quiet"], ["format", "--check"]):
+                finished = subprocess.run(  # noqa: S603
+                    [str(ruff), *arguments, str(relative)],
+                    cwd=root,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                assert finished.returncode == 0, (
+                    f"ruff {' '.join(arguments)} reported {relative}:\n"
+                    f"{finished.stdout}{finished.stderr}"
+                )
+
+    def test_the_documentation_file_is_well_formed_markdown(self) -> None:
+        """AC-003: the prose file this task changed holds together structurally.
+
+        The configured toolchain lints Python and has nothing to say about markdown,
+        so what can be checked about the documentation is checked here rather than
+        waved through: every fence it opens it closes, and every JSON block it shows
+        is JSON. A half-written block is a documentation defect no linter would catch.
+
+        Raises:
+            AssertionError: If a fence is left open or a JSON block does not parse.
+        """
+        text = docs_text()
+        fences = re.findall(r"^\s*```", text, flags=re.M)
+        assert len(fences) % 2 == 0, (
+            f"{API_DOCS_PATH.name} opens {len(fences)} fences — an odd number leaves "
+            "one unclosed, and everything after it renders as code"
+        )
+
+        json_blocks = re.findall(r"```json\n(.*?)```", text, flags=re.S)
+        for number, block in enumerate(json_blocks, start=1):
+            try:
+                json.loads(block)
+            except json.JSONDecodeError as exc:
+                raise AssertionError(
+                    f"json block #{number} in {API_DOCS_PATH.name} is not JSON: {exc}"
+                ) from exc
 
 
 def test_every_function_in_this_file_declares_its_annotations() -> None:
