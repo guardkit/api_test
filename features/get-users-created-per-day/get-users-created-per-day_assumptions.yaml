@@ -1,0 +1,25 @@
+feature: Get Users Created Per Day
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A successful request returns exactly seven days of data ordered oldest
+    first
+  assumption: The response includes exactly 7 data points covering the most recent
+    7-day window
+  confidence: low
+  basis: Inferred from feature description; not explicitly stated in input
+  human_response: deferred
+- id: ASSUM-002
+  scenario: An unauthenticated request is rejected
+  assumption: The endpoint requires authentication
+  confidence: low
+  basis: Open question in input; no authentication policy provided
+  human_response: deferred
+- id: ASSUM-003
+  scenario: Days with no new users are reported with a count of zero
+  assumption: Days with no new users are reported with a count of zero
+  confidence: low
+  basis: Open question in input; no policy on zero-count days
+  human_response: deferred

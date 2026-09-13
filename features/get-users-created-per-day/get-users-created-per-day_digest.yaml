@@ -1,0 +1,50 @@
+feature: get-users-created-per-day
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/created-per-day
+scenarios:
+- title: A successful request returns exactly seven days of data ordered oldest first
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A successful request returns exactly seven days of data ordered from the oldest day to the newest day.
+- title: The response contains exactly seven data points
+  tags:
+  - '@boundary'
+  sentence: The response contains exactly seven data points.
+- title: The response does not contain fewer than seven data points
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: The response does not contain fewer than seven data points.
+- title: A POST request to the endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: A POST request to the endpoint is rejected.
+- title: An unauthenticated request is rejected
+  tags:
+  - '@negative'
+  sentence: An unauthenticated request is rejected.
+- title: Days with no new users are reported with a count of zero
+  tags:
+  - '@edge-case'
+  sentence: Days with no new users are reported with a count of zero.
+- title: The oldest day in the response is exactly six days before today
+  tags:
+  - '@boundary'
+  sentence: The oldest day in the response is exactly six days before today.
+- title: The newest day in the response is today
+  tags:
+  - '@boundary'
+  sentence: The newest day in the response is today.
+assumptions:
+- id: ASSUM-001
+  text: The response includes exactly 7 data points covering the most recent 7-day window
+  basis: Inferred from feature description; not explicitly stated in input
+- id: ASSUM-002
+  text: The endpoint requires authentication
+  basis: Open question in input; no authentication policy provided
+- id: ASSUM-003
+  text: Days with no new users are reported with a count of zero
+  basis: Open question in input; no policy on zero-count days
