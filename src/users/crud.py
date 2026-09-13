@@ -5,13 +5,14 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.users.exceptions import UserAlreadyExistsError
-from src.users.models import User
+from src.users.models import User, UserAnalytics, creation_day_expression
 from src.users.schemas import UserCreate, UserUpdate
 
 
@@ -56,11 +57,7 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.id == user_id)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.id == user_id).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -78,12 +75,7 @@ async def get_users(
     Returns:
         Sequence of User objects.
     """
-    stmt = (
-        select(User)
-        .where(User.deleted_at.is_(None))
-        .offset(skip)
-        .limit(limit)
-    )
+    stmt = select(User).where(User.deleted_at.is_(None)).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -98,11 +90,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.email == email)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.email == email).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -159,8 +147,6 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
     # Prevent double-delete: if already soft-deleted, return False
     if user.deleted_at is not None:
         return False
-
-    from datetime import UTC, datetime
 
     user.deleted_at = datetime.now(UTC)
     db.add(user)
@@ -291,3 +277,65 @@ async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
     stmt = select(User).order_by(User.created_at.desc()).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+def users_created_between_statement(
+    start: datetime,
+    end: datetime,
+    include_deleted: bool = False,
+) -> Select[tuple[User]]:
+    """Build the query for the users created in a window of timestamps.
+
+    The window is half-open: ``start`` is included, ``end`` is not, so two
+    adjacent windows never count a user twice. Pass naive UTC timestamps, which
+    is how the ``created_at`` column is written.
+
+    Args:
+        start: Beginning of the window, included.
+        end: End of the window, excluded.
+        include_deleted: Whether soft-deleted users count as creations too.
+
+    Returns:
+        Select[tuple[User]]: A statement yielding the users in the window,
+        oldest creation first.
+
+    Raises:
+        ValueError: When ``end`` does not fall after ``start``.
+    """
+    stmt = (
+        select(User)
+        .where(User.created_in_window(start, end, include_deleted=include_deleted))
+        .order_by(User.created_at, User.id)
+    )
+    return stmt
+
+
+def users_created_per_day_statement(start_day: date, end_day: date) -> Select[Any]:
+    """Build the per-day creation count for an inclusive window of days.
+
+    Args:
+        start_day: First day of the window.
+        end_day: Last day of the window.
+
+    Returns:
+        Select[Any]: A statement of ``(creation_day, user_count)`` rows, oldest
+        day first. Days without a creation return no row; callers that must
+        answer for every day fill the gaps themselves.
+
+    Raises:
+        ValueError: When ``end_day`` precedes ``start_day``.
+    """
+    window_start, window_end = UserAnalytics.daily_count_window(start_day, end_day)
+    creation_day = creation_day_expression()
+
+    return (
+        select(
+            creation_day.label("creation_day"),
+            func.count(User.id).label("user_count"),
+        )
+        .where(User.created_at >= window_start)
+        .where(User.created_at < window_end)
+        .where(User.deleted_at.is_(None))
+        .group_by(creation_day)
+        .order_by(creation_day)
+    )

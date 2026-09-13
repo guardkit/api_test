@@ -5,7 +5,8 @@ Covers TASK-BD8F-001:
 - AC-001: the Pydantic schema ``UserCreationStats`` defines the response shape
   for user-creation analytics (per-day counts, ordered oldest first).
 - AC-002: the SQLAlchemy model side (``UserAnalytics`` plus the extension of the
-  existing ``User`` model) supports creation timestamp queries.
+  existing ``User`` model) supports creation timestamp queries, and those
+  queries are built in this feature's crud.py, as R-OV-1 requires.
 - AC-004: the analytics API carries type annotations on arguments and returns.
 
 The model tests use their own in-memory SQLite engine, mirroring
@@ -14,9 +15,11 @@ The model tests use their own in-memory SQLite engine, mirroring
 
 from __future__ import annotations
 
+import ast
 import inspect
 from collections.abc import AsyncIterator
 from datetime import UTC, date, datetime
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -25,6 +28,11 @@ from sqlalchemy import Select, Table, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from src.db.base import DeclarativeBase
+from src.users import crud
+from src.users.crud import (
+    users_created_between_statement,
+    users_created_per_day_statement,
+)
 from src.users.models import User, UserAnalytics, creation_day_expression
 from src.users.schemas import (
     DEFAULT_USER_CREATION_WINDOW_DAYS,
@@ -147,8 +155,13 @@ class TestUserCreationStatsSchema:
         assert "examples" in extra
 
 
-class TestUserModelCreationTimestampSupport:
-    """AC-002: the model layer supports creation timestamp queries."""
+class TestCreationTimestampQuerySupport:
+    """AC-002: creation timestamp queries are supported.
+
+    The conditions and day arithmetic belong to the model layer, the statements
+    that read the database belong to the feature's crud.py — which is where
+    these tests reach them from.
+    """
 
     def test_created_at_is_indexed(self) -> None:
         """Creation timestamp queries are served by an index."""
@@ -172,15 +185,17 @@ class TestUserModelCreationTimestampSupport:
 
     def test_creation_day_expression_groups_by_the_creation_column(self) -> None:
         """The SQL side of the hybrid names the creation timestamp column."""
-        statement = UserAnalytics.daily_count_statement(WINDOW_START, WINDOW_START)
+        statement = users_created_per_day_statement(WINDOW_START, WINDOW_START)
 
         sql = str(statement)
         assert "created_at" in sql
         assert "GROUP BY" in sql
 
-    def test_created_between_builds_a_creation_timestamp_query(self) -> None:
+    def test_the_between_window_query_selects_the_creation_timestamp_range(
+        self,
+    ) -> None:
         """A window query filters the timestamp range and skips soft deletions."""
-        statement = User.created_between(
+        statement = users_created_between_statement(
             timestamp_on(WINDOW_START), timestamp_on(date(2026, 7, 9))
         )
 
@@ -190,9 +205,9 @@ class TestUserModelCreationTimestampSupport:
         assert "users.created_at < :" in sql
         assert "deleted_at IS NULL" in sql
 
-    def test_created_between_can_keep_soft_deleted_users(self) -> None:
+    def test_the_between_window_query_can_keep_soft_deleted_users(self) -> None:
         """History queries may name deleted rows explicitly."""
-        statement = User.created_between(
+        statement = users_created_between_statement(
             timestamp_on(WINDOW_START),
             timestamp_on(date(2026, 7, 9)),
             include_deleted=True,
@@ -200,17 +215,17 @@ class TestUserModelCreationTimestampSupport:
 
         assert "deleted_at IS NULL" not in str(statement)
 
-    def test_created_between_refuses_a_window_that_ends_before_it_starts(self) -> None:
+    def test_the_between_window_query_refuses_a_reversed_window(self) -> None:
         """A reversed range is a programming error, said plainly."""
         with pytest.raises(ValueError, match="precedes"):
-            User.created_between(
+            users_created_between_statement(
                 timestamp_on(date(2026, 7, 9)), timestamp_on(WINDOW_START)
             )
 
-    def test_daily_count_statement_refuses_a_reversed_window(self) -> None:
+    def test_the_per_day_count_query_refuses_a_reversed_window(self) -> None:
         """The per-day count query says so too."""
         with pytest.raises(ValueError, match="precedes"):
-            UserAnalytics.daily_count_statement(date(2026, 7, 9), WINDOW_START)
+            users_created_per_day_statement(date(2026, 7, 9), WINDOW_START)
 
     def test_creation_day_expression_names_the_creation_column(self) -> None:
         """The shared SQL expression reads the creation timestamp column."""
@@ -298,7 +313,7 @@ class TestCreationTimestampQueriesAgainstADatabase:
         )
 
         rows = await async_session.execute(
-            UserAnalytics.daily_count_statement(WINDOW_START, date(2026, 7, 8))
+            users_created_per_day_statement(WINDOW_START, date(2026, 7, 8))
         )
 
         assert UserAnalytics.daily_counts(rows.all()) == [
@@ -320,7 +335,7 @@ class TestCreationTimestampQueriesAgainstADatabase:
         await async_session.commit()
 
         rows = await async_session.execute(
-            UserAnalytics.daily_count_statement(WINDOW_START, date(2026, 7, 8))
+            users_created_per_day_statement(WINDOW_START, date(2026, 7, 8))
         )
 
         assert UserAnalytics.daily_counts(rows.all()) == [(WINDOW_START, 1)]
@@ -335,7 +350,7 @@ class TestCreationTimestampQueriesAgainstADatabase:
         )
 
         rows = await async_session.execute(
-            UserAnalytics.daily_count_statement(WINDOW_START, date(2026, 7, 8))
+            users_created_per_day_statement(WINDOW_START, date(2026, 7, 8))
         )
 
         stats = UserCreationStats.zero_filled_window(WINDOW_START)
@@ -343,7 +358,7 @@ class TestCreationTimestampQueriesAgainstADatabase:
         assert len(stats.days) == 7
         assert stats.total == 0
 
-    async def test_created_between_finds_users_by_creation_timestamp(
+    async def test_the_between_window_query_finds_users_by_creation_timestamp(
         self, async_session: AsyncSession
     ) -> None:
         """The range query returns exactly the users created inside it."""
@@ -358,7 +373,7 @@ class TestCreationTimestampQueriesAgainstADatabase:
         )
 
         result = await async_session.execute(
-            User.created_between(
+            users_created_between_statement(
                 timestamp_on(WINDOW_START), timestamp_on(date(2026, 7, 9))
             )
         )
@@ -372,9 +387,11 @@ class TestAnalyticsApiIsAnnotated:
     def test_analytics_callables_are_fully_annotated(self) -> None:
         """Every new analytics callable says what it takes and returns."""
         callables: list[Any] = [
-            User.created_between,
+            crud.users_created_between_statement,
+            crud.users_created_per_day_statement,
+            User.created_in_window,
             UserAnalytics.creation_day,
-            UserAnalytics.daily_count_statement,
+            UserAnalytics.daily_count_window,
             UserAnalytics.daily_counts,
             UserCreationStats.zero_filled_window,
             timestamp_on,
@@ -390,3 +407,68 @@ class TestAnalyticsApiIsAnnotated:
                     target,
                     name,
                 )
+
+
+QUERY_BUILDING_NAMES: frozenset[str] = frozenset(
+    {"select", "insert", "update", "delete"}
+)
+"""The SQLAlchemy names whose call sites the architecture rule watches."""
+
+
+def query_call_lines(path: Path) -> list[int]:
+    """Lines where ``path`` builds a database query inside a function body.
+
+    Reads the syntax tree, not the text, so a query quoted in a docstring stays
+    invisible — the same reading docs/architecture-rules.yaml asks of the
+    conformance checker for R-OV-1.
+
+    Args:
+        path: The source file to read.
+
+    Returns:
+        list[int]: The line numbers of the query call sites, smallest first.
+    """
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    query_names = {
+        alias.asname or alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+        and (node.module or "").split(".")[0] == "sqlalchemy"
+        for alias in node.names
+        if alias.name in QUERY_BUILDING_NAMES
+    }
+    if not query_names:
+        return []
+
+    lines: list[int] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            continue
+        for call in ast.walk(node):
+            if (
+                isinstance(call, ast.Call)
+                and isinstance(call.func, ast.Name)
+                and call.func.id in query_names
+            ):
+                lines.append(call.lineno)
+    return sorted(set(lines))
+
+
+class TestQueriesLiveInTheFeatureCrudFile:
+    """R-OV-1: database queries live in crud.py, not in models.py or router.py."""
+
+    def test_the_model_file_builds_no_database_queries(self) -> None:
+        """The analytics helpers stay out of the query business."""
+        models_file = Path(crud.__file__).with_name("models.py")
+
+        assert query_call_lines(models_file) == []
+
+    def test_the_model_router_builds_no_database_queries(self) -> None:
+        """The feature's router holds no query of its own."""
+        router_file = Path(crud.__file__).with_name("router.py")
+
+        assert query_call_lines(router_file) == []
+
+    def test_the_creation_timestamp_queries_are_built_in_crud(self) -> None:
+        """Both creation-window queries have their home in this crud file."""
+        assert query_call_lines(Path(crud.__file__))

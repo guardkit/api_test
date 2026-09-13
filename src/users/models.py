@@ -4,18 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, time, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, Select, String, func, select
+from sqlalchemy import Boolean, DateTime, String, and_, func
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql.elements import ColumnElement
 
 from src.db.base import DeclarativeBase
-
-if TYPE_CHECKING:
-    pass
 
 
 def creation_day_expression() -> ColumnElement[date]:
@@ -58,6 +55,56 @@ def as_creation_day(value: object) -> date:
             raise ValueError(f"cannot read {value!r} as a creation day") from exc
     raise TypeError(
         f"cannot read {value!r} of type {type(value).__name__} as a creation day"
+    )
+
+
+def creation_window(start: datetime, end: datetime) -> tuple[datetime, datetime]:
+    """Check a creation window and return its half-open timestamp bounds.
+
+    ``start`` is included, ``end`` is not, so two adjacent windows never count a
+    user twice. Timestamps are compared as written on ``created_at``, which
+    carries no timezone; pass naive UTC values.
+
+    Args:
+        start: Beginning of the window, included.
+        end: End of the window, excluded.
+
+    Returns:
+        tuple[datetime, datetime]: The bounds to compare ``created_at`` against.
+
+    Raises:
+        ValueError: When ``end`` does not fall after ``start``.
+    """
+    if end <= start:
+        raise ValueError(
+            f"creation window end {end.isoformat()} precedes its "
+            f"start {start.isoformat()}"
+        )
+    return start, end
+
+
+def creation_day_window(start_day: date, end_day: date) -> tuple[datetime, datetime]:
+    """Turn an inclusive window of days into half-open timestamp bounds.
+
+    Args:
+        start_day: First day of the window, included.
+        end_day: Last day of the window, included.
+
+    Returns:
+        tuple[datetime, datetime]: The timestamp bounds of the window: midnight
+        on ``start_day`` up to midnight after ``end_day``.
+
+    Raises:
+        ValueError: When ``end_day`` precedes ``start_day``.
+    """
+    if end_day < start_day:
+        raise ValueError(
+            f"creation window end {end_day.isoformat()} precedes its "
+            f"start {start_day.isoformat()}"
+        )
+    return (
+        datetime.combine(start_day, time.min),
+        datetime.combine(end_day + timedelta(days=1), time.min),
     )
 
 
@@ -138,17 +185,20 @@ class User(DeclarativeBase):
         return creation_day_expression()
 
     @classmethod
-    def created_between(
+    def created_in_window(
         cls,
         start: datetime,
         end: datetime,
         include_deleted: bool = False,
-    ) -> Select[tuple[User]]:
-        """Select the users created in the window from ``start`` to ``end``.
+    ) -> ColumnElement[bool]:
+        """SQL condition selecting the users created in a window of timestamps.
 
         The window is half-open: ``start`` is included, ``end`` is not, so two
         adjacent windows never count a user twice. Timestamps are compared as
         written on the column, which carries no timezone; pass naive UTC values.
+
+        This builds a condition, not a query: the statements that read the
+        database live in this feature's crud.py.
 
         Args:
             start: Beginning of the window, included.
@@ -156,31 +206,30 @@ class User(DeclarativeBase):
             include_deleted: Whether soft-deleted users count as creations too.
 
         Returns:
-            Select[tuple[User]]: A statement yielding the users in the window,
-            oldest creation first.
+            ColumnElement[bool]: The condition a query filters on.
 
         Raises:
             ValueError: When ``end`` does not fall after ``start``.
         """
-        if end <= start:
-            raise ValueError(
-                f"creation window end {end.isoformat()} precedes its "
-                f"start {start.isoformat()}"
-            )
+        window_start, window_end = creation_window(start, end)
 
-        stmt = select(cls).where(cls.created_at >= start, cls.created_at < end)
-        if not include_deleted:
-            stmt = stmt.where(cls.deleted_at.is_(None))
-        return stmt.order_by(cls.created_at, cls.id)
+        inside_window = and_(
+            cls.created_at >= window_start,
+            cls.created_at < window_end,
+        )
+        if include_deleted:
+            return inside_window
+        return and_(inside_window, cls.deleted_at.is_(None))
 
 
 class UserAnalytics:
     """Creation timestamp analytics over the users table.
 
     This maps no table of its own. It is the analytics face of the ``User``
-    model: every statement it builds selects, filters and groups the columns the
-    ``User`` model declares, so a creation timestamp query has one home rather
-    than one per caller.
+    model: the day arithmetic and the row reading that a creation timestamp
+    query needs, in one place. It holds no statement itself — the queries that
+    read the database live in this feature's crud.py, which composes the
+    expressions and windows defined here.
     """
 
     @staticmethod
@@ -196,42 +245,25 @@ class UserAnalytics:
         return user.creation_day
 
     @staticmethod
-    def daily_count_statement(start_day: date, end_day: date) -> Select[Any]:
-        """Build the per-day creation count for an inclusive window of days.
+    def daily_count_window(
+        start_day: date,
+        end_day: date,
+    ) -> tuple[datetime, datetime]:
+        """Timestamp bounds of the per-day count for an inclusive day window.
 
         Args:
             start_day: First day of the window.
             end_day: Last day of the window.
 
         Returns:
-            Select[Any]: A statement of ``(creation_day, user_count)`` rows,
-            oldest day first. Days without a creation return no row; callers
-            that must answer for every day fill the gaps themselves.
+            tuple[datetime, datetime]: Midnight on ``start_day`` up to midnight
+            after ``end_day``, the bounds a per-day count filters ``created_at``
+            against.
 
         Raises:
             ValueError: When ``end_day`` precedes ``start_day``.
         """
-        if end_day < start_day:
-            raise ValueError(
-                f"creation window end {end_day.isoformat()} precedes its "
-                f"start {start_day.isoformat()}"
-            )
-
-        window_start = datetime.combine(start_day, time.min)
-        window_end = datetime.combine(end_day + timedelta(days=1), time.min)
-        creation_day = creation_day_expression()
-
-        return (
-            select(
-                creation_day.label("creation_day"),
-                func.count(User.id).label("user_count"),
-            )
-            .where(User.created_at >= window_start)
-            .where(User.created_at < window_end)
-            .where(User.deleted_at.is_(None))
-            .group_by(creation_day)
-            .order_by(creation_day)
-        )
+        return creation_day_window(start_day, end_day)
 
     @staticmethod
     def daily_counts(rows: Sequence[Any]) -> list[tuple[date, int]]:
