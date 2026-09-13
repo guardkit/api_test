@@ -13,7 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.users.exceptions import UserAlreadyExistsError
 from src.users.models import User, UserAnalytics, creation_day_expression
-from src.users.schemas import UserCreate, UserUpdate
+from src.users.schemas import (
+    DEFAULT_USER_CREATION_WINDOW_DAYS,
+    UserCreate,
+    UserCreationDayCount,
+    UserCreationStats,
+    UserUpdate,
+)
 
 
 async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
@@ -341,4 +347,66 @@ def users_created_per_day_statement(start_day: date, end_day: date) -> Select[An
         .where(User.deleted_at.is_(None))
         .group_by(creation_day)
         .order_by(creation_day)
+    )
+
+
+async def get_users_created_per_day(
+    db: AsyncSession,
+    *,
+    window_days: int = DEFAULT_USER_CREATION_WINDOW_DAYS,
+    end_day: date | None = None,
+) -> UserCreationStats:
+    """Count the users created on each day of the recent creation window.
+
+    The window ends on ``end_day`` — on today when no day is named — and runs
+    ``window_days`` days back, the last day included. Every day of the window is
+    answered for: a day without a creation carries a count of zero rather than
+    going missing, so the response reads as one unbroken run of days, oldest
+    first.
+
+    Days are read from ``created_at``, which the model writes as naive UTC, and
+    grouped by the calendar day expression the model layer declares, so SQLite
+    and PostgreSQL answer the same way. Soft-deleted users are not counted as
+    creations, as every other count here agrees.
+
+    Args:
+        db: The async database session.
+        window_days: How many consecutive days the answer covers, today's day
+            included. Defaults to the window the schema declares.
+        end_day: The newest day of the window, defaulting to today. Name it to
+            ask about a window that has already closed.
+
+    Returns:
+        UserCreationStats: One entry per day of the window, oldest day first,
+        and the total the days account for.
+
+    Raises:
+        ValueError: When the window spans fewer than one day.
+        sqlalchemy.exc.SQLAlchemyError: When the database refused the count; the
+            failure is logged with the window that was asked for, then raised.
+    """
+    if window_days < 1:
+        raise ValueError(f"window_days must be at least one, got {window_days}")
+
+    last_day = date.today() if end_day is None else end_day
+    first_day = last_day - timedelta(days=window_days - 1)
+
+    try:
+        result = await db.execute(users_created_per_day_statement(first_day, last_day))
+    except SQLAlchemyError:
+        logger = logging.getLogger(__name__)
+        logger.exception(
+            "Database error while counting user creations from %s through %s",
+            first_day,
+            last_day,
+        )
+        raise
+
+    counts = dict(UserAnalytics.daily_counts(result.all()))
+    window = [first_day + timedelta(days=offset) for offset in range(window_days)]
+
+    return UserCreationStats(
+        days=[
+            UserCreationDayCount(date=day, count=counts.get(day, 0)) for day in window
+        ]
     )

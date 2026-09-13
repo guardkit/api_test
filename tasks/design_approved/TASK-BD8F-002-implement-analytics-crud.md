@@ -1,15 +1,15 @@
 ---
-id: TASK-BD8F-002
-title: Implement analytics crud
-task_type: feature
-parent_review: TASK-REV-BD8F
-feature_id: FEAT-BD8F
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-BD8F-001
-status: pending
+- TASK-BD8F-001
+feature_id: FEAT-BD8F
+id: TASK-BD8F-002
+implementation_mode: task-work
+parent_review: TASK-REV-BD8F
+status: design_approved
+task_type: feature
+title: Implement analytics crud
+wave: 2
 ---
 
 ## Description
