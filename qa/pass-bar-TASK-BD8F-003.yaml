@@ -1,0 +1,19 @@
+format_version: '2.0'
+task_id: TASK-BD8F-003
+registered_at:
+  sha: ec1b19e9b18c013e83db7846342d4410bd362b1d
+  date: '2026-09-13'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: get-users-created-per-day-AC-001
+  text: A request to the endpoint returns exactly seven days of data ordered oldest
+    first
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

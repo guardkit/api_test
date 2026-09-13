@@ -1,0 +1,52 @@
+# --------------------------------------------------------------------------
+# DOCUMENTATION TASK — NOT A COPY OF THE FEATURE CHECKLIST
+#
+# The plan types TASK-BD8F-005 as a documentation task, and guardkit runs
+# no tests for that type (documentation profile: tests_required =
+# false). So the feature's machine criteria — how the running
+# endpoint behaves — are left off this bar: this task edits
+# documents and could never produce that evidence. They are still
+# carried by the feature's other tasks and answered by the live gate.
+# The criteria below are the ones written on the task itself,
+# in tasks/backlog/get-users-per-day/TASK-BD8F-005-update-api-docs.md under '## Acceptance Criteria' — what the build
+# actually holds this task to.
+# They are classed 'machine' with evidence kind 'log' because there is
+# no operator runbook to route an operator criterion to, and the live
+# evidence kinds would arm the feature-complete runtime-surface gate
+# off a documentation task.
+#
+# Written by forge's planning driver on 2026-09-13.
+# --------------------------------------------------------------------------
+format_version: '2.0'
+task_id: TASK-BD8F-005
+registered_at:
+  sha: ec1b19e9b18c013e83db7846342d4410bd362b1d
+  date: '2026-09-13'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: AC-1
+  text: '`docs/API.md` updated with endpoint description'
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+- id: AC-2
+  text: Example request/response included
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+- id: AC-3
+  text: All modified files pass project-configured lint/format checks with zero errors
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+- id: AC-4
+  text: All modified files have type annotations on arguments and return values
+  class: machine
+  evidence_kind: log
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
