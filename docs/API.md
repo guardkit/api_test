@@ -664,6 +664,181 @@ Note: Domains with fewer than 3 users are excluded from the response.
 
 ---
 
+### Users Created Per Day
+
+#### GET /users/created-per-day
+
+Returns the number of users created on each of the last seven calendar days, oldest
+day first, together with the total those days account for. The window ends
+**yesterday**: today is a day still in progress, so it is not answered for.
+
+**Tags**: `users`, `analytics`
+
+**Authentication**: Required via ``X-Auth-Token`` header
+
+**Request Headers**:
+
+| Header       | Required | Description                                       |
+|--------------|----------|---------------------------------------------------|
+| X-Auth-Token | Yes      | Authentication token (`dev-token` in development) |
+
+**Query Parameters**: None. The window is fixed at seven days (`window_days = 7` in
+`src/users/schemas.py`) and is anchored on the calendar, not on the caller: naming a
+day, a count, or any other parameter changes nothing about what is answered.
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+{
+  "days": [
+    {
+      "date": "YYYY-MM-DD",
+      "count": 0
+    }
+  ],
+  "total": 0
+}
+```
+
+**Field Descriptions**:
+- `days` (array): One entry for every day of the window, seven entries, oldest day
+  first. A day without creations carries a `count` of `0` rather than going missing,
+  so the array always reads as one unbroken run of consecutive days.
+- `days[].date` (string, `YYYY-MM-DD`): The calendar day the count belongs to, in UTC.
+- `days[].count` (integer, `>= 0`): How many users were created that day. Soft-deleted
+  users are not counted as creations, as every other count in this API agrees.
+- `total` (integer, `>= 0`): Derived — the sum of `days[].count`. It is computed from
+  the days the response carries and cannot disagree with them.
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/users/created-per-day \
+  -H "X-Auth-Token: dev-token"
+```
+
+**Example Response (Happy Path — seven days, oldest first)**:
+```json
+{
+  "days": [
+    {
+      "date": "2026-07-02",
+      "count": 3
+    },
+    {
+      "date": "2026-07-03",
+      "count": 0
+    },
+    {
+      "date": "2026-07-04",
+      "count": 1
+    },
+    {
+      "date": "2026-07-05",
+      "count": 0
+    },
+    {
+      "date": "2026-07-06",
+      "count": 0
+    },
+    {
+      "date": "2026-07-07",
+      "count": 5
+    },
+    {
+      "date": "2026-07-08",
+      "count": 2
+    }
+  ],
+  "total": 11
+}
+```
+Note: the newest day is `2026-07-08`, the day before the request's today
+(`2026-07-09`), and `total` is the sum of the seven counts.
+
+**Example Response (No user created in the window)**:
+```json
+{
+  "days": [
+    {
+      "date": "2026-07-02",
+      "count": 0
+    },
+    {
+      "date": "2026-07-03",
+      "count": 0
+    },
+    {
+      "date": "2026-07-04",
+      "count": 0
+    },
+    {
+      "date": "2026-07-05",
+      "count": 0
+    },
+    {
+      "date": "2026-07-06",
+      "count": 0
+    },
+    {
+      "date": "2026-07-07",
+      "count": 0
+    },
+    {
+      "date": "2026-07-08",
+      "count": 0
+    }
+  ],
+  "total": 0
+}
+```
+Note: an empty user table, and a window in which nothing was created, are answered the
+same way — seven days of zeroes, not an empty array.
+
+**Example Response (403 Forbidden — missing or wrong token)**:
+```json
+{
+  "detail": "Unauthorized: valid authentication token required"
+}
+```
+
+**Example Response (503 Service Unavailable — database refused the count)**:
+```json
+{
+  "detail": "Database unavailable: connection to server at localhost port 5432 failed"
+}
+```
+
+**Status Codes**:
+- `200 OK`: Creation counts returned successfully. The body carries one entry per day
+  of the window, oldest first, and the total those days account for.
+- `403 Forbidden`: Unauthorized. The request is missing the ``X-Auth-Token`` header or
+  carries a token that does not match the configured one.
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported on this path).
+- `503 Service Unavailable`: Database error while counting creations.
+
+**Use Cases**:
+- Tracking recent registration activity day by day
+- Feeding a "new users per day" chart without further aggregation
+- Spotting the days a signup campaign or an onboarding change did or did not move
+
+**Implementation Notes**:
+- The window is seven consecutive days ending yesterday, read from the calendar at
+  request time (`recent_creation_window_end()` in `src/users/calculations.py`); today
+  is excluded because it is still in progress
+- Days are grouped from `created_at`, which the model stores as naive UTC, so SQLite
+  and PostgreSQL answer the same way
+- Soft-deleted users (`deleted_at` set) are excluded from the counts
+- `total` is recomputed from the days by the response model, so it always equals their
+  sum; a response that repeats one day is refused rather than sent
+- The path is served by the analytics router (`src/users/router.py`) and is registered
+  ahead of `/users/{user_id}`, so it is never read as a malformed user ID
+- The service-wide ETag and `If-None-Match` handling described in
+  [ETag Support](#etag-support) applies to GET requests on this path
+
+---
+
 ## Common Response Formats
 
 ### Success Response
