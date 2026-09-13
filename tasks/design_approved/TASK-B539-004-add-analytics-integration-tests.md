@@ -1,14 +1,15 @@
 ---
-id: TASK-B539-004
-title: Add integration tests for analytics endpoint
-task_type: testing
-parent_review: TASK-REV-B539
-feature_id: FEAT-B539
-wave: 3
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-B539-002
+- TASK-B539-002
+feature_id: FEAT-B539
+id: TASK-B539-004
+implementation_mode: task-work
+parent_review: TASK-REV-B539
+status: design_approved
+task_type: testing
+title: Add integration tests for analytics endpoint
+wave: 3
 ---
 
 # Add integration tests for analytics endpoint
