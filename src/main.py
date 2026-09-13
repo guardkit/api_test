@@ -20,6 +20,7 @@ from src.health.router import router as health_router
 from src.search.router import router as search_router
 from src.stats.router import StatsCounterMiddleware
 from src.stats.router import router as stats_router
+from src.stats.users_created import router as users_created_router
 from src.time.router import router as time_router
 from src.uptime.router import router as uptime_router
 from src.users.router import recent_router
@@ -138,6 +139,9 @@ app.include_router(uptime_router, tags=["uptime"])
 
 # Include stats router (prefix already set in router.py)
 app.include_router(stats_router, tags=["stats"])
+
+# Include users-created-per-day stats router (prefix already set in router.py)
+app.include_router(users_created_router, tags=["stats"])
 
 # Include time router (prefix already set in router.py)
 app.include_router(time_router, tags=["time"])
