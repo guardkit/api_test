@@ -288,6 +288,175 @@ def test_api_documentation_ready_response_schema(
         "Documentation must include the 'service' field in /ready response"
     )
 
+
+# ---------------------------------------------------------------------------
+# Created-per-day endpoint documentation tests (TASK-B539-005)
+# ---------------------------------------------------------------------------
+
+
+def test_api_documentation_contains_created_per_day_endpoint(
+    api_docs_path: Path,
+) -> None:
+    """Test that the API documentation includes the /users/created-per-day endpoint.
+
+    AC-001: API documentation updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+    assert "GET /users/created-per-day" in content, (
+        "Documentation must include the GET /users/created-per-day endpoint"
+    )
+
+
+def test_api_documentation_created_per_day_description(
+    api_docs_path: Path,
+) -> None:
+    """Test that the endpoint description covers the 7-day window and ordering.
+
+    AC-001: API documentation updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+    section_start = content.find("GET /users/created-per-day")
+    assert section_start != -1
+    section = content[section_start : section_start + 1000]
+    assert "last 7" in section or "7 days" in section, (
+        "Description must mention the 7-day window"
+    )
+    assert "oldest to newest" in section or "ascending" in section, (
+        "Description must mention ordering"
+    )
+
+
+def test_api_documentation_created_per_day_tags(
+    api_docs_path: Path,
+) -> None:
+    """Test that the endpoint is tagged under 'users'.
+
+    AC-001: API documentation updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+    section_start = content.find("GET /users/created-per-day")
+    section = content[section_start : section_start + 500]
+    assert "**Tags**: `users`" in section, (
+        "Endpoint should be tagged as 'users'"
+    )
+
+
+def test_api_documentation_created_per_day_response_schema(
+    api_docs_path: Path,
+) -> None:
+    """Test that the response schema documents date and count fields.
+
+    AC-001: API documentation updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+    section_start = content.find("GET /users/created-per-day")
+    section = content[section_start : section_start + 3000]
+    assert '"date"' in section, "Response schema must include 'date' field"
+    assert '"count"' in section, "Response schema must include 'count' field"
+
+
+def test_api_documentation_created_per_day_field_descriptions(
+    api_docs_path: Path,
+) -> None:
+    """Test that field descriptions are documented for date and count.
+
+    AC-001: API documentation updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+    section_start = content.find("GET /users/created-per-day")
+    section = content[section_start : section_start + 3000]
+    assert "Field Descriptions" in section, (
+        "Must have a Field Descriptions section"
+    )
+    assert "`date`" in section, "Must describe the 'date' field"
+    assert "`count`" in section, "Must describe the 'count' field"
+
+
+def test_api_documentation_created_per_day_example_request(
+    api_docs_path: Path,
+) -> None:
+    """Test that an example request is included.
+
+    AC-002: Example response included in documentation
+    """
+    content = api_docs_path.read_text()
+    section_start = content.find("GET /users/created-per-day")
+    section = content[section_start : section_start + 3000]
+    assert "Example Request" in section, "Must include an example request"
+    assert "curl" in section, "Example should use curl"
+    assert "/users/created-per-day" in section, (
+        "Example should reference the correct endpoint path"
+    )
+
+
+def test_api_documentation_created_per_day_example_response(
+    api_docs_path: Path,
+) -> None:
+    """Test that an example response with date and count values is included.
+
+    AC-002: Example response included in documentation
+    """
+    content = api_docs_path.read_text()
+    section_start = content.find("GET /users/created-per-day")
+    section = content[section_start : section_start + 5000]
+    assert "Example Response" in section, (
+        "Must include an example response section"
+    )
+    assert '"date":' in section, (
+        "Example response must contain date values"
+    )
+    assert '"count":' in section, (
+        "Example response must contain count values"
+    )
+    assert "```json" in section, (
+        "Example response must use fenced JSON code blocks"
+    )
+
+
+def test_api_documentation_created_per_day_status_codes(
+    api_docs_path: Path,
+) -> None:
+    """Test that status codes are documented.
+
+    AC-001: API documentation updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+    section_start = content.find("GET /users/created-per-day")
+    section = content[section_start : section_start + 4000]
+    assert "Status Codes" in section, "Must have a Status Codes section"
+    assert "200 OK" in section, "Must document 200 OK status"
+    assert "503" in section, "Must document 503 Service Unavailable"
+
+
+def test_api_documentation_created_per_day_implementation_notes(
+    api_docs_path: Path,
+) -> None:
+    """Test that implementation notes are included.
+
+    AC-001: API documentation updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+    section_start = content.find("GET /users/created-per-day")
+    section = content[section_start : section_start + 5000]
+    assert "Implementation Notes" in section, (
+        "Must include an Implementation Notes section"
+    )
+
+
+def test_api_documentation_created_per_day_authentication(
+    api_docs_path: Path,
+) -> None:
+    """Test that authentication requirements are documented.
+
+    AC-001: API documentation updated with endpoint description
+    """
+    content = api_docs_path.read_text()
+    section_start = content.find("GET /users/created-per-day")
+    section = content[section_start : section_start + 500]
+    assert "**Authentication**: None required" in section, (
+        "Must document that no authentication is required"
+    )
+
     # Verify the status values are documented
     assert "ready" in content.lower(), (
         "Documentation must describe the 'ready' status value"

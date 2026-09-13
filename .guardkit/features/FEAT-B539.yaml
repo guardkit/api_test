@@ -1,0 +1,85 @@
+id: FEAT-B539
+name: "User Creation Analytics - Daily Counts"
+description: "Add endpoint to return user creation counts for the last 7 days"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-B539-001
+    name: "Add user_creation_count query to crud.py"
+    file_path: "tasks/backlog/user-analytics/TASK-B539-001-add-user-creation-count-query.md"
+    complexity: 4
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-B539-002
+    name: "Implement GET /users/created-per-day endpoint"
+    file_path: "tasks/backlog/user-analytics/TASK-B539-002-implement-created-per-day-endpoint.md"
+    complexity: 5
+    dependencies:
+      - TASK-B539-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-B539-003
+    name: "Add Pydantic schemas for analytics response"
+    file_path: "tasks/backlog/user-analytics/TASK-B539-003-add-analytics-schemas.md"
+    complexity: 3
+    dependencies:
+      - TASK-B539-001
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-B539-004
+    name: "Add integration tests for analytics endpoint"
+    file_path: "tasks/backlog/user-analytics/TASK-B539-004-add-analytics-integration-tests.md"
+    complexity: 4
+    dependencies:
+      - TASK-B539-002
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-B539-005
+    name: "Add documentation for analytics endpoint"
+    file_path: "tasks/backlog/user-analytics/TASK-B539-005-add-analytics-documentation.md"
+    complexity: 2
+    dependencies:
+      - TASK-B539-002
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+orchestration:
+  parallel_groups:
+    - - TASK-B539-001
+    - - TASK-B539-002
+      - TASK-B539-003
+    - - TASK-B539-004
+    - - TASK-B539-005
+  estimated_duration_minutes: 195
+  recommended_parallel: 2
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/created-per-day/created-per-day.feature"
+scenarios:
+  "A request to the daily counts endpoint returns exactly 7 days of data ordered oldest first":
+    verifier: "hurl"
+  "The endpoint returns exactly 7 days of data when the system has been running for at least 7 days":
+    verifier: "hurl"
+  "The endpoint returns exactly 7 days of data when the system has been running for more than 7 days":
+    verifier: "hurl"
+  "A request to a non-existent endpoint returns a failure":
+    verifier: "hurl"
+  "The endpoint returns a failure when the service is unavailable":
+    verifier: "hurl"
+  "The endpoint returns 7 data points even when the system has been running for less than 7 days":
+    verifier: "hurl"
