@@ -1,0 +1,48 @@
+feature: get-users-created-per-day
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/created-per-day
+scenarios:
+- title: A request to the endpoint returns exactly seven days of data ordered oldest first
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A request to the endpoint returns exactly seven days of data ordered from the oldest day to the newest day.
+- title: The oldest day in the response is exactly seven days ago
+  tags:
+  - '@boundary'
+  sentence: The oldest day in the response is exactly seven days before the current day.
+- title: The newest day in the response is yesterday
+  tags:
+  - '@boundary'
+  sentence: The newest day in the response is yesterday.
+- title: A POST request to the endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: A POST request to the endpoint is rejected.
+- title: A request without authentication is rejected
+  tags:
+  - '@negative'
+  sentence: A request without authentication is rejected.
+- title: The endpoint returns zero counts for all days when no users were created
+  tags:
+  - '@edge-case'
+  sentence: When no users have been created in the last seven days, the endpoint returns zero counts for every day.
+- title: The endpoint returns zero counts for all days when the user table is empty
+  tags:
+  - '@edge-case'
+  sentence: When the user table is empty, the endpoint returns zero counts for every day.
+assumptions:
+- id: ASSUM-001
+  text: The response includes exactly 7 data points for the preceding week
+  basis: Inferred from request description; not explicitly stated in input
+- id: ASSUM-002
+  text: The oldest day in the response is exactly 7 days before the current day
+  basis: Inferred from 'last 7 days' phrasing; could mean 6 days ago or include today
+- id: ASSUM-003
+  text: The newest day in the response is yesterday, not today
+  basis: Inferred from 'last 7 days' phrasing; could include today
+- id: ASSUM-004
+  text: The endpoint requires authentication
+  basis: Not stated in input; common security practice for analytics endpoints
