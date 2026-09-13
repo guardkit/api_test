@@ -664,6 +664,116 @@ Note: Domains with fewer than 3 users are excluded from the response.
 
 ---
 
+### Daily User Creation Counts
+
+#### GET /users/created-per-day
+
+Returns a JSON array of `{date, count}` objects showing the number of users
+created on each of the last 7 calendar days, ordered from oldest to newest.
+Each day is represented as an ISO date string (``YYYY-MM-DD``). Days with no
+user creations are included with a count of zero, ensuring the response always
+contains exactly 7 data points.
+
+**Tags**: `users`
+
+**Authentication**: None required
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+[
+  {
+    "date": "string",
+    "count": 0
+  }
+]
+```
+
+**Field Descriptions**:
+- `date` (string): The calendar date in ISO 8601 format (``YYYY-MM-DD``). Represents one of the last 7 days including today.
+- `count` (integer): The number of users created on that date. Always a non-negative integer; zero for days with no user creations.
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/users/created-per-day
+```
+
+**Example Response (Happy Path — 7 Days of Data)**:
+```json
+[
+  {
+    "date": "2024-01-01",
+    "count": 3
+  },
+  {
+    "date": "2024-01-02",
+    "count": 7
+  },
+  {
+    "date": "2024-01-03",
+    "count": 0
+  },
+  {
+    "date": "2024-01-04",
+    "count": 5
+  },
+  {
+    "date": "2024-01-05",
+    "count": 2
+  },
+  {
+    "date": "2024-01-06",
+    "count": 0
+  },
+  {
+    "date": "2024-01-07",
+    "count": 9
+  }
+]
+```
+
+**Example Response (System Running Less Than 7 Days)**:
+```json
+[
+  {
+    "date": "2024-01-05",
+    "count": 0
+  },
+  {
+    "date": "2024-01-06",
+    "count": 0
+  },
+  {
+    "date": "2024-01-07",
+    "count": 2
+  }
+]
+```
+Note: The response contains exactly 7 data points when the system has been running for 7 or more days. When the system has been running for fewer than 7 days, the response contains only the days since the system started, with earlier days defaulting to zero counts.
+
+**Status Codes**:
+- `200 OK`: Daily creation counts returned successfully. The response body is a JSON array of date/count objects.
+- `503 Service Unavailable`: Database error when querying user creation data.
+
+**Use Cases**:
+- Tracking user acquisition trends over the past week
+- Monitoring the impact of marketing campaigns on user sign-ups
+- Identifying days with unusually high or low user creation activity
+- Capacity planning based on user growth patterns
+
+**Implementation Notes**:
+- The endpoint queries the database for user creation counts grouped by date
+- Results are ordered from oldest to newest (ascending date order)
+- The response always covers a rolling 7-day window ending with the current day
+- Days with no user creations are included with a count of zero
+- The date format is ISO 8601 (``YYYY-MM-DD``) without time component
+- This endpoint does not require authentication and is publicly accessible
+- The query is handled by ``crud.user_creation_count()`` in the users CRUD module
+
+---
+
 ## Common Response Formats
 
 ### Success Response
@@ -826,13 +936,14 @@ import requests
 # Step 1: Get the initial ETag
 response = requests.get("http://localhost:8000/health")
 etag = response.headers.get("ETag")
-print(f"ETag: {etag}")  # "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"
+print(
+    f"ETag: {etag}"
+)  # "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"
 
 # Step 2: Conditional GET on subsequent requests
 if etag:
     response = requests.get(
-        "http://localhost:8000/health",
-        headers={"If-None-Match": etag}
+        "http://localhost:8000/health", headers={"If-None-Match": etag}
     )
     if response.status_code == 304:
         print("Cache is still valid, using local copy")
