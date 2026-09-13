@@ -41,13 +41,6 @@ Feature: Get Users Created Per Day
     When I send a POST request to the user creation statistics endpoint
     Then the request should be rejected
 
-  # Why: Negative — missing authentication should be rejected
-  # [ASSUMPTION: confidence=low] The endpoint requires authentication
-  @negative
-  Scenario: An unauthenticated request is rejected
-    When I request the user creation statistics without authentication
-    Then the request should be rejected
-
   # Why: Edge case — days with no new users should still be reported
   # [ASSUMPTION: confidence=low] Days with no new users are reported with a count of zero
   @edge-case

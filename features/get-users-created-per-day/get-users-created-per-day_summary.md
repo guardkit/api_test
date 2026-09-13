@@ -2,13 +2,13 @@
 
 **Stack**: generic
 **Generated**: 2026-07-09T14:32:00Z
-**Scenarios**: 8 total (1 smoke, 0 regression)
+**Scenarios**: 7 total (1 smoke, 0 regression)
 **Assumptions**: 3 total (0 high / 0 medium / 3 low confidence)
 **Review required**: Yes
 
 ## Scope
 
-This specification covers the GET /users/created-per-day endpoint which returns the number of users created on each of the last 7 days, ordered oldest first. The input was sparse on authentication policy, zero-count day handling, and exact response format, so these are captured as low-confidence assumptions.
+This specification covers the GET /users/created-per-day endpoint which returns the number of users created on each of the last 7 days, ordered oldest first. The input was sparse on zero-count day handling and exact response structure, which are captured as low-confidence assumptions. No authentication assumptions are included as they were removed per request.
 
 ## Scenario Counts by Category
 
@@ -16,7 +16,7 @@ This specification covers the GET /users/created-per-day endpoint which returns 
 |----------|-------|
 | Key examples (@key-example) | 1 |
 | Boundary conditions (@boundary) | 4 |
-| Negative cases (@negative) | 3 |
+| Negative cases (@negative) | 2 |
 | Edge cases (@edge-case) | 1 |
 
 ## Deferred Items
@@ -26,8 +26,8 @@ None.
 ## Open Assumptions (low confidence)
 
 - **ASSUM-001**: The response includes exactly 7 data points covering the most recent 7-day window. Basis: Inferred from feature description; not explicitly stated in input.
-- **ASSUM-002**: The endpoint requires authentication. Basis: Open question in input; no authentication policy provided.
-- **ASSUM-003**: Days with no new users are reported with a count of zero. Basis: Open question in input; no policy on zero-count days.
+- **ASSUM-002**: Days with no new users are reported with a count of zero. Basis: Open question in input; no policy on zero-count days.
+- **ASSUM-003**: The response must contain data for the most recent 7-day window, including days with no new users, and must order results oldest first. Basis: Boundary conditions and edge case scenarios rely on this assumption; it is not explicitly confirmed in the input.
 
 REVIEW REQUIRED: all assumptions unconfirmed (--auto mode)
 
@@ -37,7 +37,6 @@ REVIEW REQUIRED: all assumptions unconfirmed (--auto mode)
 - "The response contains exactly seven data points" → hurl
 - "The response does not contain fewer than seven data points" → hurl
 - "A POST request to the endpoint is rejected" → hurl
-- "An unauthenticated request is rejected" → hurl
 - "Days with no new users are reported with a count of zero" → hurl
 - "The oldest day in the response is exactly six days before today" → hurl
 - "The newest day in the response is today" → hurl
