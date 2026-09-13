@@ -261,7 +261,10 @@ async def count_users_by_domain(
 
     result = await db.execute(stmt)
     rows = result.fetchall()
-    return [{"domain": row.domain, "count": row.count} for row in rows]
+    # Read the columns by position: ``Row`` derives from ``tuple``, so the
+    # attribute ``row.count`` resolves to ``tuple.count`` rather than to the
+    # labelled count column, which mypy (strict) rightly refused.
+    return [{"domain": str(row[0]), "count": int(row[1])} for row in rows]
 
 
 async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
