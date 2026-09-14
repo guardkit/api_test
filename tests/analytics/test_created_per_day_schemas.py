@@ -2,7 +2,8 @@
 
 Covers the acceptance criteria of TASK-6F3D-001:
 - AC-001: Pydantic models for the user count response (date and count)
-- AC-002: SQLAlchemy model backing the analytics data
+- AC-002: the SQLAlchemy side of the analytics data — no separate table, so the
+  users.created_at index plus the ADR-001 boundary the analytics read across
 - AC-003: Migration script adding the required schema change
 - AC-004: The modified files pass the project-configured lint/format checks
   (exercised here by importing them under the strict typing/lint configuration
@@ -11,8 +12,11 @@ Covers the acceptance criteria of TASK-6F3D-001:
 
 from __future__ import annotations
 
+import ast
+import importlib
 import json
 import os
+import pkgutil
 import re
 import subprocess
 import sys
@@ -25,15 +29,79 @@ from pydantic import ValidationError
 from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from src.analytics.models import ANALYTICS_TIMESTAMP_COLUMN, UserAnalyticsSource
 from src.analytics.schemas import (
     CreatedPerDayResponse,
     UserCount,
     UserCountByDate,
 )
+from src.db.base import DeclarativeBase
 from src.users.models import User
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+ANALYTICS_PACKAGE = PROJECT_ROOT / "src" / "analytics"
+
+# ADR-001, amendment of 2026-08-31: the files of a feature that another feature
+# may not import. crud.py and schemas.py make up the public read interface, and
+# the amendment names nothing else, so the guard below checks exactly these.
+PRIVATE_FEATURE_FILES = frozenset({"models", "service", "router", "dependencies"})
+
+
+def _private_feature_imports(package: Path) -> list[str]:
+    """Find every import in `package` that names a private file of another feature.
+
+    Args:
+        package: Directory whose modules are read.
+
+    Returns:
+        list[str]: One "<path>: <imported module>" entry per offending import,
+        empty when the package keeps to other features' public read interface.
+    """
+    offenders: list[str] = []
+    for module_path in sorted(package.rglob("*.py")):
+        imported: list[str] = []
+        for node in ast.walk(ast.parse(module_path.read_text())):
+            if isinstance(node, ast.Import):
+                imported.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported.append(node.module)
+                if len(node.module.split(".")) == 2 and node.module.startswith("src."):
+                    # `from src.users import models` names the file in the alias.
+                    imported.extend(
+                        f"{node.module}.{alias.name}" for alias in node.names
+                    )
+        for name in imported:
+            parts = name.split(".")
+            if len(parts) < 3 or parts[0] != "src" or parts[1] == package.name:
+                continue
+            feature_file = parts[2]
+            if feature_file in PRIVATE_FEATURE_FILES or feature_file.startswith("_"):
+                offenders.append(f"{module_path.relative_to(PROJECT_ROOT)}: {name}")
+    return offenders
+
+
+def _orm_models_exposed_by(package_name: str) -> list[str]:
+    """List the SQLAlchemy models that `package_name` declares or re-exports.
+
+    Args:
+        package_name: Dotted name of the package to inspect, e.g.
+            ``"src.analytics"``.
+
+    Returns:
+        list[str]: Qualified names of the declarative models found, empty when
+        the package owns no table.
+    """
+    package = importlib.import_module(package_name)
+    exposed: list[str] = []
+    for module_info in pkgutil.iter_modules(package.__path__):
+        module = importlib.import_module(f"{package_name}.{module_info.name}")
+        exposed.extend(
+            f"{module.__name__}.{name}"
+            for name, value in sorted(vars(module).items())
+            if isinstance(value, type)
+            and issubclass(value, DeclarativeBase)
+            and value is not DeclarativeBase
+        )
+    return exposed
 
 
 class TestUserCountByDate:
@@ -144,15 +212,34 @@ class TestCreatedPerDayResponse:
 
 
 class TestAnalyticsModels:
-    """AC-002: the SQLAlchemy model that backs the analytics data."""
+    """AC-002: the SQLAlchemy side of the analytics data.
 
-    def test_analytics_are_served_by_the_users_model(self) -> None:
-        """The analytics context reads through the User model, not a second table."""
-        assert UserAnalyticsSource is User
+    The criterion is conditional — "SQLAlchemy model for analytics data (if
+    separate table)". The storage decision recorded for FEAT-6F3D
+    (tasks/backlog/user-analytics/IMPLEMENTATION-GUIDE.md) is the existing
+    users table with an index on created_at, so there is no second table and no
+    analytics ORM model; what the analytics need from the schema layer is that
+    index, and the boundary that keeps them reading the users table through the
+    users feature's public interface (ADR-001, amendment of 2026-08-31).
+    """
 
-    def test_analytics_group_on_the_users_created_at_column(self) -> None:
-        """The named analytics timestamp is the users.created_at column."""
-        assert ANALYTICS_TIMESTAMP_COLUMN is User.created_at
+    def test_analytics_add_no_table_of_their_own(self) -> None:
+        """No separate table means no separate ORM model: analytics declares none."""
+        models = _orm_models_exposed_by("src.analytics")
+
+        assert models == [], (
+            "analytics answers from the users table and stores nothing of its "
+            "own, so it must declare no ORM model of its own: " + ", ".join(models)
+        )
+
+    def test_analytics_import_no_private_file_of_another_feature(self) -> None:
+        """Analytics reads users through crud.py/schemas.py, never through models.py."""
+        offenders = _private_feature_imports(ANALYTICS_PACKAGE)
+
+        assert offenders == [], (
+            "ADR-001 (amendment 2026-08-31) lets one feature import another's "
+            "crud.py and schemas.py and nothing else: " + "; ".join(offenders)
+        )
 
     def test_created_at_is_declared_indexed_on_the_model(self) -> None:
         """The model declares an index on created_at for the daily-window query."""

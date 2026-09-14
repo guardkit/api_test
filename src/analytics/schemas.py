@@ -2,8 +2,10 @@
 
 The analytics served here is a daily series: one data point per calendar day,
 ordered oldest first, as required by ``GET /users/created-per-day``
-(FEAT-6F3D). The series is derived from the ``users`` table itself; see
-:mod:`src.analytics.models` for that storage decision.
+(FEAT-6F3D). The series is derived from the ``users`` table, which the analytics
+read through the users feature's public read interface — these schemas are the
+shape that interface's results are handed to callers in, which is why the
+aggregation normalises into them rather than into an ORM row.
 """
 
 from __future__ import annotations
