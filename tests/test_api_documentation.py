@@ -1419,3 +1419,168 @@ def test_api_documentation_domain_count_consistent_with_implementation(
         f"Documented fields {documented_fields} must match "
         f"DomainCountResponse fields {schema_fields}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Created-per-day endpoint documentation tests (TASK-BB40-004)
+# ---------------------------------------------------------------------------
+
+
+class TestCreatedPerDayDocumentation:
+    """Tests for the GET /users/created-per-day endpoint documentation."""
+
+    def test_documentation_contains_created_per_day_endpoint(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the created-per-day endpoint is documented.
+
+        AC-001: API spec includes the GET /users/created-per-day endpoint
+        """
+        content = api_docs_path.read_text()
+        assert "/users/created-per-day" in content, (
+            "API documentation must include the /users/created-per-day endpoint"
+        )
+
+    def test_documentation_contains_created_per_day_get_method(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the created-per-day endpoint specifies GET method.
+
+        AC-001: API spec includes the GET /users/created-per-day endpoint
+        """
+        content = api_docs_path.read_text()
+        assert "GET /users/created-per-day" in content, (
+            "Documentation must specify GET as the HTTP method for /users/created-per-day"
+        )
+
+    def test_documentation_contains_created_per_day_section_header(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the API documentation includes a dedicated section
+        for the created-per-day endpoint.
+
+        AC-001: API spec includes the GET /users/created-per-day endpoint
+        """
+        content = api_docs_path.read_text()
+        assert "Created Per Day" in content, (
+            "Documentation must include a Created Per Day section"
+        )
+
+    def test_documentation_contains_created_per_day_response_schema(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the documented response schema is present.
+
+        AC-002: Response format is documented
+        """
+        content = api_docs_path.read_text()
+        assert "Response Schema" in content or "Response Schemas" in content, (
+            "Documentation must include response schema for /users/created-per-day"
+        )
+        # Verify the schema includes date and count fields
+        assert '"date"' in content or "'date'" in content, (
+            "Documentation must include the 'date' field in response schema"
+        )
+        assert '"count"' in content or "'count'" in content, (
+            "Documentation must include the 'count' field in response schema"
+        )
+
+    def test_documentation_contains_created_per_day_field_descriptions(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that field descriptions are documented for the response.
+
+        AC-002: Response format is documented
+        """
+        content = api_docs_path.read_text()
+        assert "Field Descriptions" in content, (
+            "Documentation must include field descriptions for /users/created-per-day"
+        )
+        assert "date" in content.lower(), (
+            "Documentation must describe the 'date' field"
+        )
+        assert "count" in content.lower(), (
+            "Documentation must describe the 'count' field"
+        )
+
+    def test_documentation_contains_created_per_day_example_response(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that an example response is provided.
+
+        AC-003: Example response is provided
+        """
+        content = api_docs_path.read_text()
+        assert "Example Response" in content or "example response" in content.lower(), (
+            "Documentation must include an example response for /users/created-per-day"
+        )
+
+    def test_documentation_contains_created_per_day_example_request(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that an example request is provided.
+
+        AC-003: Example response is provided (example request also expected)
+        """
+        content = api_docs_path.read_text()
+        assert "Example Request" in content or "example request" in content.lower(), (
+            "Documentation must include an example request for /users/created-per-day"
+        )
+
+    def test_documentation_contains_created_per_day_example_dates(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that example dates are provided in ISO-8601 format.
+
+        AC-003: Example response is provided
+        """
+        content = api_docs_path.read_text()
+        # Example response should include dates in YYYY-MM-DD format
+        assert "2024-01-01" in content or "date" in content.lower(), (
+            "Documentation should include example dates in ISO-8601 format"
+        )
+
+    def test_documentation_contains_created_per_day_seven_days(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the documentation mentions exactly 7 days of data.
+
+        AC-002: Response format is documented
+        """
+        content = api_docs_path.read_text()
+        assert "7" in content or "seven" in content.lower(), (
+            "Documentation should mention 7 days of data"
+        )
+
+    def test_documentation_contains_created_per_day_status_codes(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that status codes are documented.
+
+        AC-002: Response format is documented
+        """
+        content = api_docs_path.read_text()
+        assert "Status Codes" in content or "status codes" in content.lower(), (
+            "Documentation must include status codes for /users/created-per-day"
+        )
+        assert "200" in content, (
+            "Documentation must document 200 OK status"
+        )
+        assert "405" in content, (
+            "Documentation must document 405 Method Not Allowed status"
+        )
+        assert "503" in content, (
+            "Documentation must document 503 Service Unavailable status"
+        )
+
+    def test_documentation_contains_created_per_day_ordered_oldest_first(
+        self, api_docs_path: Path
+    ) -> None:
+        """Test that the documentation specifies ordering from oldest to newest.
+
+        AC-002: Response format is documented
+        """
+        content = api_docs_path.read_text()
+        assert "oldest" in content.lower() or "ascending" in content.lower(), (
+            "Documentation should specify ordering from oldest to newest"
+        )

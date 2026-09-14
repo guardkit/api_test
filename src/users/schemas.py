@@ -220,3 +220,49 @@ class RecentUsersResponse(BaseModel):
             ]
         }
     )
+
+
+class DailyCountEntry(BaseModel):
+    """Schema for a single day's user creation count."""
+
+    date: str
+    count: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "date": "2024-01-01",
+                    "count": 5,
+                }
+            ]
+        }
+    )
+
+
+class CreatedPerDayResponse(BaseModel):
+    """Schema for the created-per-day endpoint response.
+
+    Returns exactly seven data points ordered oldest to newest,
+    each with a date string and count of users created on that day.
+    """
+
+    counts: list[DailyCountEntry]
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "counts": [
+                        {"date": "2024-01-01", "count": 5},
+                        {"date": "2024-01-02", "count": 3},
+                        {"date": "2024-01-03", "count": 0},
+                        {"date": "2024-01-04", "count": 7},
+                        {"date": "2024-01-05", "count": 2},
+                        {"date": "2024-01-06", "count": 4},
+                        {"date": "2024-01-07", "count": 1},
+                    ]
+                }
+            ]
+        }
+    )

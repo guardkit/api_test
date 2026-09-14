@@ -1,0 +1,19 @@
+format_version: '2.0'
+task_id: TASK-BB40-002
+registered_at:
+  sha: be1adc32ef9a95f76c84bb3cd3e948fd53b75f19
+  date: '2026-09-14'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: created-per-day-AC-001
+  text: A request for daily user creation counts returns exactly seven days ordered
+    oldest first
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

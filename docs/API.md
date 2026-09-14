@@ -664,6 +664,95 @@ Note: Domains with fewer than 3 users are excluded from the response.
 
 ---
 
+### Created Per Day
+
+#### GET /users/created-per-day
+
+Returns the number of users created on each of the last 7 days, ordered from
+oldest to newest. This endpoint provides a daily breakdown of user acquisition
+trends over the most recent week, including the current day.
+
+**Tags**: `users`
+
+**Authentication**: None required
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+[
+  {
+    "date": "string",
+    "count": 0
+  }
+]
+```
+
+**Field Descriptions**:
+- `date` (string): The calendar date in ISO-8601 format (e.g., "2024-01-01"). Dates are ordered from oldest to newest, with the most recent day being the current day.
+- `count` (integer): The number of users created on that date. Always a non-negative integer; zero for days with no user creations.
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/users/created-per-day
+```
+
+**Example Response**:
+```json
+[
+  {
+    "date": "2024-01-01",
+    "count": 3
+  },
+  {
+    "date": "2024-01-02",
+    "count": 7
+  },
+  {
+    "date": "2024-01-03",
+    "count": 0
+  },
+  {
+    "date": "2024-01-04",
+    "count": 5
+  },
+  {
+    "date": "2024-01-05",
+    "count": 2
+  },
+  {
+    "date": "2024-01-06",
+    "count": 8
+  },
+  {
+    "date": "2024-01-07",
+    "count": 4
+  }
+]
+```
+
+**Status Codes**:
+- `200 OK`: Daily creation counts returned successfully. The response body is a JSON array of exactly 7 {date, count} objects, ordered from oldest to newest.
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported).
+- `503 Service Unavailable`: Database error when querying user data.
+
+**Use Cases**:
+- Monitoring daily user acquisition trends over the past week
+- Identifying spikes or drops in user creation activity
+- Tracking the impact of marketing campaigns on user sign-ups
+- Capacity planning based on recent user growth patterns
+
+**Implementation Notes**:
+- The endpoint returns exactly 7 data points, covering the last 7 calendar days
+- Results are ordered from oldest to newest (ascending date order)
+- The current day is included as the most recent entry
+- Days with no user creations return a count of 0
+- This endpoint does not require authentication and is publicly accessible
+- Only the GET HTTP method is supported; other methods return 405
+
+---
+
 ## Common Response Formats
 
 ### Success Response

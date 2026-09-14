@@ -16,6 +16,8 @@ from src.users import crud
 from src.users.calculations import calculate_days_since_created
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
+    CreatedPerDayResponse,
+    DailyCountEntry,
     DomainCountResponse,
     RecentUsersResponse,
     UserCountResponse,
@@ -274,6 +276,46 @@ async def get_domain_count(
             detail=f"Database unavailable: {exc}",
         ) from exc
     return [DomainCountResponse(**row) for row in rows]
+
+
+@router.get(
+    "/created-per-day",
+    response_model=CreatedPerDayResponse,
+    tags=["users"],
+    summary="Get user creation counts for the last 7 days",
+    description=(
+        "Returns exactly seven data points ordered oldest to newest, "
+        "each containing a date (ISO format) and the count of users "
+        "created on that day. Days with no creations return a count of 0. "
+        "Soft-deleted users are excluded from counts."
+    ),
+    responses={
+        405: {"description": "Method not allowed"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_created_per_day(
+    db: AsyncSession = Depends(get_db),
+) -> CreatedPerDayResponse:
+    """Get user creation counts for the last 7 days.
+
+    Returns exactly seven data points ordered oldest to newest,
+    each with a date and count of users created on that day.
+    Days with no user creations return a count of 0.
+
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        entries = await crud.count_users_per_day(db)
+    except SQLAlchemyError as exc:
+        logger.error("Database error while getting created-per-day counts: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return CreatedPerDayResponse(
+        counts=[DailyCountEntry(**entry) for entry in entries]
+    )
 
 
 @router.get(
