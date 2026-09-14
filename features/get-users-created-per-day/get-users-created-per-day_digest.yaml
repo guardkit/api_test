@@ -22,10 +22,6 @@ scenarios:
   tags:
   - '@negative'
   sentence: The service refuses any request that does not use the GET method.
-- title: The endpoint rejects unauthenticated requests
-  tags:
-  - '@negative'
-  sentence: The service refuses any request that does not include authentication.
 - title: The endpoint returns zero counts when no users were created in the last 7 days
   tags:
   - '@edge-case'
@@ -43,6 +39,3 @@ assumptions:
 - id: ASSUM-002
   text: The 7-day window is inclusive of the oldest day
   basis: Inferred from 'last 7 days' phrasing; could be exclusive or inclusive
-- id: ASSUM-003
-  text: The endpoint requires authentication
-  basis: Open question in input; not stated in description

@@ -2,8 +2,8 @@
 
 **Stack**: generic
 **Generated**: 2026-07-09T14:32:00Z
-**Scenarios**: 7 total (1 smoke, 0 regression)
-**Assumptions**: 3 total (0 high / 0 medium / 3 low confidence)
+**Scenarios**: 6 total (1 smoke, 0 regression)
+**Assumptions**: 2 total (0 high / 0 medium / 2 low confidence)
 **Review required**: Yes
 
 ## Scope
@@ -16,7 +16,7 @@ This specification covers the GET /users/created-per-day endpoint which returns 
 |----------|-------|
 | Key examples (@key-example) | 1 |
 | Boundary conditions (@boundary) | 2 |
-| Negative cases (@negative) | 2 |
+| Negative cases (@negative) | 1 |
 | Edge cases (@edge-case) | 2 |
 
 ## Deferred Items
@@ -27,7 +27,6 @@ None.
 
 - **ASSUM-001**: The response includes exactly 7 data points for the last 7 days. Basis: Inferred from request description; not explicitly stated in input.
 - **ASSUM-002**: The 7-day window is inclusive of the oldest day. Basis: Inferred from 'last 7 days' phrasing; could be exclusive or inclusive.
-- **ASSUM-003**: The endpoint requires authentication. Basis: Open question in input; not stated in description.
 
 REVIEW REQUIRED: all assumptions unconfirmed (--auto mode)
 
@@ -37,7 +36,6 @@ REVIEW REQUIRED: all assumptions unconfirmed (--auto mode)
 - "The oldest day in the 7-day window is included in the response" → hurl
 - "The most recent day is included in the response" → hurl
 - "The endpoint rejects non-GET requests" → hurl
-- "The endpoint rejects unauthenticated requests" → hurl
 - "The endpoint returns zero counts when no users were created in the last 7 days" → hurl
 - "The endpoint fails gracefully when the user database is unavailable" → hurl
 

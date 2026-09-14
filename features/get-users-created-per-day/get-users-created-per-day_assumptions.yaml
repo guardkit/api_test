@@ -16,9 +16,3 @@ assumptions:
   confidence: low
   basis: Inferred from 'last 7 days' phrasing; could be exclusive or inclusive
   human_response: deferred
-- id: ASSUM-003
-  scenario: The endpoint rejects unauthenticated requests
-  assumption: The endpoint requires authentication
-  confidence: low
-  basis: Open question in input; not stated in description
-  human_response: deferred
