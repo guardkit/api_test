@@ -1,15 +1,15 @@
 ---
-id: TASK-BB40-002
-title: Implement count calculation logic
-task_type: feature
-parent_review: TASK-REV-BB40
-feature_id: FEAT-BB40
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-BB40-001
-status: pending
+- TASK-BB40-001
+feature_id: FEAT-BB40
+id: TASK-BB40-002
+implementation_mode: task-work
+parent_review: TASK-REV-BB40
+status: design_approved
+task_type: feature
+title: Implement count calculation logic
+wave: 2
 ---
 
 ## Description
