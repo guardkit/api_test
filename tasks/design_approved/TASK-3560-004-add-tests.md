@@ -1,15 +1,16 @@
 ---
-id: TASK-3560-004
-title: Add endpoint tests
-task_type: testing
-parent_review: TASK-REV-3560
-feature_id: FEAT-3560
-wave: 3
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-3560-002
-  - TASK-3560-003
+- TASK-3560-002
+- TASK-3560-003
+feature_id: FEAT-3560
+id: TASK-3560-004
+implementation_mode: task-work
+parent_review: TASK-REV-3560
+status: design_approved
+task_type: testing
+title: Add endpoint tests
+wave: 3
 ---
 
 ## Description
