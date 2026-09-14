@@ -11,11 +11,13 @@ from pydantic import EmailStr
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.exceptions import DatabaseUnavailableError
 from src.db.dependencies import get_db
 from src.users import crud
 from src.users.calculations import calculate_days_since_created
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
+    DailyCountResponse,
     DomainCountResponse,
     RecentUsersResponse,
     UserCountResponse,
@@ -140,10 +142,7 @@ async def create_user(
         user = await crud.create_user(db, user_in)
     except SQLAlchemyError as exc:
         logger.error("Database error while creating user: %s", exc)
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
+        raise DatabaseUnavailableError from exc
     return UserPublic.model_validate(user)
 
 
@@ -173,10 +172,7 @@ async def list_users(
         total = await crud.count_users(db)
     except SQLAlchemyError as exc:
         logger.error("Database error while listing users: %s", exc)
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
+        raise DatabaseUnavailableError from exc
     return UserList(items=[UserPublic.model_validate(u) for u in users], total=total)
 
 
@@ -199,10 +195,7 @@ async def get_user_count(db: AsyncSession = Depends(get_db)) -> UserCountRespons
     try:
         total = await crud.count_users(db)
     except SQLAlchemyError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
+        raise DatabaseUnavailableError from exc
     return UserCountResponse(count=total)
 
 
@@ -227,10 +220,7 @@ async def get_users_count_today(
     try:
         total = await crud.count_users_today(db)
     except SQLAlchemyError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
+        raise DatabaseUnavailableError from exc
     return UserCountResponse(count=total)
 
 
@@ -269,11 +259,62 @@ async def get_domain_count(
     try:
         rows = await crud.count_users_by_domain(db, min_count=min_count)
     except SQLAlchemyError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
+        raise DatabaseUnavailableError from exc
     return [DomainCountResponse(**row) for row in rows]
+
+
+@router.get(
+    "/created-per-day",
+    response_model=list[DailyCountResponse],
+    tags=["users"],
+    summary="Get daily user creation counts",
+    description=(
+        "Returns a JSON array of {date, count} objects with the number of "
+        "users created on each of the last 7 calendar days, ordered oldest "
+        "day first. Days without any user creations are included with a "
+        "count of zero. Soft-deleted users are excluded."
+    ),
+    responses={
+        405: {"description": "Method not allowed; only GET is supported"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_created_per_day(
+    db: AsyncSession = Depends(get_db),
+) -> list[DailyCountResponse]:
+    """Get the number of users created on each of the last 7 days.
+
+    Returns exactly seven {date, count} data points ordered oldest first,
+    covering today and the six preceding calendar days.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        rows = await crud.count_users_created_per_day(db)
+    except SQLAlchemyError as exc:
+        logger.error("Database error while counting users per day: %s", exc)
+        raise DatabaseUnavailableError from exc
+    return [DailyCountResponse(**row) for row in rows]
+
+
+@router.api_route(
+    "/created-per-day",
+    methods=["POST", "PUT", "PATCH", "DELETE"],
+    include_in_schema=False,
+)
+async def reject_non_get_created_per_day(request: Request) -> Response:
+    """Reject non-GET requests to /users/created-per-day with 405.
+
+    Registered explicitly so PUT/DELETE never fall through to the
+    ``/users/{user_id}`` routes; this path serves GET only.
+    """
+    raise HTTPException(
+        status_code=405,
+        detail=(
+            f"Method '{request.method}' not allowed on "
+            "/users/created-per-day; only GET is supported"
+        ),
+        headers={"Allow": "GET"},
+    )
 
 
 @router.get(
@@ -372,10 +413,7 @@ async def get_user_by_email(
     try:
         user = await crud.get_user_by_email(db, email)
     except SQLAlchemyError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
+        raise DatabaseUnavailableError from exc
     if user is None:
         raise HTTPException(
             status_code=404,
@@ -413,10 +451,7 @@ async def get_user(
         logger.error(
             "Database error while fetching user %s: %s", validated_user_id, exc
         )
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
+        raise DatabaseUnavailableError from exc
     if user is None:
         raise UserNotFoundError(user_id=validated_user_id)
     return UserPublic.model_validate(user)
@@ -464,10 +499,7 @@ async def get_recent_users(
         users = await crud.get_recent_users(db, limit=limit)
         total = await crud.count_users(db)
     except SQLAlchemyError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
+        raise DatabaseUnavailableError from exc
     return RecentUsersResponse(
         users=[UserPublic.model_validate(u) for u in users],
         total=total,
@@ -529,10 +561,7 @@ async def delete_user_by_email(
     try:
         user = await crud.get_user_by_email(db, email)
     except SQLAlchemyError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
+        raise DatabaseUnavailableError from exc
 
     if user is None:
         raise HTTPException(
@@ -543,10 +572,7 @@ async def delete_user_by_email(
     try:
         deleted = await crud.delete_user(db, str(user.id))
     except SQLAlchemyError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
+        raise DatabaseUnavailableError from exc
 
     if not deleted:
         raise HTTPException(

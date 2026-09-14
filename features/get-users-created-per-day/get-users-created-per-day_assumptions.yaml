@@ -1,0 +1,18 @@
+feature: User Creation Daily Counts
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: Requesting the daily user counts returns exactly seven days of data ordered
+    oldest first
+  assumption: The response includes exactly 7 data points for the last 7 days
+  confidence: low
+  basis: Inferred from request description; not explicitly stated in input
+  human_response: deferred
+- id: ASSUM-002
+  scenario: The oldest day in the 7-day window is included in the response
+  assumption: The 7-day window is inclusive of the oldest day
+  confidence: low
+  basis: Inferred from 'last 7 days' phrasing; could be exclusive or inclusive
+  human_response: deferred

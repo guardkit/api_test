@@ -1,0 +1,41 @@
+feature: get-users-created-per-day
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/created-per-day
+scenarios:
+- title: Requesting the daily user counts returns exactly seven days of data ordered oldest first
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: Asking the service for the number of users created each day over the past week returns exactly seven
+    data points ordered from the oldest day to the most recent day.
+- title: The oldest day in the 7-day window is included in the response
+  tags:
+  - '@boundary'
+  sentence: The oldest day within the seven-day period is included in the returned list.
+- title: The most recent day is included in the response
+  tags:
+  - '@boundary'
+  sentence: The most recent day is included in the returned list.
+- title: The endpoint rejects non-GET requests
+  tags:
+  - '@negative'
+  sentence: The service refuses any request that does not use the GET method.
+- title: The endpoint returns zero counts when no users were created in the last 7 days
+  tags:
+  - '@edge-case'
+  sentence: If no users were created in the past week, the service still returns seven data points,
+    each showing a count of zero.
+- title: The endpoint fails gracefully when the user database is unavailable
+  tags:
+  - '@edge-case'
+  sentence: If the user database is unavailable, the service fails gracefully and informs the
+    caller that the service is temporarily unavailable.
+assumptions:
+- id: ASSUM-001
+  text: The response includes exactly 7 data points for the last 7 days
+  basis: Inferred from request description; not explicitly stated in input
+- id: ASSUM-002
+  text: The 7-day window is inclusive of the oldest day
+  basis: Inferred from 'last 7 days' phrasing; could be exclusive or inclusive

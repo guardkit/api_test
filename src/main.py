@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from src.core.config import settings
 from src.core.etag import ETagMiddleware
+from src.core.exceptions import register_error_handlers
 from src.core.logging import setup_logging
 from src.core.middleware import (
     APIVersionHeaderMiddleware,
@@ -112,6 +113,11 @@ app = FastAPI(
     },
     lifespan=lifespan,
 )
+
+# Turn an error into the one documented response body, wherever it comes from:
+# src/core/exceptions.py handles AppError (503 when the database is down) and
+# acts as the safety net for a database error no route caught.
+register_error_handlers(app)
 
 # Register middleware: CorrelationID -> StatsCounter -> RequestLogging ->
 # APIVersion -> ETag

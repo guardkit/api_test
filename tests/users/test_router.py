@@ -96,9 +96,7 @@ class TestListUsers:
         for i in range(3):
             await crud.create_user(
                 db_session,
-                UserCreate(
-                    email=f"user{i}@example.com", full_name=f"User {i}"
-                ),
+                UserCreate(email=f"user{i}@example.com", full_name=f"User {i}"),
             )
 
         response = await async_client.get("/users")
@@ -221,7 +219,9 @@ class TestUpdateUser:
         """Test updating a non-existent user returns 404."""
         fake_id = str(uuid4())
 
-        response = await async_client.put(f"/users/{fake_id}", json={"full_name": "New"})
+        response = await async_client.put(
+            f"/users/{fake_id}", json={"full_name": "New"}
+        )
 
         assert response.status_code == HTTPStatus.NOT_FOUND
         data = response.json()
@@ -354,7 +354,9 @@ class TestGetUserCount:
     async def test_get_user_by_id_still_works(
         self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
     ) -> None:
-        """Regression guard: GET /users/{user_id} still works after adding count route."""
+        """Regression guard: GET /users/{user_id} still works after the
+        count route was added.
+        """
         user_in = UserCreate(email="regression@example.com", full_name="Regression")
         created = await crud.create_user(db_session, user_in)
 
@@ -383,7 +385,12 @@ class TestGetUserCount:
             assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
             data = response.json()
             assert "Database unavailable" in data["detail"]
-            assert "Connection refused" in data["detail"]
+            # TASK-54E1-004: a database failure answers with one fixed,
+            # user-facing message from src/core/exceptions.py. The driver's own
+            # words go to the log, not to the caller, so this endpoint's 503
+            # reads the same as every other endpoint's.
+            assert "Connection refused" not in data["detail"]
+            assert set(data) == {"detail"}
         finally:
             crud.count_users = original_count_users
 
@@ -399,7 +406,9 @@ class TestGetUserByEmail:
         user_in = UserCreate(email="byemail@example.com", full_name="By Email")
         created = await crud.create_user(db_session, user_in)
 
-        response = await async_client.get("/users/by-email", params={"email": "byemail@example.com"})
+        response = await async_client.get(
+            "/users/by-email", params={"email": "byemail@example.com"}
+        )
 
         assert response.status_code == HTTPStatus.OK
         data = response.json()
@@ -421,7 +430,9 @@ class TestGetUserByEmail:
                 UserCreate(email=f"multi{i}@example.com", full_name=f"Multi {i}"),
             )
 
-        response = await async_client.get("/users/by-email", params={"email": "multi1@example.com"})
+        response = await async_client.get(
+            "/users/by-email", params={"email": "multi1@example.com"}
+        )
 
         assert response.status_code == HTTPStatus.OK
         data = response.json()
@@ -433,7 +444,9 @@ class TestGetUserByEmail:
         self, async_client: AsyncClient, override_get_db: None
     ) -> None:
         """Test that an unknown email returns 404 with clear detail."""
-        response = await async_client.get("/users/by-email", params={"email": "unknown@example.com"})
+        response = await async_client.get(
+            "/users/by-email", params={"email": "unknown@example.com"}
+        )
 
         assert response.status_code == HTTPStatus.NOT_FOUND
         data = response.json()
@@ -445,7 +458,9 @@ class TestGetUserByEmail:
         self, async_client: AsyncClient, override_get_db: None
     ) -> None:
         """Test that a malformed email returns 422 without hitting the database."""
-        response = await async_client.get("/users/by-email", params={"email": "not-an-email"})
+        response = await async_client.get(
+            "/users/by-email", params={"email": "not-an-email"}
+        )
 
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
@@ -459,14 +474,22 @@ class TestGetUserByEmail:
         from sqlalchemy.exc import SQLAlchemyError
 
         original_get_by_email = crud.get_user_by_email
-        crud.get_user_by_email = AsyncMock(side_effect=SQLAlchemyError("Connection refused"))
+        crud.get_user_by_email = AsyncMock(
+            side_effect=SQLAlchemyError("Connection refused")
+        )
 
         try:
-            response = await async_client.get("/users/by-email", params={"email": "x@example.com"})
+            response = await async_client.get(
+                "/users/by-email", params={"email": "x@example.com"}
+            )
             assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
             data = response.json()
             assert "Database unavailable" in data["detail"]
-            assert "Connection refused" in data["detail"]
+            # TASK-54E1-004: one fixed, user-facing message for a database
+            # failure (src/core/exceptions.py); the driver's words go to the
+            # log, so this 503 reads the same as every other endpoint's.
+            assert "Connection refused" not in data["detail"]
+            assert set(data) == {"detail"}
         finally:
             crud.get_user_by_email = original_get_by_email
 
@@ -480,10 +503,14 @@ class TestGetUserByEmail:
             UserCreate(email="CaseSensitive@example.com", full_name="Case Test"),
         )
 
-        response_upper = await async_client.get("/users/by-email", params={"email": "CASESENSITIVE@EXAMPLE.COM"})
+        response_upper = await async_client.get(
+            "/users/by-email", params={"email": "CASESENSITIVE@EXAMPLE.COM"}
+        )
         assert response_upper.status_code == HTTPStatus.NOT_FOUND
 
-        response_exact = await async_client.get("/users/by-email", params={"email": "CaseSensitive@example.com"})
+        response_exact = await async_client.get(
+            "/users/by-email", params={"email": "CaseSensitive@example.com"}
+        )
         assert response_exact.status_code == HTTPStatus.OK
         assert response_exact.json()["full_name"] == "Case Test"
 
@@ -491,7 +518,9 @@ class TestGetUserByEmail:
     async def test_by_id_still_works_after_by_email(
         self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
     ) -> None:
-        """Regression guard: GET /users/{user_id} still works after adding by-email route."""
+        """Regression guard: GET /users/{user_id} still works after the
+        by-email route was added.
+        """
         user_in = UserCreate(email="regression2@example.com", full_name="Regression 2")
         created = await crud.create_user(db_session, user_in)
 
@@ -523,7 +552,9 @@ class TestDeleteUserByEmail:
         the candidate check. Soft-delete is how the row is kept for the audit
         trail, not a promise that a deleted user still answers.
         """
-        user_in = UserCreate(email="deletebyemail@example.com", full_name="Delete By Email")
+        user_in = UserCreate(
+            email="deletebyemail@example.com", full_name="Delete By Email"
+        )
         await crud.create_user(db_session, user_in)
 
         response = await async_client.delete(
@@ -596,7 +627,9 @@ class TestDeleteUserByEmail:
         for i in range(3):
             await crud.create_user(
                 db_session,
-                UserCreate(email=f"selective{i}@example.com", full_name=f"Selective {i}"),
+                UserCreate(
+                    email=f"selective{i}@example.com", full_name=f"Selective {i}"
+                ),
             )
 
         # Delete the middle user by email
@@ -626,8 +659,12 @@ class TestDeleteUserByEmail:
     async def test_by_id_delete_still_works(
         self, async_client: AsyncClient, override_get_db: None, db_session: AsyncSession
     ) -> None:
-        """Regression guard: DELETE /users/{user_id} still returns 204 after adding by-email route."""
-        user_in = UserCreate(email="regression_delete@example.com", full_name="Regression Delete")
+        """Regression guard: DELETE /users/{user_id} still returns 204 after
+        the by-email route was added.
+        """
+        user_in = UserCreate(
+            email="regression_delete@example.com", full_name="Regression Delete"
+        )
         created = await crud.create_user(db_session, user_in)
 
         response = await async_client.delete(
@@ -651,7 +688,9 @@ class TestDeleteUserByEmail:
 
         original_get = crud.get_user_by_email
         original_delete = crud.delete_user
-        crud.get_user_by_email = AsyncMock(side_effect=SQLAlchemyError("Connection refused"))
+        crud.get_user_by_email = AsyncMock(
+            side_effect=SQLAlchemyError("Connection refused")
+        )
 
         try:
             response = await async_client.delete(
@@ -660,7 +699,11 @@ class TestDeleteUserByEmail:
             assert response.status_code == HTTPStatus.SERVICE_UNAVAILABLE
             data = response.json()
             assert "Database unavailable" in data["detail"]
-            assert "Connection refused" in data["detail"]
+            # TASK-54E1-004: one fixed, user-facing message for a database
+            # failure (src/core/exceptions.py); the driver's words go to the
+            # log, so this 503 reads the same as every other endpoint's.
+            assert "Connection refused" not in data["detail"]
+            assert set(data) == {"detail"}
         finally:
             crud.get_user_by_email = original_get
             crud.delete_user = original_delete

@@ -664,6 +664,152 @@ Note: Domains with fewer than 3 users are excluded from the response.
 
 ---
 
+### Daily User Creation Counts
+
+#### GET /users/created-per-day
+
+Returns the number of users created on each of the last 7 calendar days as a
+JSON array of exactly seven `{date, count}` data points, ordered oldest day
+first. The array always holds seven points — days with no new users are
+reported with a count of zero — so consumers can plot the series without
+filling gaps.
+
+**Tags**: `users`
+
+**Authentication**: None required
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+[
+  {
+    "date": "string",
+    "count": 0
+  }
+]
+```
+
+**Field Descriptions**:
+- `date` (string): Calendar day of the data point in ISO-8601 date format (`YYYY-MM-DD`), e.g. "2026-09-14". Seven consecutive days, ascending, ending with today.
+- `count` (integer): Number of users whose `created_at` falls on that day. Days with no user creations return `0`, never a missing entry.
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/users/created-per-day
+```
+
+**Example Response**:
+```json
+[
+  {
+    "date": "2026-09-08",
+    "count": 0
+  },
+  {
+    "date": "2026-09-09",
+    "count": 3
+  },
+  {
+    "date": "2026-09-10",
+    "count": 12
+  },
+  {
+    "date": "2026-09-11",
+    "count": 7
+  },
+  {
+    "date": "2026-09-12",
+    "count": 0
+  },
+  {
+    "date": "2026-09-13",
+    "count": 21
+  },
+  {
+    "date": "2026-09-14",
+    "count": 5
+  }
+]
+```
+
+**Example Response (No User Creations In The Window)**:
+```json
+[
+  {
+    "date": "2026-09-08",
+    "count": 0
+  },
+  {
+    "date": "2026-09-09",
+    "count": 0
+  },
+  {
+    "date": "2026-09-10",
+    "count": 0
+  },
+  {
+    "date": "2026-09-11",
+    "count": 0
+  },
+  {
+    "date": "2026-09-12",
+    "count": 0
+  },
+  {
+    "date": "2026-09-13",
+    "count": 0
+  },
+  {
+    "date": "2026-09-14",
+    "count": 0
+  }
+]
+```
+Note: the response never shrinks to `[]`; a quiet week is seven zeroed data points.
+
+**Example Request (Unsupported Method)**:
+```bash
+curl -X POST http://localhost:8000/users/created-per-day
+```
+
+**Example Response (Unsupported Method — `405` With The `Allow` Header)**:
+```json
+{
+  "detail": "Method 'POST' not allowed on /users/created-per-day; only GET is supported"
+}
+```
+
+**Example Response (Database Unavailable — `503`)**:
+```json
+{
+  "detail": "Database unavailable: the service could not reach its database. Please try again shortly."
+}
+```
+
+**Status Codes**:
+- `200 OK`: Daily counts returned successfully. The body is a JSON array of seven date/count objects, oldest day first.
+- `405 Method Not Allowed`: HTTP method other than GET (POST, PUT, PATCH, DELETE). The response carries an `Allow: GET` header.
+- `503 Service Unavailable`: The database could not be reached or could not answer the query.
+
+**Use Cases**:
+- Plotting a user-acquisition chart for the last week
+- Detecting days on which sign-ups stalled (a zero among the seven points)
+- Feeding weekly growth reports and dashboards
+
+**Implementation Notes**:
+- The window is seven calendar days: today plus the six days before it, inclusive of both ends
+- Data points are emitted oldest first, regardless of the order rows were written in
+- Only the `created_at` timestamp decides a user's day; `updated_at` is not considered
+- Soft-deleted users (`deleted_at` set) are excluded, matching `/users/count`
+- Days with no creations are filled in with a count of zero by the service, not by the database
+- The endpoint is read-only; other methods are refused with `405` and an `Allow: GET` header
+- Database failures are reported through the standard error body, never as a stack trace
+- This endpoint does not require authentication and is publicly accessible
+
+---
+
 ## Common Response Formats
 
 ### Success Response
