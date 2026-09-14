@@ -6,7 +6,7 @@ import logging
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, and_, case, func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,11 +56,7 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.id == user_id)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.id == user_id).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -78,12 +74,7 @@ async def get_users(
     Returns:
         Sequence of User objects.
     """
-    stmt = (
-        select(User)
-        .where(User.deleted_at.is_(None))
-        .offset(skip)
-        .limit(limit)
-    )
+    stmt = select(User).where(User.deleted_at.is_(None)).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -98,11 +89,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.email == email)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.email == email).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -159,8 +146,6 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
     # Prevent double-delete: if already soft-deleted, return False
     if user.deleted_at is not None:
         return False
-
-    from datetime import UTC, datetime
 
     user.deleted_at = datetime.now(UTC)
     db.add(user)
@@ -291,3 +276,100 @@ async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
     stmt = select(User).order_by(User.created_at.desc()).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+def _midnight(day: date) -> datetime:
+    """Return midnight at the start of ``day`` as a naive datetime.
+
+    Naive because ``users.created_at`` is a ``DateTime`` without a timezone, so
+    a naive boundary compares like with like on both SQLite and PostgreSQL —
+    the same approach ``count_users_today`` takes.
+
+    Args:
+        day: The calendar day to open.
+
+    Returns:
+        Midnight at the start of that day.
+    """
+    return datetime(day.year, day.month, day.day)
+
+
+def _created_on_bucket(day: date) -> ColumnElement[int]:
+    """Return the conditional aggregate counting users created on ``day``.
+
+    One ``SUM(CASE WHEN ... THEN 1 ELSE 0 END)`` per day: the database does the
+    counting, no date function is needed, and each day is described by the same
+    half-open range as every other count in this module. Grouping by a SQL date
+    function is the other option, but the two databases this project runs
+    against disagree about which date functions exist and about the timezone a
+    date is taken in (see the dialect detection in ``count_users_by_domain``),
+    while ``created_at >= midnight AND created_at < next midnight`` is the same
+    question in both.
+
+    Args:
+        day: The calendar day to count creations on.
+
+    Returns:
+        A SQL aggregate expression yielding that day's count.
+    """
+    return func.sum(
+        case(
+            (
+                and_(
+                    User.created_at >= _midnight(day),
+                    User.created_at < _midnight(day + timedelta(days=1)),
+                ),
+                1,
+            ),
+            else_=0,
+        )
+    )
+
+
+async def count_users_created_on_days(
+    db: AsyncSession, window: Sequence[date]
+) -> list[int]:
+    """Count non-deleted users created on each day of ``window``, oldest first.
+
+    ``window`` is a run of consecutive calendar days, oldest day first, and one
+    count comes back per day in that same position — the caller never has to
+    match rows back to days, and the order the days were asked for is the order
+    they are answered in. Days with no creations are answered with 0 rather than
+    left out: the aggregate carries no GROUP BY, so exactly one row comes back,
+    holding NULL where nothing matched, which reads as a zero count.
+
+    Users created outside the window — earlier than its first day, or stamped in
+    the future — are counted nowhere, and soft-deleted users are excluded, as in
+    ``count_users``, ``count_users_today`` and ``count_users_by_domain``.
+
+    Args:
+        db: The async database session.
+        window: The calendar days to count over, oldest day first.
+
+    Returns:
+        One count per day of ``window``, in the order the days were given.
+
+    Raises:
+        ValueError: If ``window`` is empty, since then there is no question to
+            put to the database.
+        SQLAlchemyError: If the aggregate query fails.
+    """
+    if not window:
+        raise ValueError(
+            "count_users_created_on_days needs at least one day to count over"
+        )
+
+    buckets = [
+        _created_on_bucket(day).label(f"day_{index}")
+        for index, day in enumerate(window)
+    ]
+    stmt = (
+        select(*buckets)
+        .select_from(User)
+        .where(User.created_at >= _midnight(window[0]))
+        .where(User.created_at < _midnight(window[-1] + timedelta(days=1)))
+        .where(User.deleted_at.is_(None))
+    )
+    result = await db.execute(stmt)
+
+    return [int(count or 0) for count in result.one()]
