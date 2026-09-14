@@ -2,9 +2,23 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
+from datetime import date as CalendarDay
+from typing import TypeAlias
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
+
+# Pydantic refuses a field whose name is also a type name, so the calendar-day
+# type behind the ``date`` fields below is imported under an alias and named
+# once here for both daily-count schemas to use.
+DayType: TypeAlias = CalendarDay
 
 
 class UserBase(BaseModel):
@@ -216,6 +230,117 @@ class RecentUsersResponse(BaseModel):
                         }
                     ],
                     "total": 1,
+                }
+            ]
+        }
+    )
+
+
+def _calendar_day_of(moment: datetime) -> DayType:
+    """Return the calendar day a timestamp falls on.
+
+    A timezone-aware timestamp is read in UTC, which is how the rest of this
+    package turns a timestamp into a day; a naive one is taken at face value.
+
+    Args:
+        moment: The timestamp to read a day out of.
+
+    Returns:
+        The calendar day the timestamp falls on.
+    """
+    if moment.tzinfo is not None:
+        return moment.astimezone(UTC).date()
+    return moment.date()
+
+
+def _timestamp_in(text: str) -> datetime | None:
+    """Return the timestamp an ISO-8601 string carries, or None.
+
+    A database driver may hand back a timestamp either as a ``datetime`` or
+    as its text form, and the text form differs between PostgreSQL and
+    SQLite.  Anything that is not an ISO-8601 timestamp yields None so the
+    value falls through to the plain ``date`` validation, which reports the
+    bad input in the usual way.
+
+    Args:
+        text: The string to try to read as a timestamp.
+
+    Returns:
+        The timestamp it carries, or None if it is not one.
+    """
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        return None
+
+
+class DailyUserCount(BaseModel):
+    """Schema for one day's user-creation count: a ``(date, count)`` pair.
+
+    One of these is one entry of the JSON array served by the daily
+    user-creation-counts endpoint (``GET /users/created-per-day``): the
+    calendar day, and how many users were created on it.  A day on which no
+    user was created is described the same way, with ``count`` of zero.
+
+    Filling these from the database is TASK-D49B-002's job; exposing them over
+    HTTP belongs to TASK-D49B-003 and TASK-D49B-004.
+    """
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "date": "2026-07-09",
+                    "count": 5,
+                }
+            ]
+        }
+    )
+
+    date: DayType = Field(description="Calendar day the count describes, ISO 8601.")
+    count: int = Field(description="Number of users created on that day.", ge=0)
+
+    @field_validator("date", mode="before")
+    @classmethod
+    def reduce_to_calendar_day(cls, value: object) -> object:
+        """Reduce a timestamp to the calendar day it falls on.
+
+        The counts these entries describe come out of creation timestamps, so
+        a timestamp is accepted for the day and reduced to the day it falls
+        on — UTC for a timezone-aware one, as stamped for a naive one, whether
+        it arrives as a ``datetime`` or as its ISO-8601 text.  A plain
+        ``date``, or an ISO-8601 date string, needs no reducing and is passed
+        to the regular field validation untouched.
+
+        Args:
+            value: The raw value supplied for the ``date`` field.
+
+        Returns:
+            The calendar day as a ``datetime.date``, or ``value`` unchanged.
+        """
+        if isinstance(value, datetime):
+            return _calendar_day_of(value)
+        if isinstance(value, str):
+            moment = _timestamp_in(value)
+            if moment is not None:
+                return _calendar_day_of(moment)
+        return value
+
+
+class SingleDayUserCountResponse(DailyUserCount):
+    """Schema for a user-creation count that covers exactly one day.
+
+    It carries the same two fields as one :class:`DailyUserCount` entry, so a
+    single-day response is also a valid entry of the multi-day array — which
+    keeps the wire shape identical whichever way the count is asked for.
+    """
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "date": "2026-07-09",
+                    "count": 12,
                 }
             ]
         }
