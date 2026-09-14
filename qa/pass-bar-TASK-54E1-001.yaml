@@ -1,0 +1,19 @@
+format_version: '2.0'
+task_id: TASK-54E1-001
+registered_at:
+  sha: 82d68300114eacffd4e6c61003bfc9a6f22e6de5
+  date: '2026-09-14'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: get-users-created-per-day-AC-001
+  text: Requesting the daily user counts returns exactly seven days of data ordered
+    oldest first
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
