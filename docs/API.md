@@ -664,6 +664,106 @@ Note: Domains with fewer than 3 users are excluded from the response.
 
 ---
 
+### User Creations Per Day
+
+#### GET /users/created-per-day
+
+Returns the number of users created on each of the last 7 calendar days as a
+JSON array of `{date, count}` objects ordered from the oldest day to the newest
+day. Days with no new users are included with a count of zero, so the response
+always carries exactly 7 data points, including on a freshly deployed system
+that has no user history at all.
+
+**Tags**: `users`
+
+**Authentication**: None required
+
+**Query Parameters**: None. The window is fixed at the trailing 7 calendar days
+(`today - 6` through `today`) and is evaluated in the server's local calendar.
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+[
+  {
+    "date": "string",
+    "count": 0
+  }
+]
+```
+
+**Response Format**:
+- The top-level value is a JSON array, never an object.
+- The array holds exactly 7 entries, one per day of the trailing 7-day window.
+- Entries are sorted ascending by `date`: the oldest day (`today - 6`) first, `today` last.
+- Every entry is an object with exactly two keys, `date` and `count`; no additional fields are returned.
+- The array is returned bare, with no wrapper envelope, and maps directly to the `DayCountResponse` model in `src/users/schemas.py`.
+
+**Field Descriptions**:
+- `date` (string): ISO 8601 calendar date of one day in the window, formatted `YYYY-MM-DD` (e.g., "2026-09-14"). No time of day or timezone offset is included.
+- `count` (integer): Number of users created on that day. Days with no creations are reported as `0` rather than omitted.
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/users/created-per-day
+```
+
+**Example Response (Happy Path — Seven Days With Signups)**:
+```json
+[
+  {"date": "2026-09-08", "count": 0},
+  {"date": "2026-09-09", "count": 3},
+  {"date": "2026-09-10", "count": 1},
+  {"date": "2026-09-11", "count": 7},
+  {"date": "2026-09-12", "count": 2},
+  {"date": "2026-09-13", "count": 5},
+  {"date": "2026-09-14", "count": 4}
+]
+```
+
+**Example Response (Edge Case — No History, All Zero Counts)**:
+```json
+[
+  {"date": "2026-09-08", "count": 0},
+  {"date": "2026-09-09", "count": 0},
+  {"date": "2026-09-10", "count": 0},
+  {"date": "2026-09-11", "count": 0},
+  {"date": "2026-09-12", "count": 0},
+  {"date": "2026-09-13", "count": 0},
+  {"date": "2026-09-14", "count": 0}
+]
+```
+Note: the dates above are illustrative; the window is always the 7 calendar days ending on the current server date, oldest first.
+
+**Example Response (Error — Database Unavailable)**:
+```json
+{
+  "detail": "Database unavailable: connection to server at \"db\" (127.0.0.1), port 5432 failed"
+}
+```
+
+**Status Codes**:
+- `200 OK`: The 7-day series was retrieved successfully. The body is a JSON array of exactly 7 date/count objects, oldest day first.
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported).
+- `503 Service Unavailable`: Database error while aggregating user creation timestamps.
+
+**Use Cases**:
+- Monitoring daily user growth across the past week
+- Feeding a 7-day sign-up trend chart on an analytics dashboard
+- Spotting zero-creation days after a deployment or signup outage
+
+**Implementation Notes**:
+- The window is today plus the 6 days before it (`CREATED_PER_DAY_WINDOW_DAYS = 7` in `src/users/router.py`); creations older than the window are ignored, so 8 or more days of history still returns exactly 7 data points.
+- Counts come from `count_users_created_per_day` in `src/users/crud.py`, which pre-seeds every day of the window at 0 and then fills in the days that have rows.
+- Soft-deleted users (a non-null `deleted_at`) are excluded from the counts.
+- Creation timestamps are bucketed in Python rather than with a SQL date function, so the result is identical on PostgreSQL and SQLite.
+- The endpoint is served by the `users` router and reaches the database through the standard `get_db` dependency.
+- This endpoint does not require authentication and is publicly accessible
+
+---
+
 ## Common Response Formats
 
 ### Success Response

@@ -1,0 +1,29 @@
+feature: User Creation Daily Counts
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A request to the endpoint returns exactly 7 days of data ordered oldest
+    to newest
+  assumption: The response includes exactly 7 data points covering the most recent
+    7-day window
+  confidence: low
+  basis: Inferred from request description; not explicitly stated in input
+  human_response: deferred
+- id: ASSUM-002
+  scenario: The endpoint returns 7 data points with zero counts when fewer than 7
+    days of history exist
+  assumption: If fewer than 7 days of history exist, the endpoint returns 7 data points
+    with zero counts for missing days
+  confidence: low
+  basis: Inferred from common analytics API convention; not stated in input
+  human_response: deferred
+- id: ASSUM-003
+  scenario: The response format is a JSON array of date-count pairs
+  assumption: The response format is a JSON array of objects, each containing a date
+    string and a count integer
+  confidence: low
+  basis: Inferred from request description 'JSON response containing the number of
+    users created on each of the last 7 days'; exact structure not specified
+  human_response: deferred

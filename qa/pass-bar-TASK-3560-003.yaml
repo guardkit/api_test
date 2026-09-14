@@ -1,0 +1,19 @@
+format_version: '2.0'
+task_id: TASK-3560-003
+registered_at:
+  sha: 2d7a1eed0945a727d82e22d6ee05a644eec1e66c
+  date: '2026-09-14'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: created-per-day-AC-001
+  text: A request to the endpoint returns exactly 7 days of data ordered oldest to
+    newest
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

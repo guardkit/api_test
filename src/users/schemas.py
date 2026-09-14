@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
@@ -52,6 +52,27 @@ class DomainCountResponse(BaseModel):
             "examples": [
                 {
                     "domain": "example.com",
+                    "count": 5,
+                }
+            ]
+        }
+    )
+
+
+class DayCountResponse(BaseModel):
+    """Schema for one day in the user-creation-per-day series.
+
+    Pairs an ISO 8601 calendar date with the number of users created on it.
+    """
+
+    date: date
+    count: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "date": "2026-09-14",
                     "count": 5,
                 }
             ]

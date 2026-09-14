@@ -1,0 +1,49 @@
+feature: created-per-day
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/created-per-day
+scenarios:
+- title: A request to the endpoint returns exactly 7 days of data ordered oldest to newest
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A request for the last week's user counts returns exactly seven days of data, starting with the oldest day and ending with the most recent.
+- title: The endpoint returns data for exactly 7 days when 7 days of history exist
+  tags:
+  - '@boundary'
+  sentence: When exactly seven days of history are available, the endpoint returns data for all seven days.
+- title: The endpoint returns only the most recent 7 days when more than 7 days of history exist
+  tags:
+  - '@boundary'
+  sentence: When more than seven days of history are available, the endpoint returns data for only the most recent seven days.
+- title: A POST request to the endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: The endpoint rejects any request that uses the POST method instead of GET.
+- title: A request to a non-existent path returns a not-found response
+  tags:
+  - '@negative'
+  sentence: The system rejects any request made to a path that does not exist.
+- title: The endpoint returns 7 data points with zero counts when fewer than 7 days of history exist
+  tags:
+  - '@edge-case'
+  sentence: When fewer than seven days of history are available, the endpoint still returns seven data points, filling in zeros for any missing days.
+- title: Concurrent requests to the endpoint return consistent data
+  tags:
+  - '@edge-case'
+  sentence: Two simultaneous requests to the endpoint both succeed and return identical data.
+- title: The response format is a JSON array of date-count pairs
+  tags:
+  - '@key-example'
+  sentence: The response is a JSON list where each entry pairs a date with the number of users created on that day.
+assumptions:
+- id: ASSUM-001
+  text: The response includes exactly 7 data points covering the most recent 7-day window
+  basis: Inferred from request description; not explicitly stated in input
+- id: ASSUM-002
+  text: If fewer than 7 days of history exist, the endpoint returns 7 data points with zero counts for missing days
+  basis: Inferred from common analytics API convention; not stated in input
+- id: ASSUM-003
+  text: The response format is a JSON array of objects, each containing a date string and a count integer
+  basis: Inferred from request description 'JSON response containing the number of users created on each of the last 7 days'; exact structure not specified

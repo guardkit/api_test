@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import func, select
@@ -56,11 +57,7 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.id == user_id)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.id == user_id).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -78,12 +75,7 @@ async def get_users(
     Returns:
         Sequence of User objects.
     """
-    stmt = (
-        select(User)
-        .where(User.deleted_at.is_(None))
-        .offset(skip)
-        .limit(limit)
-    )
+    stmt = select(User).where(User.deleted_at.is_(None)).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -98,11 +90,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.email == email)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.email == email).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -159,8 +147,6 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
     # Prevent double-delete: if already soft-deleted, return False
     if user.deleted_at is not None:
         return False
-
-    from datetime import UTC, datetime
 
     user.deleted_at = datetime.now(UTC)
     db.add(user)
@@ -276,6 +262,80 @@ async def count_users_by_domain(
     result = await db.execute(stmt)
     rows = result.fetchall()
     return [{"domain": row.domain, "count": row.count} for row in rows]
+
+
+@dataclass(frozen=True)
+class DailyCount:
+    """Number of users created on a single calendar day.
+
+    Attributes:
+        day: The calendar day the count covers.
+        count: How many users were created on that day.
+    """
+
+    day: date
+    count: int
+
+
+async def count_users_created_per_day(
+    db: AsyncSession, days: int = 7
+) -> list[DailyCount]:
+    """Count users created on each of the last ``days`` calendar days.
+
+    The window is today plus the ``days`` - 1 days before it. Exactly ``days``
+    entries come back, ordered oldest day first; days with no creations are
+    reported with a count of zero rather than being left out, so a newly
+    deployed system with no history still returns a full series.
+
+    The timestamps are bucketed in Python instead of with a SQL date function:
+    ``date_trunc`` is PostgreSQL-only and ``date()`` is SQLite-only, and the
+    last feature that assumed one of them existed went green on the SQLite test
+    database and 503'd on real PostgreSQL (see count_users_by_domain). Only the
+    bounded window is read, so the aggregation stays cheap.
+
+    Args:
+        db: The async database session.
+        days: Size of the window in calendar days (default 7).
+
+    Returns:
+        List of ``days`` DailyCount entries ordered oldest day first.
+
+    Raises:
+        ValueError: If ``days`` is not a positive number of days.
+        SQLAlchemyError: If the database query fails.
+    """
+    if days < 1:
+        raise ValueError(f"days must be a positive number of days, got {days}")
+
+    today = date.today()
+    first_day = today - timedelta(days=days - 1)
+
+    # Naive bounds mirror count_users_today(): created_at is a plain DateTime
+    # column, so one calendar day is the naive [midnight, next midnight) range.
+    window_start = datetime(first_day.year, first_day.month, first_day.day)
+    window_end = datetime(today.year, today.month, today.day) + timedelta(days=1)
+
+    stmt = (
+        select(User.created_at)
+        .where(User.created_at >= window_start)
+        .where(User.created_at < window_end)
+        .where(User.deleted_at.is_(None))
+    )
+    result = await db.execute(stmt)
+
+    per_day: dict[date, int] = {}
+    for created_at in result.scalars().all():
+        if created_at.tzinfo is not None:
+            # An aware timestamp is only comparable to date.today() once it is
+            # expressed in the server's local calendar day.
+            created_at = created_at.astimezone().replace(tzinfo=None)
+        day = created_at.date()
+        per_day[day] = per_day.get(day, 0) + 1
+
+    return [
+        DailyCount(day=day, count=per_day.get(day, 0))
+        for day in (first_day + timedelta(days=offset) for offset in range(days))
+    ]
 
 
 async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
