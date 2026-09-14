@@ -291,3 +291,42 @@ async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
     stmt = select(User).order_by(User.created_at.desc()).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+async def count_users_per_day(db: AsyncSession, days: int = 7) -> list[dict[str, str | int]]:
+    """Count users created per day for the last N days.
+
+    Returns exactly ``days`` data points, one per calendar day from
+    (today - days + 1) through today, ordered oldest to newest.
+    Days with no user creations return a count of 0.
+
+    Args:
+        db: The async database session.
+        days: Number of days to look back (default 7).
+
+    Returns:
+        List of dicts with 'date' (str, ISO format 'YYYY-MM-DD') and
+        'count' (int) keys, ordered oldest to newest.
+    """
+    today = date.today()
+    entries: list[dict[str, str | int]] = []
+
+    for i in range(days - 1, -1, -1):
+        target_date = today - timedelta(days=i)
+        next_date = target_date + timedelta(days=1)
+
+        start = datetime(target_date.year, target_date.month, target_date.day)
+        end = datetime(next_date.year, next_date.month, next_date.day)
+
+        stmt = (
+            select(func.count())
+            .select_from(User)
+            .where(User.created_at >= start)
+            .where(User.created_at < end)
+            .where(User.deleted_at.is_(None))
+        )
+        result = await db.execute(stmt)
+        count = result.scalar_one() or 0
+        entries.append({"date": target_date.isoformat(), "count": count})
+
+    return entries
