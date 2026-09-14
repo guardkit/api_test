@@ -56,11 +56,7 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.id == user_id)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.id == user_id).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -78,12 +74,7 @@ async def get_users(
     Returns:
         Sequence of User objects.
     """
-    stmt = (
-        select(User)
-        .where(User.deleted_at.is_(None))
-        .offset(skip)
-        .limit(limit)
-    )
+    stmt = select(User).where(User.deleted_at.is_(None)).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -98,11 +89,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.email == email)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.email == email).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -159,8 +146,6 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
     # Prevent double-delete: if already soft-deleted, return False
     if user.deleted_at is not None:
         return False
-
-    from datetime import UTC, datetime
 
     user.deleted_at = datetime.now(UTC)
     db.add(user)
@@ -220,6 +205,106 @@ async def count_users_today(db: AsyncSession) -> int:
     return result.scalar_one() or 0
 
 
+def _as_calendar_day(value: object) -> date:
+    """Normalise a grouped-day value returned by the database.
+
+    ``date(created_at)`` comes back as an ISO string on SQLite, as a
+    ``date`` on PostgreSQL, and sometimes as a full ``datetime`` depending
+    on the driver. Unparseable or unexpected values raise rather than being
+    silently bucketed onto the wrong day.
+
+    Args:
+        value: The raw day value from a result row.
+
+    Returns:
+        date: The calendar day the value represents.
+
+    Raises:
+        ValueError: If the value cannot be read as a calendar date.
+    """
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        try:
+            return date.fromisoformat(value[:10])
+        except ValueError as exc:
+            raise ValueError(
+                "count_users_created_per_day: database returned day value "
+                f"{value!r}, which is not an ISO-8601 date"
+            ) from exc
+    raise ValueError(
+        "count_users_created_per_day: database returned day value "
+        f"{value!r} of type {type(value).__name__}, expected date or ISO string"
+    )
+
+
+async def count_users_created_per_day(
+    db: AsyncSession, days: int = 7
+) -> list[dict[str, int | str]]:
+    """Count users created on each of the last ``days`` days, oldest first.
+
+    The window is calendar-day based and inclusive at both ends: day one is
+    ``days - 1`` days before today and the last data point is today, so a
+    seven-day call always covers today plus the six preceding days. Days with
+    no creations are reported with a count of zero, which keeps the result at
+    exactly ``days`` data points and ordered oldest first.
+
+    Soft-deleted users are excluded, matching ``count_users`` and
+    ``count_users_today``. The window filter is a plain half-open range
+    predicate on the bare ``created_at`` column, so the planner can use an
+    index on ``created_at``; the day function is applied only in GROUP BY.
+
+    Args:
+        db: The async database session.
+        days: Number of calendar days in the window, including today.
+
+    Returns:
+        List of ``days`` dicts with 'date' (ISO-8601 str) and 'count' (int)
+        keys, ordered oldest day first.
+
+    Raises:
+        ValueError: If ``days`` is less than 1, or the database returns a
+            day value that cannot be read as a calendar date.
+    """
+    if days < 1:
+        raise ValueError(
+            f"count_users_created_per_day: days must be >= 1 to build a "
+            f"window, got {days}"
+        )
+
+    today = date.today()
+    oldest = today - timedelta(days=days - 1)
+
+    # Half-open [oldest 00:00, tomorrow 00:00) range built from naive
+    # datetimes to match the naive DateTime column on the User model.
+    window_start = datetime(oldest.year, oldest.month, oldest.day)
+    window_end = datetime(today.year, today.month, today.day) + timedelta(days=1)
+
+    day_expr = func.date(User.created_at)
+    stmt = (
+        select(day_expr.label("day"), func.count().label("count"))
+        .select_from(User)
+        .where(User.created_at >= window_start)
+        .where(User.created_at < window_end)
+        .where(User.deleted_at.is_(None))
+        .group_by(day_expr)
+    )
+    result = await db.execute(stmt)
+
+    counts: dict[date, int] = {}
+    for raw_day, raw_count in result.fetchall():
+        day = _as_calendar_day(raw_day)
+        counts[day] = counts.get(day, 0) + int(raw_count)
+
+    points: list[dict[str, int | str]] = []
+    for offset in range(days):
+        day = oldest + timedelta(days=offset)
+        points.append({"date": day.isoformat(), "count": counts.get(day, 0)})
+    return points
+
+
 async def count_users_by_domain(
     db: AsyncSession, min_count: int | None = None
 ) -> list[dict[str, int | str]]:
@@ -275,7 +360,7 @@ async def count_users_by_domain(
 
     result = await db.execute(stmt)
     rows = result.fetchall()
-    return [{"domain": row.domain, "count": row.count} for row in rows]
+    return [{"domain": domain, "count": int(count)} for domain, count in rows]
 
 
 async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
