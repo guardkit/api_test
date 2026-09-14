@@ -1,0 +1,90 @@
+id: FEAT-3560
+name: "User Creation Daily Counts"
+description: "Implement endpoint to retrieve user creation counts for the last 7 days"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-3560-001
+    name: "Create user creation count endpoint"
+    file_path: "tasks/backlog/user-creation-counts/TASK-3560-001-create-endpoint.md"
+    complexity: 5
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-3560-002
+    name: "Implement count calculation logic"
+    file_path: "tasks/backlog/user-creation-counts/TASK-3560-002-implement-logic.md"
+    complexity: 5
+    dependencies:
+      - TASK-3560-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-3560-003
+    name: "Add database migrations for user creation timestamps"
+    file_path: "tasks/backlog/user-creation-counts/TASK-3560-003-add-migrations.md"
+    complexity: 4
+    dependencies:
+      - TASK-3560-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-3560-004
+    name: "Implement endpoint tests"
+    file_path: "tasks/backlog/user-creation-counts/TASK-3560-004-add-tests.md"
+    complexity: 4
+    dependencies:
+      - TASK-3560-002
+      - TASK-3560-003
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-3560-005
+    name: "Add API documentation"
+    file_path: "tasks/backlog/user-creation-counts/TASK-3560-005-add-docs.md"
+    complexity: 3
+    dependencies:
+      - TASK-3560-004
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+orchestration:
+  parallel_groups:
+    - - TASK-3560-001
+    - - TASK-3560-002
+      - TASK-3560-003
+    - - TASK-3560-004
+    - - TASK-3560-005
+  estimated_duration_minutes: 255
+  recommended_parallel: 2
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/created-per-day/created-per-day.feature"
+scenarios:
+  "A request to the endpoint returns exactly 7 days of data ordered oldest to newest":
+    verifier: "hurl"
+  "The endpoint returns data for exactly 7 days when 7 days of history exist":
+    verifier: "hurl"
+  "The endpoint returns only the most recent 7 days when more than 7 days of history exist":
+    verifier: "hurl"
+  "A POST request to the endpoint is rejected":
+    verifier: "hurl"
+  "A request to a non-existent path returns a not-found response":
+    verifier: "hurl"
+  "The endpoint returns 7 data points with zero counts when fewer than 7 days of history exist":
+    verifier: "hurl"
+  "Concurrent requests to the endpoint return consistent data":
+    verifier: "hurl"
+  "The response format is a JSON array of date-count pairs":
+    verifier: "hurl"
