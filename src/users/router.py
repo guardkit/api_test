@@ -16,6 +16,7 @@ from src.users import crud
 from src.users.calculations import calculate_days_since_created
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
+    DailyUserCount,
     DomainCountResponse,
     RecentUsersResponse,
     UserCountResponse,
@@ -25,6 +26,7 @@ from src.users.schemas import (
     UserSummaryResponse,
     UserUpdate,
 )
+from src.users.stats import get_daily_user_counts
 from src.users.validators import (
     get_validated_min_count,
     get_validated_user_id,
@@ -274,6 +276,44 @@ async def get_domain_count(
             detail=f"Database unavailable: {exc}",
         ) from exc
     return [DomainCountResponse(**row) for row in rows]
+
+
+@router.get(
+    "/created-per-day",
+    response_model=list[DailyUserCount],
+    tags=["users"],
+    summary="Get user creation counts per day",
+    description=(
+        "Returns a JSON array of {date, count} objects, one per calendar day of "
+        "the rolling seven-day window ending today, oldest day first. The "
+        "current day is included even when it is still incomplete, and a day on "
+        "which no user was created is reported with a count of zero rather than "
+        "left out."
+    ),
+    responses={
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_users_created_per_day(
+    db: AsyncSession = Depends(get_db),
+) -> list[DailyUserCount]:
+    """Get the number of users created on each of the last seven days.
+
+    The window, its ordering and the zero-count days are the read model's
+    business (``src.users.stats.get_daily_user_counts``); this handler only
+    puts those entries on the wire.
+
+    Returns the seven {date, count} entries oldest day first, the current day
+    last, or 503 if the database is unavailable.
+    """
+    try:
+        return await get_daily_user_counts(db)
+    except SQLAlchemyError as exc:
+        logger.error("Database error while counting users created per day: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
 
 
 @router.get(

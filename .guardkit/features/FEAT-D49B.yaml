@@ -1,0 +1,87 @@
+id: FEAT-D49B
+name: "Daily User Creation Count"
+description: "Implement endpoint to retrieve user creation counts for the last 7 days"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-D49B-001
+    name: "Create user stats schema"
+    file_path: "tasks/backlog/user-stats/TASK-D49B-001-create-user-stats-schema.md"
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-D49B-002
+    name: "Implement stats CRUD"
+    file_path: "tasks/backlog/user-stats/TASK-D49B-002-implement-stats-crud.md"
+    complexity: 5
+    dependencies:
+      - TASK-D49B-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-D49B-003
+    name: "Add stats router"
+    file_path: "tasks/backlog/user-stats/TASK-D49B-003-add-stats-router.md"
+    complexity: 3
+    dependencies:
+      - TASK-D49B-002
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-D49B-004
+    name: "Implement stats endpoint"
+    file_path: "tasks/backlog/user-stats/TASK-D49B-004-implement-stats-endpoint.md"
+    complexity: 4
+    dependencies:
+      - TASK-D49B-003
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-D49B-005
+    name: "Add stats tests"
+    file_path: "tasks/backlog/user-stats/TASK-D49B-005-add-stats-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-D49B-004
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 45
+
+orchestration:
+  parallel_groups:
+    - - TASK-D49B-001
+    - - TASK-D49B-002
+    - - TASK-D49B-003
+    - - TASK-D49B-004
+    - - TASK-D49B-005
+  estimated_duration_minutes: 225
+  recommended_parallel: 2
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/daily-user-creation-count/daily-user-creation-count.feature"
+scenarios:
+  "A request for daily user creation counts returns exactly seven days ordered oldest first":
+    verifier: "hurl"
+  "The response contains exactly seven days of data":
+    verifier: "hurl"
+  "The response does not include data older than seven days":
+    verifier: "hurl"
+  "A POST request to the endpoint is rejected":
+    verifier: "hurl"
+  "The response returns zero counts for all days when no users were created":
+    verifier: "hurl"
+  "The response includes the current day even if it is incomplete":
+    verifier: "hurl"
+  "The response body is formatted as a JSON array":
+    verifier: "hurl"
