@@ -1,14 +1,15 @@
 ---
-id: TASK-D49B-004
-title: Implement stats endpoint
-task_type: feature
-parent_review: TASK-REV-D49B
-feature_id: FEAT-D49B
-wave: 4
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-D49B-003
+- TASK-D49B-003
+feature_id: FEAT-D49B
+id: TASK-D49B-004
+implementation_mode: task-work
+parent_review: TASK-REV-D49B
+status: design_approved
+task_type: feature
+title: Implement stats endpoint
+wave: 4
 ---
 
 ## Acceptance Criteria
