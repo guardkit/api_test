@@ -1,14 +1,15 @@
 ---
-id: TASK-3560-003
-title: Add database migrations for user creation timestamps
-task_type: feature
-parent_review: TASK-REV-3560
-feature_id: FEAT-3560
-wave: 2
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-3560-001
+- TASK-3560-001
+feature_id: FEAT-3560
+id: TASK-3560-003
+implementation_mode: task-work
+parent_review: TASK-REV-3560
+status: design_approved
+task_type: feature
+title: Add database migrations for user creation timestamps
+wave: 2
 ---
 
 ## Description
