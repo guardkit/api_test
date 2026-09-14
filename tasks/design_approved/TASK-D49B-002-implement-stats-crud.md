@@ -1,14 +1,15 @@
 ---
-id: TASK-D49B-002
-title: Implement stats CRUD
-task_type: feature
-parent_review: TASK-REV-D49B
-feature_id: FEAT-D49B
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-D49B-001
+- TASK-D49B-001
+feature_id: FEAT-D49B
+id: TASK-D49B-002
+implementation_mode: task-work
+parent_review: TASK-REV-D49B
+status: design_approved
+task_type: feature
+title: Implement stats CRUD
+wave: 2
 ---
 
 ## Acceptance Criteria
