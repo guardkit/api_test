@@ -1,0 +1,27 @@
+feature: Daily User Creation Count
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A request for daily user creation counts returns exactly seven days ordered
+    oldest first
+  assumption: The response includes exactly 7 data points, one for each of the last
+    7 days
+  confidence: low
+  basis: Inferred from 'last 7 days' in request; no explicit count or window definition
+    in input
+  human_response: deferred
+- id: ASSUM-002
+  scenario: The response includes the current day even if it is incomplete
+  assumption: The current day is included in the seven-day window even if incomplete
+  confidence: low
+  basis: 'Open question in input: ''Should the endpoint include the current day if
+    it is incomplete?'''
+  human_response: deferred
+- id: ASSUM-003
+  scenario: The response body is formatted as a JSON array
+  assumption: The response body is a JSON array of objects
+  confidence: low
+  basis: 'Open question in input: ''What is the expected response format?'''
+  human_response: deferred
