@@ -1,14 +1,15 @@
 ---
-id: TASK-3560-002
-title: Implement count calculation logic
-task_type: feature
-parent_review: TASK-REV-3560
-feature_id: FEAT-3560
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-3560-001
+- TASK-3560-001
+feature_id: FEAT-3560
+id: TASK-3560-002
+implementation_mode: task-work
+parent_review: TASK-REV-3560
+status: design_approved
+task_type: feature
+title: Implement count calculation logic
+wave: 2
 ---
 
 ## Description
