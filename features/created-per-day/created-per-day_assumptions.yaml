@@ -1,0 +1,28 @@
+feature: User Creation Daily Counts
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A request for daily user creation counts returns exactly seven days ordered
+    oldest first
+  assumption: The response includes the current day as the most recent entry
+  confidence: low
+  basis: Inferred from 'last 7 days' phrasing; the input does not specify whether
+    the current day is included or if only full days are returned
+  human_response: deferred
+- id: ASSUM-002
+  scenario: The response contains exactly seven days of data
+  assumption: The endpoint returns exactly seven data points regardless of how many
+    days have actual user creations
+  confidence: low
+  basis: The input states 'must return exactly 7 data points' but does not clarify
+    how to handle days with zero creations; assumed to include zero-count days
+  human_response: deferred
+- id: ASSUM-003
+  scenario: A POST request to the endpoint is rejected
+  assumption: The endpoint only accepts GET requests and rejects all other HTTP methods
+  confidence: low
+  basis: The input specifies a GET endpoint but does not explicitly list other methods;
+    assumed to follow standard REST conventions
+  human_response: deferred

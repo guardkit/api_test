@@ -1,0 +1,42 @@
+feature: created-per-day
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/created-per-day
+scenarios:
+- title: A request for daily user creation counts returns exactly seven days ordered oldest first
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A request for the daily user creation counts returns exactly seven days of data ordered from the oldest day to the most recent day.
+- title: The response contains exactly seven days of data
+  tags:
+  - '@boundary'
+  sentence: The response contains exactly seven days of data.
+- title: The response does not contain fewer than seven days of data
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: The response contains at least seven days of data.
+- title: The response succeeds even when no users were created in the last 7 days
+  tags:
+  - '@negative'
+  sentence: The response succeeds even when no users were created in the last seven days.
+- title: A POST request to the endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: A POST request to the endpoint is rejected.
+- title: The endpoint fails gracefully when the user database is unavailable
+  tags:
+  - '@edge-case'
+  sentence: The endpoint fails gracefully when the user database is unavailable.
+assumptions:
+- id: ASSUM-001
+  text: The response includes the current day as the most recent entry
+  basis: Inferred from 'last 7 days' phrasing; the input does not specify whether the current day is included or if only full days are returned
+- id: ASSUM-002
+  text: The endpoint returns exactly seven data points regardless of how many days have actual user creations
+  basis: The input states 'must return exactly 7 data points' but does not clarify how to handle days with zero creations; assumed to include zero-count days
+- id: ASSUM-003
+  text: The endpoint only accepts GET requests and rejects all other HTTP methods
+  basis: The input specifies a GET endpoint but does not explicitly list other methods; assumed to follow standard REST conventions
