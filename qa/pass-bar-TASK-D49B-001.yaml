@@ -1,0 +1,19 @@
+format_version: '2.0'
+task_id: TASK-D49B-001
+registered_at:
+  sha: 06bd2853cd3f7057d3021520fb18eca62fd7f18b
+  date: '2026-09-14'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: daily-user-creation-count-AC-001
+  text: A request for daily user creation counts returns exactly seven days ordered
+    oldest first
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation
