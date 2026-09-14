@@ -16,6 +16,7 @@ from src.users import crud
 from src.users.calculations import calculate_days_since_created
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
+    DayCountResponse,
     DomainCountResponse,
     RecentUsersResponse,
     UserCountResponse,
@@ -39,6 +40,9 @@ AUTH_TOKEN = "dev-token"
 
 CACHE_TTL = 300  # 5 minutes
 REDIS_URL = "redis://localhost:6379/0"
+
+# Number of calendar days reported by GET /users/created-per-day.
+CREATED_PER_DAY_WINDOW_DAYS = 7
 
 
 def _cache_key(user_id: str) -> str:
@@ -274,6 +278,43 @@ async def get_domain_count(
             detail=f"Database unavailable: {exc}",
         ) from exc
     return [DomainCountResponse(**row) for row in rows]
+
+
+@router.get(
+    "/created-per-day",
+    response_model=list[DayCountResponse],
+    tags=["users"],
+    summary="Get user creations per day",
+    description=(
+        "Returns a JSON array of {date, count} objects holding the number of "
+        "users created on each of the last 7 calendar days, oldest day first. "
+        "Days with no new users are included with a count of zero, so the array "
+        "always carries exactly 7 data points."
+    ),
+    responses={
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_users_created_per_day(
+    db: AsyncSession = Depends(get_db),
+) -> list[DayCountResponse]:
+    """Get the number of users created on each of the last 7 days.
+
+    Returns the 7-day series ordered oldest day first, with zero counts for the
+    days that have no creations (including when the system has no history at
+    all). Returns 503 if the database is unavailable.
+    """
+    try:
+        rows = await crud.count_users_created_per_day(
+            db, days=CREATED_PER_DAY_WINDOW_DAYS
+        )
+    except SQLAlchemyError as exc:
+        logger.error("Database error while counting user creations per day: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return [DayCountResponse(date=row.day, count=row.count) for row in rows]
 
 
 @router.get(
