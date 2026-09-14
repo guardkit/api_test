@@ -261,3 +261,35 @@ class TestWindowAggregationDetails:
         assert all(
             isinstance(date.fromisoformat(str(row["date"])), date) for row in rows
         )
+
+
+class TestDayNormalization:
+    """Grouped-day values from any driver normalise to one calendar day.
+
+    ``date(created_at)`` comes back as an ISO string on SQLite and as a
+    native ``date`` on PostgreSQL. Anything else is a driver surprise and
+    must raise instead of silently bucketing users onto the wrong day.
+    """
+
+    def test_datetime_normalises_to_its_calendar_day(self) -> None:
+        """A timestamp maps onto the day it falls on."""
+        assert crud._as_calendar_day(datetime(2026, 9, 14, 23, 59)) == date(2026, 9, 14)
+
+    def test_date_passes_through_unchanged(self) -> None:
+        """A native date is already the value the query needs."""
+        assert crud._as_calendar_day(date(2026, 9, 14)) == date(2026, 9, 14)
+
+    def test_iso_string_is_parsed(self) -> None:
+        """SQLite's string form parses, with or without a time component."""
+        assert crud._as_calendar_day("2026-09-14") == date(2026, 9, 14)
+        assert crud._as_calendar_day("2026-09-14 23:59:59.000000") == date(2026, 9, 14)
+
+    def test_unparseable_string_raises(self) -> None:
+        """An unreadable day value is reported, not guessed at."""
+        with pytest.raises(ValueError, match="not an ISO-8601 date"):
+            crud._as_calendar_day("yesterday")
+
+    def test_unsupported_type_raises(self) -> None:
+        """A non-date value names the type it received."""
+        with pytest.raises(ValueError, match="expected date or ISO string"):
+            crud._as_calendar_day(1726300800)
