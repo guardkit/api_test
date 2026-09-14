@@ -1,0 +1,54 @@
+feature: get-users-created-per-day
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/created-per-day
+scenarios:
+- title: A request to the daily counts endpoint returns the last 7 days of data
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A request to the daily counts endpoint returns the count of users created
+    on each of the last seven days, ordered from oldest to newest, and each day includes
+    a date and a non-negative count.
+- title: The endpoint returns exactly 7 days of data regardless of total history
+  tags:
+  - '@boundary'
+  sentence: The endpoint always returns exactly seven days of data, regardless of
+    how much history is available.
+- title: The endpoint does not return more than 7 days of data
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: The endpoint never returns more than seven days of data.
+- title: The endpoint returns 7 days with zero counts when no users were created
+  tags:
+  - '@negative'
+  sentence: If no users were created in the last seven days, the endpoint still returns
+    seven days, each with a count of zero.
+- title: A POST request to the daily counts endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: The endpoint rejects any POST requests and indicates that the method is
+    not allowed.
+- title: The response is valid JSON
+  tags:
+  - '@edge-case'
+  sentence: The response from the endpoint is always valid JSON.
+- title: The data points are strictly ordered from oldest to newest
+  tags:
+  - '@edge-case'
+  sentence: The seven data points are always returned in strict order from the oldest
+    date to the newest.
+assumptions:
+- id: ASSUM-001
+  text: The response body is a JSON array of objects with 'date' and 'count' keys
+  basis: Inferred from request description; exact JSON structure not specified
+- id: ASSUM-002
+  text: The endpoint always returns exactly 7 data points
+  basis: Request states 'last 7 days' but does not specify behavior when history is
+    shorter
+- id: ASSUM-003
+  text: When no users were created, the endpoint returns 7 days with zero counts
+  basis: Inferred from 'last 7 days' requirement; not explicitly stated for empty
+    periods

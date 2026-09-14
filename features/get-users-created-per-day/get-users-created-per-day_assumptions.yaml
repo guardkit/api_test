@@ -1,0 +1,26 @@
+feature: User Creation Analytics - Daily Counts
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A request to the daily counts endpoint returns the last 7 days of data
+  assumption: The response body is a JSON array of objects with 'date' and 'count'
+    keys
+  confidence: low
+  basis: Inferred from request description; exact JSON structure not specified
+  human_response: deferred
+- id: ASSUM-002
+  scenario: The endpoint returns exactly 7 days of data regardless of total history
+  assumption: The endpoint always returns exactly 7 data points
+  confidence: low
+  basis: Request states 'last 7 days' but does not specify behavior when history is
+    shorter
+  human_response: deferred
+- id: ASSUM-003
+  scenario: The endpoint returns 7 days with zero counts when no users were created
+  assumption: When no users were created, the endpoint returns 7 days with zero counts
+  confidence: low
+  basis: Inferred from 'last 7 days' requirement; not explicitly stated for empty
+    periods
+  human_response: deferred
