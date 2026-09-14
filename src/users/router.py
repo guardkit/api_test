@@ -16,6 +16,7 @@ from src.users import crud
 from src.users.calculations import calculate_days_since_created
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
+    DailyCountResponse,
     DomainCountResponse,
     RecentUsersResponse,
     UserCountResponse,
@@ -274,6 +275,63 @@ async def get_domain_count(
             detail=f"Database unavailable: {exc}",
         ) from exc
     return [DomainCountResponse(**row) for row in rows]
+
+
+@router.get(
+    "/created-per-day",
+    response_model=list[DailyCountResponse],
+    tags=["users"],
+    summary="Get daily user creation counts",
+    description=(
+        "Returns a JSON array of {date, count} objects with the number of "
+        "users created on each of the last 7 calendar days, ordered oldest "
+        "day first. Days without any user creations are included with a "
+        "count of zero. Soft-deleted users are excluded."
+    ),
+    responses={
+        405: {"description": "Method not allowed; only GET is supported"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_created_per_day(
+    db: AsyncSession = Depends(get_db),
+) -> list[DailyCountResponse]:
+    """Get the number of users created on each of the last 7 days.
+
+    Returns exactly seven {date, count} data points ordered oldest first,
+    covering today and the six preceding calendar days.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        rows = await crud.count_users_created_per_day(db)
+    except SQLAlchemyError as exc:
+        logger.error("Database error while counting users per day: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return [DailyCountResponse(**row) for row in rows]
+
+
+@router.api_route(
+    "/created-per-day",
+    methods=["POST", "PUT", "PATCH", "DELETE"],
+    include_in_schema=False,
+)
+async def reject_non_get_created_per_day(request: Request) -> Response:
+    """Reject non-GET requests to /users/created-per-day with 405.
+
+    Registered explicitly so PUT/DELETE never fall through to the
+    ``/users/{user_id}`` routes; this path serves GET only.
+    """
+    raise HTTPException(
+        status_code=405,
+        detail=(
+            f"Method '{request.method}' not allowed on "
+            "/users/created-per-day; only GET is supported"
+        ),
+        headers={"Allow": "GET"},
+    )
 
 
 @router.get(

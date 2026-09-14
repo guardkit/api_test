@@ -1,20 +1,21 @@
 ---
-id: TASK-54E1-002
-title: Add daily counts endpoint
-task_type: feature
-parent_review: TASK-REV-54E1
-feature_id: FEAT-54E1
-wave: 2
-implementation_mode: task-work
 complexity: 4
-dependencies:
-  - TASK-54E1-001
 consumer_context:
-  - task: TASK-54E1-001
-    consumes: daily_counts_response
-    framework: FastAPI
-    driver: SQLAlchemy async
-    format_note: "List of objects with date (ISO 8601) and count (integer)"
+- consumes: daily_counts_response
+  driver: SQLAlchemy async
+  format_note: List of objects with date (ISO 8601) and count (integer)
+  framework: FastAPI
+  task: TASK-54E1-001
+dependencies:
+- TASK-54E1-001
+feature_id: FEAT-54E1
+id: TASK-54E1-002
+implementation_mode: task-work
+parent_review: TASK-REV-54E1
+status: design_approved
+task_type: feature
+title: Add daily counts endpoint
+wave: 2
 ---
 
 # Add daily counts endpoint

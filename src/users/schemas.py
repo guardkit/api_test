@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
@@ -52,6 +52,29 @@ class DomainCountResponse(BaseModel):
             "examples": [
                 {
                     "domain": "example.com",
+                    "count": 5,
+                }
+            ]
+        }
+    )
+
+
+class DailyCountResponse(BaseModel):
+    """Schema for one daily user-creation count data point.
+
+    Used by ``GET /users/created-per-day`` (contract: daily_counts_response),
+    which returns a list of these objects, one per calendar day, ordered
+    oldest first.
+    """
+
+    date: date
+    count: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "date": "2026-09-13",
                     "count": 5,
                 }
             ]
