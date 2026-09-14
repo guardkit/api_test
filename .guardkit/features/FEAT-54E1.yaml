@@ -1,0 +1,85 @@
+id: FEAT-54E1
+name: "User Creation Daily Counts"
+description: "Implement endpoint returning user creation counts for the last 7 days"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-54E1-001
+    name: "Implement user creation count query"
+    file_path: "tasks/backlog/user-creation-daily-counts/TASK-54E1-001-implement-user-creation-count-query.md"
+    complexity: 5
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-54E1-002
+    name: "Add daily counts endpoint"
+    file_path: "tasks/backlog/user-creation-daily-counts/TASK-54E1-002-add-daily-counts-endpoint.md"
+    complexity: 4
+    dependencies:
+      - TASK-54E1-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-54E1-003
+    name: "Add endpoint tests"
+    file_path: "tasks/backlog/user-creation-daily-counts/TASK-54E1-003-add-endpoint-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-54E1-002
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-54E1-004
+    name: "Add error handling"
+    file_path: "tasks/backlog/user-creation-daily-counts/TASK-54E1-004-add-error-handling.md"
+    complexity: 3
+    dependencies:
+      - TASK-54E1-002
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-54E1-005
+    name: "Update API documentation"
+    file_path: "tasks/backlog/user-creation-daily-counts/TASK-54E1-005-update-api-documentation.md"
+    complexity: 2
+    dependencies:
+      - TASK-54E1-002
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 20
+
+orchestration:
+  parallel_groups:
+    - - TASK-54E1-001
+    - - TASK-54E1-002
+    - - TASK-54E1-003
+      - TASK-54E1-004
+    - - TASK-54E1-005
+  estimated_duration_minutes: 185
+  recommended_parallel: 2
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/get-users-created-per-day/get-users-created-per-day.feature"
+scenarios:
+  "Requesting the daily user counts returns exactly seven days of data ordered oldest first":
+    verifier: "hurl"
+  "The oldest day in the 7-day window is included in the response":
+    verifier: "hurl"
+  "The most recent day is included in the response":
+    verifier: "hurl"
+  "The endpoint rejects non-GET requests":
+    verifier: "hurl"
+  "The endpoint returns zero counts when no users were created in the last 7 days":
+    verifier: "hurl"
+  "The endpoint fails gracefully when the user database is unavailable":
+    verifier: "probe:process"
