@@ -1,0 +1,18 @@
+format_version: '2.0'
+task_id: TASK-A0AE-002
+registered_at:
+  sha: 8203526c0b5d3af6607fc6dc92e82c01e21c101c
+  date: '2026-09-15'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: created-per-day-AC-001
+  text: A request for daily counts returns exactly seven days ordered oldest to newest
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

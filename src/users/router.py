@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
 
 import redis.asyncio
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
@@ -16,6 +17,7 @@ from src.users import crud
 from src.users.calculations import calculate_days_since_created
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
+    DailyCountResponse,
     DomainCountResponse,
     RecentUsersResponse,
     UserCountResponse,
@@ -25,6 +27,7 @@ from src.users.schemas import (
     UserSummaryResponse,
     UserUpdate,
 )
+from src.users.service import AnalyticsService, get_analytics_service
 from src.users.validators import (
     get_validated_min_count,
     get_validated_user_id,
@@ -53,7 +56,7 @@ def _cache_key(user_id: str) -> str:
     return f"user:summary:{user_id}"
 
 
-async def _get_cached_summary(user_id: str) -> dict | None:
+async def _get_cached_summary(user_id: str) -> dict[str, Any] | None:
     """Retrieve a cached user summary from Redis.
 
     Args:
@@ -67,13 +70,14 @@ async def _get_cached_summary(user_id: str) -> dict | None:
         data = await client.get(_cache_key(user_id))
         await client.close()
         if data is not None:
-            return json.loads(data)
+            summary: dict[str, Any] = json.loads(data)
+            return summary
     except Exception:
         logger.debug("Cache read failed for user %s", user_id)
     return None
 
 
-async def _set_cached_summary(user_id: str, summary: dict) -> None:
+async def _set_cached_summary(user_id: str, summary: dict[str, Any]) -> None:
     """Store a user summary in Redis cache.
 
     Args:
@@ -162,14 +166,14 @@ async def list_users(
     Returns a paginated list of users, or 503 if the database is unavailable.
     """
     try:
-        limit = validate_limit(limit)
+        max_results = validate_limit(limit)
     except ValueError as exc:
         raise HTTPException(
             status_code=400,
             detail=str(exc),
         ) from exc
     try:
-        users = await crud.get_users(db, skip=skip, limit=limit)
+        users = await crud.get_users(db, skip=skip, limit=max_results)
         total = await crud.count_users(db)
     except SQLAlchemyError as exc:
         logger.error("Database error while listing users: %s", exc)
@@ -274,6 +278,57 @@ async def get_domain_count(
             detail=f"Database unavailable: {exc}",
         ) from exc
     return [DomainCountResponse(**row) for row in rows]
+
+
+@router.get(
+    "/created-per-day",
+    response_model=list[DailyCountResponse],
+    tags=["users"],
+    summary="Get daily user creation counts",
+    description=(
+        "Returns a JSON array of {date, count} objects holding how many users "
+        "were created on each of the last seven calendar days, oldest day "
+        "first and the current day last. The window is always seven days long: "
+        "a day with no creations carries a count of zero rather than being left "
+        "out. Soft-deleted users are not counted. Only GET is supported on this "
+        "path; a POST is refused with 405 Method Not Allowed."
+    ),
+    responses={
+        405: {"description": "Method Not Allowed - only GET is supported"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_created_per_day(
+    db: AsyncSession = Depends(get_db),
+    analytics: AnalyticsService = Depends(get_analytics_service),
+) -> list[DailyCountResponse]:
+    """Get how many users were created on each of the last seven days.
+
+    Returns exactly seven data points, oldest day first, each one the day and
+    the number of users created on it. Days nobody registered on read as zero,
+    so an empty database answers with seven days of zeros rather than with an
+    empty array. The current day closes the window and carries only the
+    creations that have happened so far.
+
+    Returns 503 if the database is unavailable.
+
+    Args:
+        db: The async database session.
+        analytics: The analytics service, which decides the window and reads it
+            through the CRUD layer.
+
+    Returns:
+        Seven DailyCountResponse entries, oldest day first.
+    """
+    try:
+        counts = await analytics.get_daily_created_counts(db)
+    except SQLAlchemyError as exc:
+        logger.error("Database error while counting users created per day: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return [DailyCountResponse(date=entry.date, count=entry.count) for entry in counts]
 
 
 @router.get(
@@ -454,14 +509,14 @@ async def get_recent_users(
         HTTPException: 400 if limit is not a valid positive integer.
     """
     try:
-        limit = validate_limit(limit)
+        max_results = validate_limit(limit)
     except ValueError as exc:
         raise HTTPException(
             status_code=400,
             detail=str(exc),
         ) from exc
     try:
-        users = await crud.get_recent_users(db, limit=limit)
+        users = await crud.get_recent_users(db, limit=max_results)
         total = await crud.count_users(db)
     except SQLAlchemyError as exc:
         raise HTTPException(

@@ -1,0 +1,43 @@
+feature: created-per-day
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/created-per-day
+scenarios:
+- title: A request for daily counts returns exactly seven days ordered oldest to newest
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A request for the daily user creation counts returns exactly seven days of data, ordered from oldest to newest, with each day showing its count.
+- title: The endpoint returns exactly seven days of data
+  tags:
+  - '@boundary'
+  sentence: The endpoint always returns exactly seven days of data, regardless of how many days of data are available.
+- title: The endpoint does not return fewer than seven days of data
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: Even when only six days of data exist, the endpoint still returns exactly seven data points.
+- title: A POST request to the endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: The endpoint only accepts GET requests and rejects any POST requests.
+- title: The endpoint returns seven days of zero counts when no users were created
+  tags:
+  - '@negative'
+  sentence: If no users have been created in the last week, the endpoint returns seven days each showing a count of zero.
+- title: Two simultaneous requests both return the same seven-day window
+  tags:
+  - '@edge-case'
+  sentence: Two identical requests sent at the same time both succeed and return the same seven days of data in the same order.
+- title: The endpoint includes the current day even if it is incomplete
+  tags:
+  - '@edge-case'
+  sentence: The endpoint includes the current day as the most recent entry, even if only partial data for that day is available.
+assumptions:
+- id: ASSUM-001
+  text: The response includes the current day as the most recent entry
+  basis: Inferred from 'last 7 days' phrasing; not stated whether current day is included or only completed days
+- id: ASSUM-002
+  text: The response includes exactly seven data points
+  basis: Inferred from 'exactly 7 data points' constraint; not stated how to handle periods with fewer than 7 days of data
