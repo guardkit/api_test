@@ -1,0 +1,42 @@
+feature: created-per-day
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/created-per-day
+scenarios:
+- title: Requesting the metrics returns exactly seven days ordered oldest first
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: When you ask for the user creation numbers for the past week, the system gives you exactly seven days of data listed from oldest to newest.
+- title: The response includes the current day as the newest entry
+  tags:
+  - '@boundary'
+  sentence: The list of seven days always includes today as the most recent day.
+- title: The response does not include dates older than seven days ago
+  tags:
+  - '@boundary'
+  sentence: The list never includes any day older than seven days ago.
+- title: A POST request to the endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: The system will refuse any attempt to send a POST request to this endpoint.
+- title: The response returns zero counts when no users were created
+  tags:
+  - '@negative'
+  sentence: If no new users were created in the last week, the system still returns seven days but shows zero for every day.
+- title: The response includes days with zero creations
+  tags:
+  - '@edge-case'
+  sentence: If some days had new users and others did not, the system still returns exactly seven days and shows zero for the days with no new users.
+- title: The endpoint handles service unavailability gracefully
+  tags:
+  - '@edge-case'
+  sentence: If the user creation service is down, the system will fail gracefully and let you know the service is unavailable.
+assumptions:
+- id: ASSUM-001
+  text: The 7-day window includes the current day
+  basis: Not stated in input; could be last 7 completed days or last 7 including today
+- id: ASSUM-002
+  text: The response must return exactly 7 data points
+  basis: Input says 'last 7 days' but does not explicitly mandate exactly 7 points if data is sparse
