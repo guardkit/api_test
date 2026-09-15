@@ -1,14 +1,15 @@
 ---
-id: TASK-C9C4-004
-title: Implement error handling
-task_type: feature
-parent_review: TASK-REV-C9C4
-feature_id: FEAT-C9C4
-wave: 3
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-C9C4-002
+- TASK-C9C4-002
+feature_id: FEAT-C9C4
+id: TASK-C9C4-004
+implementation_mode: task-work
+parent_review: TASK-REV-C9C4
+status: design_approved
+task_type: feature
+title: Implement error handling
+wave: 3
 ---
 
 # Implement error handling
