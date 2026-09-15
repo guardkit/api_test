@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
@@ -57,6 +57,44 @@ class DomainCountResponse(BaseModel):
             ]
         }
     )
+
+
+class CreatedPerDayResponse(BaseModel):
+    """Schema for one day of the created-per-day metrics response.
+
+    ``date`` is an ISO-8601 calendar date (``YYYY-MM-DD``) and ``count`` is
+    the number of users created on that day, zero when nobody registered.
+    """
+
+    date: str
+    count: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "date": "2026-07-09",
+                    "count": 3,
+                }
+            ]
+        }
+    )
+
+    @field_validator("date")
+    @classmethod
+    def validate_iso_date(cls, value: str) -> str:
+        """Validate and normalise the day to an ISO-8601 date string.
+
+        Raises:
+            ValueError: If the value is not a parseable calendar date.
+        """
+        try:
+            parsed = date.fromisoformat(value)
+        except ValueError as exc:
+            raise ValueError(
+                f"date must be an ISO-8601 calendar date (YYYY-MM-DD), got {value!r}"
+            ) from exc
+        return parsed.isoformat()
 
 
 class UserUpdate(BaseModel):

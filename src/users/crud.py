@@ -56,11 +56,7 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.id == user_id)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.id == user_id).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -78,12 +74,7 @@ async def get_users(
     Returns:
         Sequence of User objects.
     """
-    stmt = (
-        select(User)
-        .where(User.deleted_at.is_(None))
-        .offset(skip)
-        .limit(limit)
-    )
+    stmt = select(User).where(User.deleted_at.is_(None)).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -98,11 +89,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.email == email)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.email == email).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -159,8 +146,6 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
     # Prevent double-delete: if already soft-deleted, return False
     if user.deleted_at is not None:
         return False
-
-    from datetime import UTC, datetime
 
     user.deleted_at = datetime.now(UTC)
     db.add(user)
@@ -276,6 +261,99 @@ async def count_users_by_domain(
     result = await db.execute(stmt)
     rows = result.fetchall()
     return [{"domain": row.domain, "count": row.count} for row in rows]
+
+
+def _as_calendar_date(value: object) -> date:
+    """Coerce a grouped day expression into a calendar date.
+
+    ``date(timestamp)`` comes back differently per driver: a ``date`` on
+    PostgreSQL, a full ``datetime`` on some drivers, and a ``YYYY-MM-DD``
+    string on SQLite (which stores datetimes as text).
+
+    Args:
+        value: The raw value of the grouped day expression.
+
+    Returns:
+        The calendar date the expression refers to.
+
+    Raises:
+        ValueError: If the value is not a recognisable date.
+    """
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        try:
+            return date.fromisoformat(value[:10])
+        except ValueError as exc:
+            raise ValueError(
+                f"Unexpected day value from database: {value!r} is not an ISO-8601 date"
+            ) from exc
+    raise ValueError(f"Unexpected day value from database: {value!r}")
+
+
+async def count_users_created_per_day(
+    db: AsyncSession, days: int = 7
+) -> list[dict[str, str | int]]:
+    """Count users created on each of the last ``days`` days, oldest first.
+
+    The window ends with the current calendar day and covers ``days`` days
+    in total, so the default window is today plus the six days before it.
+    Days with no creations are included with a count of zero, so the result
+    always holds exactly ``days`` entries.
+
+    Soft-deleted users are excluded, matching the other count functions.
+    Naive datetime bounds are used to match the naive DateTime column of
+    the User model (see ``count_users_today``).
+
+    Args:
+        db: The async database session.
+        days: Size of the window in days, including today. Must be >= 1.
+
+    Returns:
+        List of ``days`` dicts with 'date' (ISO-8601 str) and 'count' (int)
+        keys, ordered from the oldest day to the newest.
+
+    Raises:
+        ValueError: If ``days`` is smaller than one.
+    """
+    if days < 1:
+        raise ValueError(f"days must be at least 1, got {days}")
+
+    today = date.today()
+    start_day = today - timedelta(days=days - 1)
+
+    window_start = datetime(start_day.year, start_day.month, start_day.day)
+    window_end = datetime(today.year, today.month, today.day) + timedelta(days=1)
+
+    # date() truncates a timestamp to its calendar day and exists on both
+    # SQLite and PostgreSQL; the dialect-specific helpers used by
+    # count_users_by_domain are only needed where no common function exists.
+    # The label is deliberately not "count": Row exposes a `count` attribute,
+    # so `row.count` would not be the column.
+    day_expr = func.date(User.created_at)
+    stmt = (
+        select(day_expr.label("day"), func.count().label("day_count"))
+        .select_from(User)
+        .where(User.created_at >= window_start)
+        .where(User.created_at < window_end)
+        .where(User.deleted_at.is_(None))
+        .group_by(day_expr)
+    )
+    result = await db.execute(stmt)
+
+    counts: dict[date, int] = {}
+    for row in result.fetchall():
+        counts[_as_calendar_date(row.day)] = int(row.day_count)
+
+    return [
+        {
+            "date": (start_day + timedelta(days=offset)).isoformat(),
+            "count": counts.get(start_day + timedelta(days=offset), 0),
+        }
+        for offset in range(days)
+    ]
 
 
 async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
