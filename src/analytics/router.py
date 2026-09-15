@@ -1,6 +1,6 @@
 """Analytics API router: the daily user-creation counts (TASK-6F3D-003).
 
-This is the HTTP face of ``src.analytics.crud.get_users_created_per_day``:
+This is the HTTP face of ``src.analytics.service.get_users_created_per_day``:
 ``GET /users/created-per-day`` answers the last seven calendar days of user
 creations, oldest first, as a bare JSON array of ``{date, count}`` objects
 (FEAT-6F3D, ASSUM-001).
@@ -19,11 +19,11 @@ from the file it lives in:
   "created-per-day" read as a user id and rejected by that endpoint's
   validation. ``src/main.py`` includes this router first for that reason.
 
-The handler counts nothing of its own. The window and the day-grouping are the
-query layer's business, and ``CreatedPerDayResponse`` is the contract the
-response is checked against on the way out, so a reply that drifted from the
-schema — a missing day, a negative count, an unordered series — cannot leave
-the process.
+The handler counts nothing of its own. The window, the retrieval and the
+formatting are the service layer's business (``src/analytics/service.py``), and
+``CreatedPerDayResponse`` is the contract the response is checked against on the
+way out, so a reply that drifted from the schema — a missing day, a negative
+count, an unordered series — cannot leave the process.
 
 The database session comes from ``src.db``, which the architecture record
 lists as an infrastructure module (docs/architecture-rules.yaml, ``layout``)
@@ -39,8 +39,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.analytics.crud import get_users_created_per_day
 from src.analytics.schemas import CreatedPerDayResponse
+from src.analytics.service import get_users_created_per_day
 from src.db import get_db
 
 logger = logging.getLogger(__name__)
