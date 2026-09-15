@@ -55,6 +55,7 @@ Feature: User Creation Analytics - Daily Counts
     And each of the seven data points should have a count of zero
 
   # Why: Edge case — concurrency: two simultaneous requests should both succeed independently
+  # [ASSUMPTION: confidence=low] The repository test proves that two simultaneous requests both return the same seven-day window
   @edge-case
   Scenario: Two simultaneous requests both return the same seven-day window
     When I send two identical requests for daily user creation counts at the same time
@@ -62,6 +63,7 @@ Feature: User Creation Analytics - Daily Counts
     And both responses should contain the same seven data points ordered oldest to newest
 
   # Why: Edge case — data integrity: partial data for the current day is handled gracefully
+  # [ASSUMPTION: confidence=low] The endpoint includes the current day even if it is incomplete
   @edge-case
   Scenario: The endpoint includes the current day even if it is incomplete
     Given the current day has only partially completed user creation data
