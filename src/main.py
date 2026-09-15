@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from src.analytics.router import router as analytics_router
 from src.core.config import settings
 from src.core.etag import ETagMiddleware
 from src.core.logging import setup_logging
@@ -105,6 +106,10 @@ app = FastAPI(
             "name": "search",
             "description": "Search endpoints",
         },
+        {
+            "name": "analytics",
+            "description": "User creation analytics endpoints",
+        },
     ],
     swagger_ui_parameters={
         "defaultModelsExpandDepth": -1,
@@ -126,6 +131,12 @@ app.include_router(health_router)
 
 # Include whoami router with empty prefix so endpoint is at /whoami
 app.include_router(whoami_router, tags=["whoami"])
+
+# Include analytics router before the users router: it serves
+# GET /users/created-per-day, and FastAPI answers with the first matching
+# route, so registering it after /users/{user_id} would have the literal path
+# "created-per-day" matched as a user id and rejected by that endpoint.
+app.include_router(analytics_router, tags=["analytics"])
 
 # Include users router (prefix already set in router.py)
 app.include_router(users_router, tags=["users"])

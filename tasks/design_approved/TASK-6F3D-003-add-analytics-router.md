@@ -7,7 +7,7 @@ glue_intent: true
 id: TASK-6F3D-003
 implementation_mode: task-work
 parent_review: TASK-REV-6F3D
-status: pending
+status: design_approved
 task_type: feature
 title: Add analytics router and endpoint
 wave: 3
