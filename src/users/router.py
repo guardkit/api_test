@@ -27,6 +27,7 @@ from src.users.schemas import (
     UserSummaryResponse,
     UserUpdate,
 )
+from src.users.service import AnalyticsService, get_analytics_service
 from src.users.validators import (
     get_validated_min_count,
     get_validated_user_id,
@@ -299,6 +300,7 @@ async def get_domain_count(
 )
 async def get_created_per_day(
     db: AsyncSession = Depends(get_db),
+    analytics: AnalyticsService = Depends(get_analytics_service),
 ) -> list[DailyCountResponse]:
     """Get how many users were created on each of the last seven days.
 
@@ -312,12 +314,14 @@ async def get_created_per_day(
 
     Args:
         db: The async database session.
+        analytics: The analytics service, which decides the window and reads it
+            through the CRUD layer.
 
     Returns:
         Seven DailyCountResponse entries, oldest day first.
     """
     try:
-        counts = await crud.get_recent_daily_counts(db)
+        counts = await analytics.get_daily_created_counts(db)
     except SQLAlchemyError as exc:
         logger.error("Database error while counting users created per day: %s", exc)
         raise HTTPException(

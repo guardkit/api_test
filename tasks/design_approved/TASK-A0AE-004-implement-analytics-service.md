@@ -1,14 +1,15 @@
 ---
-id: TASK-A0AE-004
-title: Implement analytics service layer
-task_type: feature
-parent_review: TASK-REV-A0AE
-feature_id: FEAT-A0AE
-wave: 4
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-A0AE-003
+- TASK-A0AE-003
+feature_id: FEAT-A0AE
+id: TASK-A0AE-004
+implementation_mode: task-work
+parent_review: TASK-REV-A0AE
+status: design_approved
+task_type: feature
+title: Implement analytics service layer
+wave: 4
 ---
 
 # Implement analytics service layer
