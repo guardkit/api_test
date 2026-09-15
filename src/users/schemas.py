@@ -2,9 +2,18 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, date, datetime
+from typing import TypeAlias
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
+
+# What a daily-count day may be handed over as: the ``datetime.date`` PostgreSQL
+# gives back for a day expression, the ``YYYY-MM-DD`` text SQLite gives back for
+# the same expression, an ordinary ``datetime``, or the ISO8601 string the
+# schema itself declares. ``to_iso_date`` turns any of them into that last one.
+# Named at module scope because inside a model body ``date`` is the field, not
+# the type.
+DayValue: TypeAlias = date | datetime | str
 
 
 class UserBase(BaseModel):
@@ -192,6 +201,115 @@ class UserList(BaseModel):
             ]
         }
     )
+
+
+def to_iso_date(value: DayValue) -> str:
+    """Normalize a day to the ISO8601 date string the daily-count schemas declare.
+
+    Why the input can be three things: the daily-count aggregation reads the day
+    straight out of the database, and the two databases the app runs on do not
+    hand back the same Python type for it. PostgreSQL's ``date`` column
+    expression arrives as a ``datetime.date``; SQLite's arrives as the
+    ``YYYY-MM-DD`` text its ``date()`` produces. A caller holding a
+    ``datetime`` is a third way in.
+
+    A timezone-aware datetime is placed into UTC first, so a creation recorded
+    late in a day east of UTC lands on the UTC day the service reports.
+
+    Args:
+        value: The day to normalize.
+
+    Returns:
+        The day as an ISO8601 calendar-date string, ``YYYY-MM-DD``.
+
+    Raises:
+        ValueError: When a string is not a valid ISO8601 date or datetime.
+    """
+    if isinstance(value, str):
+        value = datetime.fromisoformat(value)
+    if isinstance(value, datetime):
+        if value.tzinfo is not None:
+            value = value.astimezone(UTC)
+        return value.date().isoformat()
+    return value.isoformat()
+
+
+class DailyCount(BaseModel):
+    """Schema for one data point of the daily user-creation analytics.
+
+    A data point is a single calendar day and the number of users created on
+    it; a series of these, oldest day first, is what the analytics endpoint
+    returns.
+    """
+
+    date: str
+    count: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "date": "2026-07-08",
+                    "count": 5,
+                }
+            ]
+        }
+    )
+
+    @field_validator("date", mode="before")
+    @classmethod
+    def format_date(cls, value: DayValue) -> str:
+        """Normalize the day to an ISO8601 date string.
+
+        Args:
+            value: The day as a date, a datetime, or an ISO8601 string.
+
+        Returns:
+            The day as an ISO8601 date string.
+
+        Raises:
+            ValueError: When the value is not a recognisable ISO8601 day.
+        """
+        return to_iso_date(value)
+
+
+class DailyCountResponse(BaseModel):
+    """Schema for a daily user-creation count entry.
+
+    Carries the same two fields as a :class:`DailyCount` data point, in the
+    same shape ``DomainCountResponse`` uses for its entries, so a handler can
+    return one of these on its own or a list of them as the seven-day series.
+    """
+
+    date: str
+    count: int
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "date": "2026-07-08",
+                    "count": 5,
+                }
+            ]
+        }
+    )
+
+    @field_validator("date", mode="before")
+    @classmethod
+    def format_date(cls, value: DayValue) -> str:
+        """Normalize the day to an ISO8601 date string.
+
+        Args:
+            value: The day as a date, a datetime, or an ISO8601 string.
+
+        Returns:
+            The day as an ISO8601 date string.
+
+        Raises:
+            ValueError: When the value is not a recognisable ISO8601 day.
+        """
+        return to_iso_date(value)
 
 
 class RecentUsersResponse(BaseModel):
