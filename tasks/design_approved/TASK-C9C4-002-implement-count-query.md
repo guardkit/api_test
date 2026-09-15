@@ -1,14 +1,15 @@
 ---
-id: TASK-C9C4-002
-title: Implement count query logic
-task_type: feature
-parent_review: TASK-REV-C9C4
-feature_id: FEAT-C9C4
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-C9C4-001
+- TASK-C9C4-001
+feature_id: FEAT-C9C4
+id: TASK-C9C4-002
+implementation_mode: task-work
+parent_review: TASK-REV-C9C4
+status: design_approved
+task_type: feature
+title: Implement count query logic
+wave: 2
 ---
 
 # Implement count query logic
