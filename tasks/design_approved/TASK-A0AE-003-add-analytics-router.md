@@ -1,14 +1,15 @@
 ---
-id: TASK-A0AE-003
-title: Add analytics router and endpoint
-task_type: feature
-parent_review: TASK-REV-A0AE
-feature_id: FEAT-A0AE
-wave: 3
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-A0AE-002
+- TASK-A0AE-002
+feature_id: FEAT-A0AE
+id: TASK-A0AE-003
+implementation_mode: task-work
+parent_review: TASK-REV-A0AE
+status: design_approved
+task_type: feature
+title: Add analytics router and endpoint
+wave: 3
 ---
 
 # Add analytics router and endpoint
