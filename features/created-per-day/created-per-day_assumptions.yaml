@@ -1,0 +1,19 @@
+feature: User Creation Analytics - Daily Counts
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: The endpoint includes the current day as the most recent entry
+  assumption: The response includes the current day as the most recent entry
+  confidence: low
+  basis: Inferred from 'last 7 days' phrasing; not stated whether current day is included
+    or only completed days
+  human_response: deferred
+- id: ASSUM-002
+  scenario: The response includes exactly seven data points
+  assumption: The response includes exactly seven data points
+  confidence: low
+  basis: Inferred from 'exactly 7 data points' constraint; not stated how to handle
+    periods with fewer than 7 days of data
+  human_response: deferred
