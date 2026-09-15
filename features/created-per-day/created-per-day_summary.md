@@ -2,8 +2,8 @@
 
 **Stack**: generic
 **Generated**: 2026-07-09T14:32:00Z
-**Scenarios**: 8 total (1 smoke, 0 regression)
-**Assumptions**: 3 total (0 high / 0 medium / 3 low confidence)
+**Scenarios**: 7 total (1 smoke, 0 regression)
+**Assumptions**: 2 total (0 high / 0 medium / 2 low confidence)
 **Review required**: Yes
 
 ## Scope
@@ -15,8 +15,7 @@ This specification covers the GET /users/created-per-day endpoint which returns 
 | ID | Assumption | Confidence | Basis |
 |----|-------------|------------|-------|
 | ASSUM-001 | The 7-day window includes the current day | low | Not stated in input; could be last 7 completed days or last 7 including today |
-| ASSUM-002 | The endpoint requires authentication | low | Not stated in input; could be public or require auth |
-| ASSUM-003 | The response must return exactly 7 data points | low | Input says 'last 7 days' but does not explicitly mandate exactly 7 points if data is sparse |
+| ASSUM-002 | The response must return exactly 7 data points | low | Input says 'last 7 days' but does not explicitly mandate exactly 7 points if data is sparse |
 
 REVIEW REQUIRED: all assumptions unconfirmed (--auto mode)
 
@@ -26,7 +25,7 @@ REVIEW REQUIRED: all assumptions unconfirmed (--auto mode)
 |----------|-------|
 | Key examples (@key-example) | 1 |
 | Boundary conditions (@boundary) | 2 |
-| Negative cases (@negative) | 3 |
+| Negative cases (@negative) | 2 |
 | Edge cases (@edge-case) | 2 |
 
 ## Deferred Items
@@ -39,7 +38,6 @@ None.
 - "The response includes the current day as the newest entry" → hurl
 - "The response does not include dates older than seven days ago" → hurl
 - "A POST request to the endpoint is rejected" → hurl
-- "An unauthenticated request is rejected" → hurl
 - "The response returns zero counts when no users were created" → hurl
 - "The response includes days with zero creations" → hurl
 - "The endpoint handles service unavailability gracefully" → hurl

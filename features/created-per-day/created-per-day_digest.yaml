@@ -21,10 +21,6 @@ scenarios:
   tags:
   - '@negative'
   sentence: The system will refuse any attempt to send a POST request to this endpoint.
-- title: An unauthenticated request is rejected
-  tags:
-  - '@negative'
-  sentence: The system will refuse any request that does not include proper login credentials.
 - title: The response returns zero counts when no users were created
   tags:
   - '@negative'
@@ -42,8 +38,5 @@ assumptions:
   text: The 7-day window includes the current day
   basis: Not stated in input; could be last 7 completed days or last 7 including today
 - id: ASSUM-002
-  text: The endpoint requires authentication
-  basis: Not stated in input; could be public or require auth
-- id: ASSUM-003
   text: The response must return exactly 7 data points
   basis: Input says 'last 7 days' but does not explicitly mandate exactly 7 points if data is sparse
