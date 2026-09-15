@@ -1,0 +1,88 @@
+id: FEAT-A0AE
+name: "User Creation Analytics - Daily Counts"
+description: "Implement endpoint returning number of users created each day for the last 7 days, ordered oldest to newest"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-A0AE-001
+    name: "Create analytics schema and models"
+    file_path: "tasks/backlog/user-analytics/TASK-A0AE-001-create-analytics-schema.md"
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-A0AE-002
+    name: "Implement analytics CRUD logic"
+    file_path: "tasks/backlog/user-analytics/TASK-A0AE-002-implement-analytics-crud.md"
+    complexity: 5
+    dependencies:
+      - TASK-A0AE-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-A0AE-003
+    name: "Add analytics router and endpoint"
+    file_path: "tasks/backlog/user-analytics/TASK-A0AE-003-add-analytics-router.md"
+    complexity: 4
+    dependencies:
+      - TASK-A0AE-002
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-A0AE-004
+    name: "Implement analytics service layer"
+    file_path: "tasks/backlog/user-analytics/TASK-A0AE-004-implement-analytics-service.md"
+    complexity: 5
+    dependencies:
+      - TASK-A0AE-003
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-A0AE-005
+    name: "Add analytics integration tests"
+    file_path: "tasks/backlog/user-analytics/TASK-A0AE-005-add-analytics-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-A0AE-004
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 45
+
+orchestration:
+  parallel_groups:
+    - - TASK-A0AE-001
+    - - TASK-A0AE-002
+    - - TASK-A0AE-003
+    - - TASK-A0AE-004
+    - - TASK-A0AE-005
+  estimated_duration_minutes: 240
+  recommended_parallel: 1
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/created-per-day/created-per-day.feature"
+scenarios:
+  "A request for daily counts returns exactly seven days ordered oldest to newest":
+    verifier: "hurl"
+  "The endpoint returns exactly seven days of data":
+    verifier: "hurl"
+  "The endpoint does not return fewer than seven days of data":
+    verifier: "hurl"
+  "A POST request to the endpoint is rejected":
+    verifier: "hurl"
+  "The endpoint returns seven days of zero counts when no users were created":
+    verifier: "hurl"
+  "The endpoint includes the current day even if it is incomplete":
+    verifier: "hurl"
+  # stamped by the model — no rule (R1-R10) could decide this title
+  "Two simultaneous requests both return the same seven-day window":
+    verifier: "hurl"
