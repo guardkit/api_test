@@ -1,14 +1,15 @@
 ---
-id: TASK-C9C4-005
-title: Add integration tests
-task_type: testing
-parent_review: TASK-REV-C9C4
-feature_id: FEAT-C9C4
-wave: 4
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-C9C4-004
+- TASK-C9C4-004
+feature_id: FEAT-C9C4
+id: TASK-C9C4-005
+implementation_mode: task-work
+parent_review: TASK-REV-C9C4
+status: design_approved
+task_type: testing
+title: Add integration tests
+wave: 4
 ---
 
 # Add integration tests
