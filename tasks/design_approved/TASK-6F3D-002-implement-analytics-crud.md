@@ -1,15 +1,15 @@
 ---
-id: TASK-6F3D-002
-title: Implement analytics CRUD operations
-task_type: feature
-parent_review: TASK-REV-6F3D
-feature_id: FEAT-6F3D
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-6F3D-001
-status: pending
+- TASK-6F3D-001
+feature_id: FEAT-6F3D
+id: TASK-6F3D-002
+implementation_mode: task-work
+parent_review: TASK-REV-6F3D
+status: design_approved
+task_type: feature
+title: Implement analytics CRUD operations
+wave: 2
 ---
 
 # Implement analytics CRUD operations

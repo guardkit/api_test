@@ -6,7 +6,7 @@ import logging
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import Date, func, select, type_coerce
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,11 +56,7 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.id == user_id)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.id == user_id).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -78,12 +74,7 @@ async def get_users(
     Returns:
         Sequence of User objects.
     """
-    stmt = (
-        select(User)
-        .where(User.deleted_at.is_(None))
-        .offset(skip)
-        .limit(limit)
-    )
+    stmt = select(User).where(User.deleted_at.is_(None)).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -98,11 +89,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.email == email)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.email == email).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -159,8 +146,6 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
     # Prevent double-delete: if already soft-deleted, return False
     if user.deleted_at is not None:
         return False
-
-    from datetime import UTC, datetime
 
     user.deleted_at = datetime.now(UTC)
     db.add(user)
@@ -275,7 +260,7 @@ async def count_users_by_domain(
 
     result = await db.execute(stmt)
     rows = result.fetchall()
-    return [{"domain": row.domain, "count": row.count} for row in rows]
+    return [{"domain": domain, "count": count} for domain, count in rows]
 
 
 async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
@@ -291,3 +276,63 @@ async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:
     stmt = select(User).order_by(User.created_at.desc()).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+async def count_users_created_per_day(
+    db: AsyncSession, start: datetime, end: datetime
+) -> list[tuple[date, int]]:
+    """Count non-deleted users grouped by the calendar day they were created.
+
+    Part of the users feature's public read interface (ADR-001, amendment of
+    2026-08-31): it hands back plain data, never ORM rows, so a reader in
+    another feature can aggregate user creations without importing
+    ``src.users.models``.
+
+    The window is half-open — ``[start, end)`` — so that a caller asking for
+    back-to-back days never counts a row twice. Days with no creation are
+    absent from the result; deciding whether to fill them is the caller's job,
+    which is why this takes a timestamp range rather than a number of days.
+
+    ``created_at`` is a naive UTC timestamp column, so the bounds are expected
+    to be naive UTC datetimes too, exactly as ``count_users_today`` builds
+    them.
+
+    Args:
+        db: The async database session.
+        start: Inclusive lower bound of the window, naive UTC.
+        end: Exclusive upper bound of the window, naive UTC.
+
+    Returns:
+        One ``(calendar day, count)`` pair per day that has at least one
+        creation, oldest day first.
+
+    Raises:
+        ValueError: If ``start`` is not strictly before ``end``, which would
+            describe an empty or backwards window.
+        SQLAlchemyError: If the database refuses or fails the query.
+    """
+    if start >= end:
+        msg = (
+            "the per-day count window must ascend: start "
+            f"{start.isoformat()} is not before end {end.isoformat()}"
+        )
+        raise ValueError(msg)
+
+    # date() names the calendar day on both databases this app runs on: SQLite
+    # answers with a 'YYYY-MM-DD' string, PostgreSQL with a date object.
+    # type_coerce declares the column as a Date so SQLAlchemy hands back a
+    # datetime.date either way, and the range predicate on created_at keeps the
+    # scan on the ix_users_created_at index that FEAT-6F3D added.
+    day = type_coerce(func.date(User.created_at), Date).label("day")
+    day_expression = func.date(User.created_at)
+    stmt = (
+        select(day, func.count().label("count"))
+        .select_from(User)
+        .where(User.created_at >= start)
+        .where(User.created_at < end)
+        .where(User.deleted_at.is_(None))
+        .group_by(day_expression)
+        .order_by(day_expression)
+    )
+    result = await db.execute(stmt)
+    return [(row_day, int(row_count)) for row_day, row_count in result.all()]
