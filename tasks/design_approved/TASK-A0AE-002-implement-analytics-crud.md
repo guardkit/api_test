@@ -1,14 +1,15 @@
 ---
-id: TASK-A0AE-002
-title: Implement analytics CRUD logic
-task_type: feature
-parent_review: TASK-REV-A0AE
-feature_id: FEAT-A0AE
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-A0AE-001
+- TASK-A0AE-001
+feature_id: FEAT-A0AE
+id: TASK-A0AE-002
+implementation_mode: task-work
+parent_review: TASK-REV-A0AE
+status: design_approved
+task_type: feature
+title: Implement analytics CRUD logic
+wave: 2
 ---
 
 # Implement analytics CRUD logic

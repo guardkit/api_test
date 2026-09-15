@@ -15,6 +15,10 @@ from src.users.exceptions import UserAlreadyExistsError
 from src.users.models import User
 from src.users.schemas import DailyCount, UserCreate, UserUpdate, to_iso_date
 
+# How many days the daily-creation window spans when a caller does not say.
+# One week: the analytics series is a week of days, current day last.
+DAILY_COUNT_WINDOW_DAYS = 7
+
 
 async def create_user(db: AsyncSession, user_in: UserCreate) -> User:
     """Create a new user.
@@ -355,3 +359,62 @@ async def get_daily_counts(
         DailyCount(date=to_iso_date(row["day"]), count=row["count"])
         for row in result.mappings().all()
     ]
+
+
+async def get_recent_daily_counts(
+    db: AsyncSession,
+    days: int = DAILY_COUNT_WINDOW_DAYS,
+    today: date | None = None,
+) -> list[DailyCount]:
+    """Count user creations over the most recent window of calendar days.
+
+    The window is the ``days`` consecutive days ending on the current day, and
+    every one of them is reported: a day somebody registered on carries its
+    count, a day nobody registered on carries zero. The series is therefore
+    always exactly ``days`` long — an empty database answers with ``days`` days
+    of zeros rather than with nothing — ordered oldest day first and the
+    current day last.
+
+    The current day is included even though it is not over yet, so its count is
+    whatever has been created so far and grows as the day goes on. Nothing
+    special is done to achieve that: the window ends at the start of tomorrow,
+    which a partially elapsed day sits inside entirely.
+
+    The day the window is measured from can be handed in, which keeps the
+    window the same at 23:59 as at 00:01 and lets a caller re-ask about a day
+    that has already closed.
+
+    Args:
+        db: The async database session.
+        days: How many consecutive days the window spans, counting the current
+            one. Defaults to :data:`DAILY_COUNT_WINDOW_DAYS`.
+        today: The day to measure the window from. Defaults to the current UTC
+            day, which is the day ``users.created_at`` is written in.
+
+    Returns:
+        Exactly ``days`` DailyCount data points, oldest to newest, with zero
+        counts on the days that have no creations. Soft-deleted users are left
+        out, as every other count in this module does.
+
+    Raises:
+        ValueError: When ``days`` is smaller than one, which describes no window
+            at all.
+    """
+    if days < 1:
+        raise ValueError(
+            f"The daily-count window must span at least one day, got {days}."
+        )
+
+    anchor = datetime.now(UTC).date() if today is None else today
+    start = anchor - timedelta(days=days - 1)
+
+    result = await db.execute(daily_count_aggregation_query(start, anchor))
+    counted = {
+        to_iso_date(row["day"]): int(row["count"]) for row in result.mappings().all()
+    }
+
+    # The window's days, written the same way the rows above are keyed, so a day
+    # matches whatever shape the database handed that day back in. A day the
+    # aggregation did not mention had nothing to count, and reads zero.
+    window = [to_iso_date(start + timedelta(days=step)) for step in range(days)]
+    return [DailyCount(date=day, count=counted.get(day, 0)) for day in window]
