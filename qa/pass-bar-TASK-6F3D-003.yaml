@@ -1,0 +1,18 @@
+format_version: '2.0'
+task_id: TASK-6F3D-003
+registered_at:
+  sha: 20741048eb1b85d89557479d661bafe895887b23
+  date: '2026-09-14'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: get-users-created-per-day-AC-001
+  text: A request to the daily counts endpoint returns the last 7 days of data
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

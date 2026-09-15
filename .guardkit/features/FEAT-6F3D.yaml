@@ -1,0 +1,87 @@
+id: FEAT-6F3D
+name: "User Creation Analytics - Daily Counts"
+description: "Implement endpoint to retrieve user creation counts for the last 7 days"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-6F3D-001
+    name: "Create analytics schema and models"
+    file_path: "tasks/backlog/user-analytics/TASK-6F3D-001-create-analytics-schema.md"
+    complexity: 4
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-6F3D-002
+    name: "Implement analytics CRUD operations"
+    file_path: "tasks/backlog/user-analytics/TASK-6F3D-002-implement-analytics-crud.md"
+    complexity: 5
+    dependencies:
+      - TASK-6F3D-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 90
+
+  - id: TASK-6F3D-003
+    name: "Add analytics router and endpoint"
+    file_path: "tasks/backlog/user-analytics/TASK-6F3D-003-add-analytics-router.md"
+    complexity: 4
+    dependencies:
+      - TASK-6F3D-002
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-6F3D-004
+    name: "Implement analytics service logic"
+    file_path: "tasks/backlog/user-analytics/TASK-6F3D-004-implement-analytics-service.md"
+    complexity: 5
+    dependencies:
+      - TASK-6F3D-003
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 90
+
+  - id: TASK-6F3D-005
+    name: "Add analytics integration tests"
+    file_path: "tasks/backlog/user-analytics/TASK-6F3D-005-add-analytics-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-6F3D-004
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 60
+
+orchestration:
+  parallel_groups:
+    - - TASK-6F3D-001
+    - - TASK-6F3D-002
+    - - TASK-6F3D-003
+    - - TASK-6F3D-004
+    - - TASK-6F3D-005
+  estimated_duration_minutes: 360
+  recommended_parallel: 1
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/get-users-created-per-day/get-users-created-per-day.feature"
+scenarios:
+  "A request to the daily counts endpoint returns the last 7 days of data":
+    verifier: "hurl"
+  "The endpoint returns exactly 7 days of data regardless of total history":
+    verifier: "hurl"
+  "The endpoint does not return more than 7 days of data":
+    verifier: "hurl"
+  "The endpoint returns 7 days with zero counts when no users were created":
+    verifier: "hurl"
+  "A POST request to the daily counts endpoint is rejected":
+    verifier: "hurl"
+  "The response is valid JSON":
+    verifier: "hurl"
+  "The data points are strictly ordered from oldest to newest":
+    verifier: "hurl"

@@ -53,9 +53,13 @@ class User(DeclarativeBase):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Timestamps - DeclarativeBase provides these, but we override to add timezone
+    # created_at is indexed: the daily user-count analytics (FEAT-6F3D) filter
+    # and group on it, and alembic migration 6f3d_add_created_at_index keeps
+    # the schema in step with this declaration.
     created_at: Mapped[datetime] = mapped_column(
         nullable=False,
         server_default=func.now(),
+        index=True,
     )
     updated_at: Mapped[datetime] = mapped_column(
         nullable=False,
