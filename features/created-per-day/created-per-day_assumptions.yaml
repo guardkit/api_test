@@ -1,0 +1,24 @@
+feature: User Creation Metrics
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: The response includes the current day as the newest entry
+  assumption: The 7-day window includes the current day
+  confidence: low
+  basis: Not stated in input; could be last 7 completed days or last 7 including today
+  human_response: deferred
+- id: ASSUM-002
+  scenario: An unauthenticated request is rejected
+  assumption: The endpoint requires authentication
+  confidence: low
+  basis: Not stated in input; could be public or require auth
+  human_response: deferred
+- id: ASSUM-003
+  scenario: The response includes exactly seven data points
+  assumption: The response must return exactly 7 data points
+  confidence: low
+  basis: Input says 'last 7 days' but does not explicitly mandate exactly 7 points
+    if data is sparse
+  human_response: deferred
