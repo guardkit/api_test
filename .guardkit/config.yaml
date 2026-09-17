@@ -24,6 +24,11 @@ qa:
 # delete the block. Zero verdict impact by construction (never-raise wrappers; the
 # receipt qav_shadow_turn_N.json lands beside coach_turn_N.json).
 autobuild:
+  player:
+    skills:
+      - "skills/"
+    protected_paths:
+      - "tests/acceptance/"
   coach:
     # Coach v4 flip (2026-07-26, Rich's do-it-now): the tuned coach-ft-v4 seat
     # + the raw v4 wire contract. env GUARDKIT_COACH_CONTRACT / --coach-model
