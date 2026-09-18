@@ -54,3 +54,12 @@ autobuild:
 # `off`). Reversible: set to off. Card of record:
 # ai-transition docs/bdd-replacement-options-card-2026-08-09.md (Q8/A.2).
 routing_law: enforced
+
+# Project-selected Fleet guidance; a new input for subsequent local evaluations.
+# These tags select existing stored rules without changing retrieval thresholds.
+memory:
+  fleet:
+    context_sources:
+      relevant_patterns:
+        document_tags:
+          - rules_fastapi_python
