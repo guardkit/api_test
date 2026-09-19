@@ -155,20 +155,21 @@ pytest -m asyncio
 
 This template works with the following specialized AI agents:
 
-- **fastapi-specialist**: FastAPI patterns, routing, dependencies (see `.claude/rules/guidance/fastapi.md`)
-- **fastapi-database-specialist**: SQLAlchemy, Alembic, database design (see `.claude/rules/guidance/database.md`)
-- **fastapi-testing-specialist**: pytest, async testing, fixtures (see `.claude/rules/guidance/testing.md`)
+- **fastapi-specialist**: FastAPI patterns, routing, dependencies (see `.claude/agents/fastapi-specialist.md`)
+- **fastapi-database-specialist**: SQLAlchemy, Alembic, database design (see `.claude/agents/fastapi-database-specialist.md`)
+- **fastapi-testing-specialist**: pytest, async testing, fixtures (see `.claude/agents/fastapi-testing-specialist.md`)
 
 Use these agents during development for specialized guidance.
 
 ## Detailed Patterns and Examples
 
-For detailed code examples, patterns, and best practices, see the `.claude/rules/` directory:
+This repository does not carry a `.claude/rules/` directory. The current, reviewed
+conventions live in the two project skills and their supporting references — read the
+reference each skill names before changing routes, checks, transactions or evidence:
 
-- **API Patterns**: `.claude/rules/api/` - Routing, schemas, dependencies
-- **Database Patterns**: `.claude/rules/database/` - Models, CRUD, migrations
-- **Testing Patterns**: `.claude/rules/testing.md` - Fixtures, async tests, coverage
-- **Code Style**: `.claude/rules/code-style.md` - Naming conventions, organization
+- **FastAPI conventions**: `skills/fastapi/SKILL.md` and `skills/fastapi/references/project-conventions.md`
+- **Database conventions**: `skills/sqlalchemy-database/SKILL.md` and `skills/sqlalchemy-database/references/project-conventions.md`
+- **Specialist guidance**: the three agent documents under `.claude/agents/` and their `-ext.md` companions
 
 ## Resources
 
@@ -183,7 +184,8 @@ For detailed code examples, patterns, and best practices, see the `.claude/rules
 
 When generating `.agent-response.json` files (checkpoint-resume pattern), use the format specification:
 
-**Reference**: [Agent Response Format Specification](../../docs/reference/agent-response-format.md) (TASK-FIX-267C)
+**Reference**: the format specification (TASK-FIX-267C) is not tracked in this repository; the
+key requirements below are the complete project-side contract.
 
 **Key Requirements**:
 - Field name: `response` (NOT `result`)
