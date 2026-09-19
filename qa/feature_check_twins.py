@@ -35,6 +35,16 @@ Usage (all output is plain text, one record per line):
 
     feature_check_twins.py json-line <file of titles, one per line>
         The one coverage line guardkit reads out of this check's stdout.
+
+    feature_check_twins.py table <tab-separated file>
+        The results table, columns aligned by CHARACTER count, nothing cut.
+
+    feature_check_twins.py report-requests <hurl report.json>
+        How many requests that hurl run actually sent, counted from hurl's
+        own machine-readable report (--report-json). Prints -1 when the
+        report is missing or unreadable, so the caller can say so plainly
+        instead of guessing. A twin that sent 0 requests proved nothing,
+        whatever it exited with.
 """
 
 from __future__ import annotations
@@ -233,6 +243,69 @@ def cmd_json_line(titles_file: str) -> int:
     return 0
 
 
+def cmd_report_requests(report_path: str) -> int:
+    """Print how many requests hurl actually sent, from hurl's own report.
+
+    hurl 8.0.1's ``--report-json <dir>`` writes ``<dir>/report.json``: a list
+    with one object per .hurl file, each carrying an ``entries`` list — one
+    entry per request the run actually executed. An empty ``entries`` list
+    means nothing was sent: a file of comments, or a file whose requests were
+    never reached. -1 means the report could not be read at all.
+    """
+    path = Path(report_path)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 — unreadable is its own answer
+        print(-1)
+        return 0
+    if isinstance(data, dict):
+        data = [data]
+    if not isinstance(data, list):
+        print(-1)
+        return 0
+    total = 0
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        entries = row.get("entries")
+        if isinstance(entries, list):
+            total += len(entries)
+    print(total)
+    return 0
+
+
+def cmd_table(tsv_path: str) -> int:
+    """Print a TAB-separated file as aligned columns, cutting nothing.
+
+    Not `column -t`: outside a UTF-8 locale that tool rewrites every accented
+    character as a \\xNN escape, so a French scenario title came out as
+    mojibake. Padding is counted in CHARACTERS here, and no column has a fixed
+    width, so a long or accented title is printed whole.
+    """
+    path = Path(tsv_path)
+    try:
+        rows = [
+            line.split("\t")
+            for line in path.read_text(encoding="utf-8").splitlines()
+        ]
+    except OSError as exc:
+        print(f"feature-check: could not read the results table ({exc})", file=sys.stderr)
+        return 1
+    if not rows:
+        return 0
+    width = max(len(row) for row in rows)
+    widths = [0] * width
+    for row in rows:
+        for index, cell in enumerate(row):
+            widths[index] = max(widths[index], len(cell))
+    for row in rows:
+        parts = []
+        for index, cell in enumerate(row):
+            parts.append(cell if index == len(row) - 1 else cell.ljust(widths[index]))
+        print("  ".join(parts).rstrip())
+    return 0
+
+
 def main(argv: List[str]) -> int:
     if len(argv) < 2:
         _fail("feature-check: feature_check_twins.py needs a mode")
@@ -245,6 +318,10 @@ def main(argv: List[str]) -> int:
         return cmd_wait_health(argv[2], argv[3])
     if mode == "json-line" and len(argv) == 3:
         return cmd_json_line(argv[2])
+    if mode == "report-requests" and len(argv) == 3:
+        return cmd_report_requests(argv[2])
+    if mode == "table" and len(argv) == 3:
+        return cmd_table(argv[2])
     _fail(f"feature-check: feature_check_twins.py does not understand {' '.join(argv[1:])!r}")
     return 3
 

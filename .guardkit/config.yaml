@@ -52,6 +52,9 @@ autobuild:
       - "skills/sqlalchemy-database/references/project-conventions.md"
     protected_paths:
       - "tests/acceptance/"
+      # 2026-09-19: the coder must not be able to edit the check that judges it.
+      - "qa/feature-check.sh"
+      - "qa/feature_check_twins.py"
   coach:
     # Coach v4 flip (2026-07-26, Rich's do-it-now): the tuned coach-ft-v4 seat
     # + the raw v4 wire contract. env GUARDKIT_COACH_CONTRACT / --coach-model
