@@ -4,6 +4,11 @@
 toolchain:
   test: "qa/run-suite.sh"
   test_timeout: 900
+  # 2026-09-19: the factory no longer treats an unmeasured required coverage as a
+  # pass. This is how this project measures it (exit 0 = the 80% line minimum in
+  # .claude/CLAUDE.md is met); the Coach runs it itself after its own test run.
+  coverage: "qa/run-coverage.sh"
+  coverage_timeout: 600
 
 # guardkit per-repo config.
 # qa.enforce_tier1 turns on the tier-1 QA gate refusals for THIS repo
@@ -13,6 +18,10 @@ toolchain:
 # OFF. Env override: GUARDKIT_QA_ENFORCE_TIER1.
 qa:
   enforce_tier1: true
+  # 2026-09-19: a scenario stamped `verifier: hurl` with no twin file is missing
+  # evidence, not advice. Missing twins now send the build back for repair and,
+  # when the repair budget is spent, fail it. Reversible: set to false.
+  enforce_twin_coverage: true
   # 2026-08-15: the `spec_track: dcl` opt-in and the `dcl.capture` block that
   # lived here were REMOVED — the DCL track was deleted outright from guardkit
   # (card Q11, ruled 2026-08-15; guardkit b138d92c) and from the forge planning
@@ -27,6 +36,12 @@ autobuild:
   player:
     skills:
       - "skills/"
+    # 2026-09-19: each skill body says to read its project-conventions reference
+    # before changing routes, checks, transactions or evidence. Declared here so the
+    # factory requires a complete read of each before the Player may act.
+    required_documents:
+      - "skills/fastapi/references/project-conventions.md"
+      - "skills/sqlalchemy-database/references/project-conventions.md"
     protected_paths:
       - "tests/acceptance/"
   coach:
