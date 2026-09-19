@@ -9,6 +9,14 @@ toolchain:
   # .claude/CLAUDE.md is met); the Coach runs it itself after its own test run.
   coverage: "qa/run-coverage.sh"
   coverage_timeout: 600
+  # 2026-09-19: the whole-feature check. After the last build wave the factory
+  # runs this one command over the assembled feature, before any merge can be
+  # offered: it starts this candidate's own app against a throwaway Postgres and
+  # runs the frozen Hurl twin of every scenario the feature's plan stamped
+  # `verifier: hurl`. A stamped scenario with no twin fails it. Exit 0 = the
+  # feature does what was asked at the surface a person uses.
+  feature_check: "qa/feature-check.sh"
+  feature_check_timeout: 900
 
 # guardkit per-repo config.
 # qa.enforce_tier1 turns on the tier-1 QA gate refusals for THIS repo
