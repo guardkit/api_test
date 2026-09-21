@@ -18,7 +18,9 @@ NAME="api-test-suite-pg-$$"
 # Docker picks a free loopback port (a fixed one collided with a container a
 # timed-out leg had left behind, 2026-09-08); SUITE_PG_PORT pins it if wanted.
 docker run -d --rm --name "$NAME" -e POSTGRES_PASSWORD=test -e POSTGRES_DB=test -p "127.0.0.1:${SUITE_PG_PORT:-0}:5432" postgres:16-alpine >/dev/null
-trap 'docker rm -f "$NAME" >/dev/null 2>&1 || true' EXIT
+# 2026-09-21: -v. Without it every forced removal left the container's own
+# volume behind; 542 unattached volumes had piled up by 19 September.
+trap 'docker rm -f -v "$NAME" >/dev/null 2>&1 || true' EXIT
 PORT="$(docker port "$NAME" 5432/tcp | head -1 | sed -E 's/.*:([0-9]+)$/\1/')"
 [[ -n "$PORT" ]] || { echo "qa/run-suite.sh: could not read the Postgres port" >&2; exit 2; }
 for _ in $(seq 1 60); do docker exec "$NAME" pg_isready -U postgres >/dev/null 2>&1 && break; sleep 1; done

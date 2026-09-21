@@ -26,10 +26,17 @@ toolchain:
 # OFF. Env override: GUARDKIT_QA_ENFORCE_TIER1.
 qa:
   enforce_tier1: true
-  # 2026-09-19: a scenario stamped `verifier: hurl` with no twin file is missing
-  # evidence, not advice. Missing twins now send the build back for repair and,
-  # when the repair budget is spent, fail it. Reversible: set to false.
-  enforce_twin_coverage: true
+  # 2026-09-21: OFF. A scenario stamped `verifier: hurl` with no twin file is
+  # now REPORTED as not checked instead of failing the build. The owner's
+  # answer of 21 September 2026 to the first question of the way-forward plan:
+  # "Q1: yes mark it not checked". With this on, the whole-feature check below
+  # was never even run — the build was discarded before the product started, so
+  # nobody could see what the finished feature did. With it off the central
+  # guard still names every example that has no check file of its own, and
+  # those names travel to the merge card as NOT CHECKED. They are never
+  # recorded as covered or passed. Reversible: set to true to restore the hard
+  # refusal (2026-09-19 behaviour).
+  enforce_twin_coverage: false
   # 2026-08-15: the `spec_track: dcl` opt-in and the `dcl.capture` block that
   # lived here were REMOVED — the DCL track was deleted outright from guardkit
   # (card Q11, ruled 2026-08-15; guardkit b138d92c) and from the forge planning
