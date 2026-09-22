@@ -91,6 +91,12 @@ routing_law: enforced
 # Project-selected Fleet guidance; a new input for subsequent local evaluations.
 # These tags select existing stored rules without changing retrieval thresholds.
 memory:
+  # 2026-09-22: which memory this project's builds read from and write to. The
+  # factory reads this line at the commit each piece of work starts from and
+  # refuses to start work for a project that declares none; it never files a
+  # project's records under another project's name. Letters, digits and
+  # underscores only.
+  project: api_test
   fleet:
     context_sources:
       relevant_patterns:
