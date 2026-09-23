@@ -1,18 +1,51 @@
 #!/usr/bin/env bash
 #
 # Fake `docker` for the deploy.sh dry-run harness. Records every invocation to
-# $FAKE_DOCKER_LOG and models a tiny image-tag store ($FAKE_DOCKER_STATE, one
-# ref per line) so `docker tag` / `docker image inspect` behave enough like the
-# real thing to exercise deploy.sh's snapshot / re-tag / not-found logic.
+# $FAKE_DOCKER_LOG and models a tiny image-tag store ($FAKE_DOCKER_STATE) so
+# `docker tag` / `docker image inspect` behave enough like the real thing to
+# exercise deploy.sh's snapshot / re-tag / not-found logic.
 # `docker compose ...` is recorded and always succeeds. NEVER touches real docker.
+#
+# A TAG IS AN ALIAS, NOT A COPY (23 September 2026). Each line of the store is
+# "<ref> <id>", and `docker tag src dst` gives dst SRC'S OWN id — which is what
+# real docker does, and what the promote's read-back depends on: it asks
+# whether the live tag and the identity's own tag are THE SAME IMAGE, and the
+# answer is only meaningful if two tags of one image share an id. A seeded ref
+# with no id written beside it gets one derived from its own name, so the
+# harness's `SEED_IMAGES="a b c"` line is unchanged.
 set -u
 
 LOG="${FAKE_DOCKER_LOG:?FAKE_DOCKER_LOG unset}"
 STATE="${FAKE_DOCKER_STATE:?FAKE_DOCKER_STATE unset}"
 printf 'docker %s\n' "$*" >>"${LOG}"
 
-known() { grep -qxF -- "$1" "${STATE}" 2>/dev/null; }
-add() { known "$1" || printf '%s\n' "$1" >>"${STATE}"; }
+# The id recorded for a ref, or empty when nothing knows it. A line with no id
+# beside it is a seeded image and gets one made from its own name.
+id_of() {
+  local line
+  line="$(grep -m1 -E "^$(printf '%s' "$1" | sed 's/[][\.*^$/]/\\&/g')( |$)" \
+    "${STATE}" 2>/dev/null || true)"
+  [[ -z "${line}" ]] && return 1
+  if [[ "${line}" == *" "* ]]; then
+    printf '%s\n' "${line#* }"
+  else
+    printf 'sha256:fake-%s\n' "$(printf '%s' "$1" | tr '/:' '__')"
+  fi
+}
+
+known() { id_of "$1" >/dev/null 2>&1; }
+
+# Point ref at id. An existing line for that ref is replaced, because a tag
+# that is moved onto another image points at the new one.
+put() {
+  local ref="$1" id="$2" escaped
+  escaped="$(printf '%s' "${ref}" | sed 's/[][\.*^$/]/\\&/g')"
+  if [[ -f "${STATE}" ]]; then
+    grep -v -E "^${escaped}( |$)" "${STATE}" > "${STATE}.next" 2>/dev/null || true
+    mv "${STATE}.next" "${STATE}"
+  fi
+  printf '%s %s\n' "${ref}" "${id}" >>"${STATE}"
+}
 
 case "${1:-}" in
   image)
@@ -20,8 +53,7 @@ case "${1:-}" in
     if [[ "${2:-}" == "inspect" ]]; then
       ref=""
       for a in "$@"; do ref="$a"; done # last arg is the ref
-      if known "${ref}"; then
-        printf 'sha256:fake-%s\n' "$(printf '%s' "${ref}" | tr '/:' '__')"
+      if id_of "${ref}"; then
         exit 0
       fi
       exit 1 # absent -> non-zero, like real docker
@@ -30,8 +62,8 @@ case "${1:-}" in
   tag)
     src="${2:?}"
     dst="${3:?}"
-    if known "${src}"; then
-      add "${dst}"
+    if src_id="$(id_of "${src}")"; then
+      put "${dst}" "${src_id}"
       exit 0
     fi
     printf 'Error response from daemon: No such image: %s\n' "${src}" >&2

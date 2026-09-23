@@ -175,19 +175,55 @@ deploy_candidate() {
 }
 
 deploy_promote() {
-  # Promote the candidate-built image to LIVE. Must NOT rebuild: it re-tags the
-  # candidate image as the live image and brings the live project up --no-build,
-  # snapshotting the current live image as the rollback tag FIRST (identical to
-  # the normal-mode snapshot semantics). Health is probed on the LIVE port.
-  local cand_id cur_id
+  # Promote to LIVE the exact thing forge checked, named by an identity that
+  # cannot be reused, and then SAY what is running.
+  #
+  # WHY THIS CHANGED (23 September 2026; forge's one-true-copy design pass,
+  # item 1, second revision section C). This used to re-tag one shared
+  # candidate name -- ${CANDIDATE_APP_IMAGE} -- as the live tag. That name is
+  # SHARED: a second build's candidate leg overwrites it. So between forge
+  # checking a thing and this script promoting it, the name could already
+  # point at somebody else's build, and the promote would put THAT live under
+  # the first build's sentence. The name was the defect.
+  #
+  # Now forge hands this script $DEPLOY_IDENTITY -- text it made from the
+  # joined commit it checked, with a fingerprint of that content beside it --
+  # and this script:
+  #
+  #   1. tags the candidate image with that identity FIRST, so the thing being
+  #      promoted has a name nothing else can be given;
+  #   2. promotes THAT tag, never the shared one;
+  #   3. prints DEPLOYED_IDENTITY=<what is actually running>, worked out by
+  #      comparing the live tag's image id with the identity tag's rather than
+  #      by repeating what it was told.
+  #
+  # Forge compares the two as text, and a mismatch is a FAILED deploy. Forge
+  # knows nothing about images: what an identity IS belongs here, to the
+  # project, and here it is an image tag plus that image's own id.
+  #
+  # Called with no $DEPLOY_IDENTITY -- by hand, or by a forge from before this
+  # -- it REFUSES rather than falling back to the shared name, because the
+  # shared name is exactly what this change removes.
+  local cand_id cur_id promoted_ref live_id running
+  if [[ -z "${DEPLOY_IDENTITY:-}" ]]; then
+    log "FATAL: no DEPLOY_IDENTITY was handed to this promote. This script promotes the exact thing that was checked, by an identity that cannot be reused; promoting the shared candidate name instead is the defect this refuses. (LIVE untouched)"
+    return 1
+  fi
   cand_id="$(image_id "${CANDIDATE_APP_IMAGE}")"
-  log "MODE=promote project=${COMPOSE_PROJECT} candidate_image=${CANDIDATE_APP_IMAGE} -> live_image=${APP_IMAGE}"
+  log "MODE=promote project=${COMPOSE_PROJECT} identity=${DEPLOY_IDENTITY} candidate_image=${CANDIDATE_APP_IMAGE} -> live_image=${APP_IMAGE}"
   if [[ -z "${cand_id}" ]]; then
     # Loud terminal failure: nothing to promote. The candidate leg never built
     # (or was torn down). The LIVE name is untouched.
     log "FATAL: candidate image ${CANDIDATE_APP_IMAGE} not found -- run the CANDIDATE leg first; refusing to promote (LIVE untouched)"
     return 1
   fi
+  # 0) GIVE WHAT WAS CHECKED ITS OWN NAME, before anything else is touched.
+  #    The identity's own characters are letters, digits, dots and dashes plus
+  #    one '@' between the name and the fingerprint; only that '@' has to
+  #    become a dash for an image reference.
+  promoted_ref="${IDENTITY_IMAGE_PREFIX:-apitest-app}:${DEPLOY_IDENTITY//@/-}"
+  docker tag "${CANDIDATE_APP_IMAGE}" "${promoted_ref}"
+  log "named what was checked: ${promoted_ref}=$(image_id "${promoted_ref}")"
   cur_id="$(image_id "${APP_IMAGE}")"
   # 1) Snapshot the current LIVE build as the rollback tag BEFORE we overwrite it.
   if [[ -n "${cur_id}" ]]; then
@@ -197,13 +233,27 @@ deploy_promote() {
     docker tag "${APP_IMAGE}" "${ROLLBACK_IMAGE_REF}" || true
     log "no current ${APP_IMAGE} to snapshot (first promote)"
   fi
-  # 2) Re-tag the candidate-built image as the live image tag -- NO rebuild.
-  docker tag "${CANDIDATE_APP_IMAGE}" "${APP_IMAGE}"
-  log "promoted image: ${CANDIDATE_APP_IMAGE} -> ${APP_IMAGE}=$(image_id "${APP_IMAGE}")"
+  # 2) Re-tag THE IDENTITY'S OWN IMAGE as the live image tag -- NO rebuild.
+  #    This is the line that changed: it used to name the shared candidate.
+  docker tag "${promoted_ref}" "${APP_IMAGE}"
+  log "promoted image: ${promoted_ref} -> ${APP_IMAGE}=$(image_id "${APP_IMAGE}")"
   # 3) Bring the LIVE project up on the promoted image WITHOUT rebuilding.
   docker compose -p "${COMPOSE_PROJECT}" -f "${COMPOSE_FILE}" up -d --no-build
   wait_for_health
-  log "after: ${APP_IMAGE}=$(image_id "${APP_IMAGE}") (live serving promoted candidate ${cand_id})"
+  live_id="$(image_id "${APP_IMAGE}")"
+  # 4) SAY WHAT IS RUNNING, read back rather than repeated. The live tag and
+  #    the identity's own tag are the same image only if the promote really
+  #    happened, so the identity is reported only when the two ids match.
+  if [[ -n "${live_id}" && "${live_id}" == "$(image_id "${promoted_ref}")" ]]; then
+    running="${DEPLOY_IDENTITY}"
+  else
+    running="not-${DEPLOY_IDENTITY}"
+    log "WARNING: ${APP_IMAGE} is not the image ${promoted_ref} names"
+  fi
+  log "after: ${APP_IMAGE}=${live_id} (live serving ${promoted_ref}, candidate ${cand_id})"
+  # THE ONE LINE FORGE READS BACK. Forge compares it, as text, with what it
+  # handed over; anything but an exact match is a FAILED deploy.
+  printf 'DEPLOYED_IDENTITY=%s\n' "${running}"
   log "promote complete"
 }
 

@@ -147,18 +147,29 @@ assert "takes NO rollback snapshot (candidate is throwaway)" \
 assert "never touches the LIVE project" \
   lacks "-p apitest-f2 " "${LAST_DOCKER_LOG}"
 
-# --- T6: PROMOTE -------------------------------------------------------------
-PROMOTE=1 \
+# --- T6: PROMOTE, by the identity forge handed over -------------------------
+# Changed 23 September 2026 with deploy.sh itself: the promote no longer
+# re-tags the SHARED candidate name as live. Forge hands it $DEPLOY_IDENTITY —
+# text it made from the joined commit it checked — and this script gives the
+# candidate image that name first, promotes THAT, and reports what is running.
+PROMOTE=1 DEPLOY_IDENTITY="j-0123456789ab@ffeeddccbbaa9988" \
   SEED_IMAGES="apitest-f2-app:latest apitest-f2-cand-app:latest" \
   run_case "T6 promote"
 assert "exit 0" test "${LAST_RC}" -eq 0
+assert "names what was checked with the identity it was handed" \
+  has "docker tag apitest-f2-cand-app:latest apitest-app:j-0123456789ab-ffeeddccbbaa9988" "${LAST_DOCKER_LOG}"
 assert "snapshots the current LIVE image as the rollback tag" \
   has "docker tag apitest-f2-app:latest apitest-app:rollback-pre-deploy" "${LAST_DOCKER_LOG}"
-assert "re-tags the candidate-built image as the live image" \
-  has "docker tag apitest-f2-cand-app:latest apitest-f2-app:latest" "${LAST_DOCKER_LOG}"
-assert "snapshot is taken BEFORE the candidate->live re-tag" \
+assert "promotes THE IDENTITY'S image, not the shared candidate name" \
+  has "docker tag apitest-app:j-0123456789ab-ffeeddccbbaa9988 apitest-f2-app:latest" "${LAST_DOCKER_LOG}"
+assert "never re-tags the shared candidate name straight onto live" \
+  lacks "docker tag apitest-f2-cand-app:latest apitest-f2-app:latest" "${LAST_DOCKER_LOG}"
+assert "names it BEFORE the rollback snapshot, so the thing promoted is pinned first" \
+  before "docker tag apitest-f2-cand-app:latest apitest-app:j-0123456789ab-ffeeddccbbaa9988" \
+         "docker tag apitest-f2-app:latest apitest-app:rollback-pre-deploy" "${LAST_DOCKER_LOG}"
+assert "snapshot is taken BEFORE the identity->live re-tag" \
   before "docker tag apitest-f2-app:latest apitest-app:rollback-pre-deploy" \
-         "docker tag apitest-f2-cand-app:latest apitest-f2-app:latest" "${LAST_DOCKER_LOG}"
+         "docker tag apitest-app:j-0123456789ab-ffeeddccbbaa9988 apitest-f2-app:latest" "${LAST_DOCKER_LOG}"
 assert "brings the LIVE project up WITH --no-build (no rebuild)" \
   has "docker compose -p apitest-f2 -f docker-compose.yml up -d --no-build" "${LAST_DOCKER_LOG}"
 assert "does NOT rebuild in promote mode" \
@@ -167,9 +178,26 @@ assert "does NOT bring the -cand project up during promote" \
   lacks "-p apitest-f2-cand -f docker-compose.yml -f deploy/docker-compose.candidate.yml up" "${LAST_DOCKER_LOG}"
 assert "probes the live :8901 port" \
   has "localhost:8901/health" "${LAST_CURL_LOG}"
+assert "REPORTS the identity of what is now running, on one line forge reads" \
+  has "DEPLOYED_IDENTITY=j-0123456789ab@ffeeddccbbaa9988" "${LAST_OUT}"
+
+# --- T6b: PROMOTE with NO identity -> loud refusal ---------------------------
+# The shared name is the defect this change removes, so a promote with nothing
+# to promote BY refuses rather than falling back to it.
+PROMOTE=1 \
+  SEED_IMAGES="apitest-f2-app:latest apitest-f2-cand-app:latest" \
+  run_case "T6b promote with no identity"
+assert "non-zero exit" test "${LAST_RC}" -ne 0
+assert "loud FATAL saying why" \
+  has "FATAL: no DEPLOY_IDENTITY was handed to this promote" "${LAST_OUT}"
+assert "never re-tagged anything (LIVE untouched)" \
+  lacks "docker tag" "${LAST_DOCKER_LOG}"
+assert "never ran compose up" \
+  lacks "docker compose" "${LAST_DOCKER_LOG}"
 
 # --- T7: PROMOTE with the candidate image ABSENT -> loud fail ----------------
-PROMOTE=1 SEED_IMAGES="apitest-f2-app:latest" \
+PROMOTE=1 DEPLOY_IDENTITY="j-0123456789ab@ffeeddccbbaa9988" \
+  SEED_IMAGES="apitest-f2-app:latest" \
   run_case "T7 promote missing candidate image"
 assert "non-zero exit" test "${LAST_RC}" -ne 0
 assert "loud FATAL naming the missing candidate image" \
