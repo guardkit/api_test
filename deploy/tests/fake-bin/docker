@@ -15,8 +15,18 @@
 # harness's `SEED_IMAGES="a b c"` line is unchanged.
 set -u
 
-LOG="${FAKE_DOCKER_LOG:?FAKE_DOCKER_LOG unset}"
-STATE="${FAKE_DOCKER_STATE:?FAKE_DOCKER_STATE unset}"
+# WHERE IT WRITES WHEN NOBODY SAID (26 September 2026). This used to REFUSE
+# without $FAKE_DOCKER_LOG and $FAKE_DOCKER_STATE, and that made the harness
+# unusable through the factory's real route: a build's environment is built
+# from the factory's own named list plus the names THIS PROJECT declares, and
+# these two are a test harness's names, not a declaration this project should
+# be carrying. So they fall back to the scratch directory every launch already
+# carries ($TMPDIR, on the factory's own list). The harness in
+# deploy/tests/run_deploy_tests.sh still sets both explicitly, so it is
+# unchanged; a run through the real route now works with neither.
+LOG="${FAKE_DOCKER_LOG:-${TMPDIR:-/tmp}/fake-docker.log}"
+STATE="${FAKE_DOCKER_STATE:-${TMPDIR:-/tmp}/fake-docker-images}"
+[[ -f "${STATE}" ]] || : >"${STATE}"
 printf 'docker %s\n' "$*" >>"${LOG}"
 
 # The id recorded for a ref, or empty when nothing knows it. A line with no id

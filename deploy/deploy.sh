@@ -591,23 +591,45 @@ tear_one_candidate_down() {
 }
 
 candidate_down() {
-  # Teardown helper: remove a candidate project + its db volume + orphans. Used
-  # when a candidate gate FAILS (live never touched) or after a promote when
-  # candidate.keep is false. The LIVE project is never named here.
+  # Teardown: remove THE ONE candidate project this teardown was told about,
+  # its db volume and its orphans. Used when a candidate gate FAILS (live never
+  # touched) or after a promote when candidate.keep is false. The LIVE project
+  # is never named here.
   #
-  # Changed 25 September 2026 with the candidate project itself. A teardown
-  # that is handed the same identity the check was handed tears down exactly
-  # that check's project and nothing else. One that is handed nothing goes and
-  # LOOKS for candidate projects of this repository's, because there is no
-  # longer one name it could assume -- and it says which ones it found.
-  local project token found any
-  if token="$(candidate_token)"; then
-    project="${CANDIDATE_PROJECT_PREFIX}-${token}"
-    log "MODE=candidate_down project=${project} (named by the identity this teardown was handed)"
-    tear_one_candidate_down "${project}"
-    return 0
+  # BY NAME OR NOT AT ALL (26 September 2026, after the fourth review of the
+  # teardown). This used to go LOOKING when it was handed nothing: it asked
+  # docker for every project whose name began with this repository's candidate
+  # prefix and took them all down with their volumes. That was driven -- three
+  # builds had candidates up, the first one ended without publishing, and all
+  # three candidates and all three databases went. One build's cleanup must
+  # never touch another build's candidate, and the only thing that tells them
+  # apart is the identity the CHECK was handed. So with no identity this
+  # refuses and removes nothing. The sweep that removes candidates it was not
+  # told the name of is still here, but only as a by-hand command (see
+  # sweep_candidates_by_hand); nothing the factory sends can reach it.
+  local project token
+  if ! token="$(candidate_token)"; then
+    log "FATAL: no identity and no token were handed to this teardown, so there is no one candidate it could name. Nothing was removed. This script never goes looking for candidates to remove: what it found could belong to another build's check, and removing those took three builds' databases with them. Hand it the same identity the check was handed (DEPLOY_IDENTITY), or, to clear every candidate of this repository's by hand, run: deploy/deploy.sh sweep-candidates --remove-every-candidate"
+    return 2
   fi
-  log "MODE=candidate_down: no identity and no token were handed to this teardown, so it asks docker which candidate projects of ${CANDIDATE_PROJECT_PREFIX} are up"
+  project="${CANDIDATE_PROJECT_PREFIX}-${token}"
+  log "MODE=candidate_down project=${project} (named by the identity this teardown was handed)"
+  tear_one_candidate_down "${project}"
+}
+
+sweep_candidates_by_hand() {
+  # THE ONLY THING IN THIS SCRIPT THAT REMOVES A CANDIDATE IT WAS NOT TOLD THE
+  # NAME OF, and it is reachable only by a person running this script with two
+  # words on the command line. The factory runs this script with NO arguments
+  # at all (deploy/profile.yaml names the script and nothing else, and the
+  # sandbox wrapper forwards no arguments either), so no request, no runbook
+  # and no environment setting can reach this.
+  local confirmed="$1" project found any
+  if [[ "${confirmed}" != "--remove-every-candidate" ]]; then
+    log "FATAL: sweep-candidates removes EVERY candidate project of ${CANDIDATE_PROJECT_PREFIX} and every one of their volumes, including candidates other builds are still checking. Say so explicitly: deploy/deploy.sh sweep-candidates --remove-every-candidate"
+    return 2
+  fi
+  log "MODE=sweep-candidates BY HAND: asking docker which candidate projects of ${CANDIDATE_PROJECT_PREFIX} are up"
   found="$(docker compose ls --all -q 2>/dev/null || true)"
   any=0
   while IFS= read -r project; do
@@ -648,6 +670,19 @@ resolve_and_run() {
 
 main() {
   log "repo_root=${REPO_ROOT}"
+  # THE FACTORY SENDS NO ARGUMENTS. It names this script in deploy/profile.yaml
+  # and the modes ride in the environment; the sandbox wrapper forwards no
+  # arguments either. So the one command that takes an argument -- the by-hand
+  # sweep -- cannot be reached by anything the factory sends, and anything else
+  # on the command line is a mistake worth saying out loud.
+  if [[ "${1:-}" == "sweep-candidates" ]]; then
+    sweep_candidates_by_hand "${2:-}"
+    return
+  fi
+  if (($# > 0)); then
+    log "FATAL: this script takes no arguments (the mode rides in the environment); the only by-hand command is 'sweep-candidates --remove-every-candidate'. Got: $*"
+    return 2
+  fi
   resolve_and_run
 }
 

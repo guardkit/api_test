@@ -54,7 +54,10 @@ run_case() {
 
   local out rc
   set +e
-  out="$(PATH="${FAKE_BIN}:${PATH}" "${DEPLOY_SH}" 2>&1)"
+  # Anything after the case's name is the COMMAND LINE the script is run with.
+  # The factory sends none; the by-hand sweep is the only thing that takes one,
+  # which is exactly what makes it unreachable from the factory.
+  out="$(PATH="${FAKE_BIN}:${PATH}" "${DEPLOY_SH}" "$@" 2>&1)"
   rc=$?
   set -e
 
@@ -310,23 +313,77 @@ assert "never brings anything up during teardown" \
 assert "never touches the LIVE project" \
   lacks "-p apitest-f2 " "${LAST_DOCKER_LOG}"
 
-# --- T8b: a teardown handed nothing GOES AND LOOKS ---------------------------
-# There is no single shared name to assume any more, so a teardown with no
-# identity asks docker which candidate projects of this repository are up.
+# --- T8b: a teardown handed nothing REFUSES AND REMOVES NOTHING --------------
+# It used to go looking: it asked docker for every project whose name began
+# with this repository's candidate prefix and took them all down with their
+# volumes, so one build's ending removed other builds' candidates and their
+# databases. There is no name it can assume and none it may guess.
 _T8B_DIR="$(mktemp -d)"
 SCRATCH="${_T8B_DIR}" CANDIDATE=1 DEPLOY_IDENTITY="${_T5_IDENTITY}" \
   SEED_IMAGES="apitest-f2-app:latest" \
-  run_case "T8b a check, so there is something to find"
+  run_case "T8b a check, so there is something that could have been found"
 assert "the check passed" test "${LAST_RC}" -eq 0
 SCRATCH="${_T8B_DIR}" CANDIDATE_DOWN=1 \
   run_case "T8b teardown with nothing handed to it"
+assert "non-zero exit" test "${LAST_RC}" -ne 0
+assert "loud FATAL saying it was handed no identity" \
+  has "FATAL: no identity and no token were handed to this teardown" "${LAST_OUT}"
+assert "says what a person does instead" \
+  has "sweep-candidates --remove-every-candidate" "${LAST_OUT}"
+assert "never asks docker which projects are up" \
+  lacks "docker compose ls" "${LAST_DOCKER_LOG}"
+assert "removes nothing at all" lacks "down -v" "${LAST_DOCKER_LOG}"
+
+# --- T8c: ONE BUILD'S TEARDOWN LEAVES THE OTHERS' CANDIDATES ALONE -----------
+# Three checks, three candidates. The first build's teardown, handed the first
+# build's identity, takes the first build's candidate and nothing else.
+_T8C_A="j-aaaaaaaaaaaa@1111111111111111"
+_T8C_B="j-bbbbbbbbbbbb@2222222222222222"
+_T8C_C="j-cccccccccccc@3333333333333333"
+_T8C_PA="apitest-f2-cand-j-aaaaaaaaaaaa-1111111111111111"
+_T8C_PB="apitest-f2-cand-j-bbbbbbbbbbbb-2222222222222222"
+_T8C_PC="apitest-f2-cand-j-cccccccccccc-3333333333333333"
+SCRATCH="${_T8B_DIR}" CANDIDATE=1 DEPLOY_IDENTITY="${_T8C_A}" \
+  SEED_IMAGES="apitest-f2-app:latest" run_case "T8c build A checks"
+assert "A's check passed" test "${LAST_RC}" -eq 0
+SCRATCH="${_T8B_DIR}" CANDIDATE=1 DEPLOY_IDENTITY="${_T8C_B}" \
+  SEED_IMAGES="apitest-f2-app:latest" run_case "T8c build B checks"
+assert "B's check passed" test "${LAST_RC}" -eq 0
+SCRATCH="${_T8B_DIR}" CANDIDATE=1 DEPLOY_IDENTITY="${_T8C_C}" \
+  SEED_IMAGES="apitest-f2-app:latest" run_case "T8c build C checks"
+assert "C's check passed" test "${LAST_RC}" -eq 0
+SCRATCH="${_T8B_DIR}" CANDIDATE_DOWN=1 DEPLOY_IDENTITY="${_T8C_A}" \
+  run_case "T8c build A's teardown"
+assert "exit 0" test "${LAST_RC}" -eq 0
+assert "A's candidate and its volumes are gone" \
+  has "docker compose -p ${_T8C_PA} -f docker-compose.yml -f deploy/docker-compose.candidate.yml down -v --remove-orphans" "${LAST_DOCKER_LOG}"
+assert "B's candidate is untouched" lacks "-p ${_T8C_PB} " "${LAST_DOCKER_LOG}"
+assert "C's candidate is untouched" lacks "-p ${_T8C_PC} " "${LAST_DOCKER_LOG}"
+assert "never asks docker which projects are up" \
+  lacks "docker compose ls" "${LAST_DOCKER_LOG}"
+
+# --- T8d: the sweep still exists, BY HAND, and says so before it runs --------
+SCRATCH="${_T8B_DIR}" run_case "T8d sweep with no confirmation" sweep-candidates
+assert "non-zero exit" test "${LAST_RC}" -ne 0
+assert "says it removes every candidate and asks to be told so" \
+  has "sweep-candidates removes EVERY candidate project" "${LAST_OUT}"
+assert "removes nothing" lacks "down -v" "${LAST_DOCKER_LOG}"
+SCRATCH="${_T8B_DIR}" run_case "T8d sweep, confirmed" \
+  sweep-candidates --remove-every-candidate
 assert "exit 0" test "${LAST_RC}" -eq 0
 assert "asks docker which projects are up" \
   has "docker compose ls --all -q" "${LAST_DOCKER_LOG}"
-assert "tears down the candidate project it FOUND" \
-  has "docker compose -p ${_T5_PROJECT} -f docker-compose.yml -f deploy/docker-compose.candidate.yml down -v --remove-orphans" "${LAST_DOCKER_LOG}"
+assert "takes B's candidate down" has "-p ${_T8C_PB} " "${LAST_DOCKER_LOG}"
+assert "takes C's candidate down" has "-p ${_T8C_PC} " "${LAST_DOCKER_LOG}"
 assert "never tears the LIVE project down" \
   lacks "-p apitest-f2 -f docker-compose.yml -f deploy/docker-compose.candidate.yml down" "${LAST_DOCKER_LOG}"
+
+# --- T8e: anything else on the command line is refused ----------------------
+SCRATCH="${_T8B_DIR}" run_case "T8e an argument nobody should be sending" promote
+assert "non-zero exit" test "${LAST_RC}" -ne 0
+assert "says the mode rides in the environment" \
+  has "FATAL: this script takes no arguments" "${LAST_OUT}"
+assert "ran no docker at all" lacks "docker" "${LAST_DOCKER_LOG}"
 rm -rf "${_T8B_DIR}"
 
 # --- T9: ambiguous mode combos -> loud refuse, nothing runs ------------------
