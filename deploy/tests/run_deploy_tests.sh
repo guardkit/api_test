@@ -523,6 +523,43 @@ assert "says which container could not be asked" \
   has "RUNNING_IDENTITY_UNKNOWN=" "${LAST_OUT}"
 rm -rf "${_T14B_DIR}"
 
+# --- T14c: A WARNING IS NOT AN ANSWER AND IS NOT A FAILURE -------------------
+# The fourth review's smaller fault, driven. The query used to be captured with
+# `2>&1`, so an ordinary engine warning — and the real engine warns readily —
+# was read as the first line of the answer, failed the container-id shape check
+# and made the leg exit non-zero. It failed in the safe direction, but it would
+# have stopped every deploy and every candidate check on the real engine.
+_T14C_DIR="$(mktemp -d)"
+_T14C_IDENTITY="j-eeeeeeeeeeee@5555555555555555"
+printf 'apitest-app:j-eeeeeeeeeeee-5555555555555555 sha256:fake-LIVE-E\n' >"${_T14C_DIR}/images"
+printf 'apitest-f2-app:latest sha256:fake-LIVE-E\n' >>"${_T14C_DIR}/images"
+printf 'container:apitest-f2-app-1 sha256:fake-LIVE-E\n' >>"${_T14C_DIR}/images"
+SCRATCH="${_T14C_DIR}" RUNNING_IDENTITY=1 FAKE_DOCKER_PS_WARNS=1 \
+  run_case "T14c the query succeeds and the engine warns"
+assert "exit 0: a warning is not a failed observation" test "${LAST_RC}" -eq 0
+assert "answers what is really running" \
+  has "RUNNING_IDENTITY=${_T14C_IDENTITY}" "${LAST_OUT}"
+assert "does not say the question could not be answered" \
+  lacks "RUNNING_IDENTITY_UNKNOWN=" "${LAST_OUT}"
+assert "the warning is never read as the answer" \
+  lacks "RUNNING_IDENTITY=WARN" "${LAST_OUT}"
+rm -rf "${_T14C_DIR}"
+
+# --- T14d: and the candidate check survives the same warning ----------------
+_T14D_DIR="$(mktemp -d)"
+_T14D_IDENTITY="j-ffffffffffff@6666666666666666"
+_T14D_PROJECT="apitest-f2-cand-j-ffffffffffff-6666666666666666"
+: >"${_T14D_DIR}/images"
+SCRATCH="${_T14D_DIR}" CANDIDATE=1 DEPLOY_IDENTITY="${_T14D_IDENTITY}" \
+  FAKE_DOCKER_PS_WARNS=1 \
+  run_case "T14d the candidate check with an engine that warns"
+assert "the check passed" test "${LAST_RC}" -eq 0
+assert "it captured its own container's image" \
+  has "CHECKED_ARTIFACT=sha256:fake-${_T14D_PROJECT}-app_latest" "${LAST_OUT}"
+assert "it never mistook the warning for a container id" \
+  lacks "could not be asked which container it started" "${LAST_OUT}"
+rm -rf "${_T14D_DIR}"
+
 # --- T12c: RUNNING_IDENTITY is a mode like the others (ambiguity refused) ----
 RUNNING_IDENTITY=1 PROMOTE=1 SEED_IMAGES="apitest-f2-app:latest" \
   run_case "T12c ambiguous PROMOTE+RUNNING_IDENTITY"

@@ -131,13 +131,25 @@ identity_ref() {
 #   ok <container id>   -- a query that SUCCEEDED and found that container
 #   ok                  -- a query that SUCCEEDED and found nothing up
 #   error <reason>      -- the query did not succeed; NOTHING may be concluded
+#
+# AND THE TWO STREAMS ARE KEPT APART (26 September 2026, the fourth review).
+# The first cure captured the query with `2>&1`, which put the engine's own
+# chatter in front of the answer: a docker that SUCCEEDS and warns -- and the
+# real engine warns readily, e.g. about an obsolete compose attribute -- had
+# its warning read as the first line of the answer, failed the container-id
+# shape check, and made the leg exit non-zero. It failed safely, in that
+# nothing was deployed, but it would have stopped every deploy and every
+# candidate check. Ids come from stdout; stderr is kept for the REASON only.
 compose_container() {
-  local project="$1" out rc first
-  out="$(docker compose -p "${project}" -f "${COMPOSE_FILE}" ps -q app 2>&1)" \
+  local project="$1" out rc first chatter errs
+  errs="$(mktemp "${TMPDIR:-/tmp}/deploy-sh-query.XXXXXX")"
+  out="$(docker compose -p "${project}" -f "${COMPOSE_FILE}" ps -q app 2>"${errs}")" \
     && rc=0 || rc=$?
+  chatter="$(tr '\n' ' ' <"${errs}" | cut -c1-160)"
+  rm -f "${errs}"
   if ((rc != 0)); then
     printf 'error the query failed: `docker compose -p %s ps -q app` exited %s (%s)\n' \
-      "${project}" "${rc}" "$(printf '%s' "${out}" | tr '\n' ' ' | cut -c1-160)"
+      "${project}" "${rc}" "${chatter}"
     return 0
   fi
   first="$(printf '%s' "${out}" | head -n1)"

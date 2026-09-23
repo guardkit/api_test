@@ -90,6 +90,12 @@ container_of_project() { printf 'container:%s-app-1\n' "$1"; }
 # which the script turned a failing docker into "nothing is running".
 FAIL_PS="${FAKE_DOCKER_PS_FAILS:-}"
 
+# `docker compose ... ps` SUCCEEDS and warns on stderr while this is set. The
+# real engine warns readily -- an obsolete compose attribute is the everyday
+# one -- and the fourth review found the script reading that warning as the
+# first line of the answer. A warning is not an answer and is not a failure.
+WARN_PS="${FAKE_DOCKER_PS_WARNS:-}"
+
 case "${1:-}" in
   image)
     # docker image inspect --format <fmt> <ref>. Two formats are modelled:
@@ -202,6 +208,10 @@ case "${1:-}" in
         if [[ -n "${FAIL_PS}" ]]; then
           printf 'Cannot connect to the Docker daemon. Is the docker daemon running?\n' >&2
           exit 1
+        fi
+        if [[ -n "${WARN_PS}" ]]; then
+          printf "WARN[0000] %s: the attribute \`version\` is obsolete, it will be ignored\n" \
+            "${COMPOSE_FILE:-docker-compose.yml}" >&2
         fi
         if id_of "${this_container}" >/dev/null 2>&1; then
           printf '%s\n' "${this_container#container:}"
