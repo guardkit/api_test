@@ -117,7 +117,12 @@ EXPECT_ALLOW="sbx policy allow network --sandbox ${S_NAME} ${S_ALLOW}"
 # them on 23 September 2026: forge hands the wrapper the name it made for the
 # exact thing it checked, and the promote that has to use it runs on the
 # other side of this line. Left off, deploy_promote refuses outright.
-EXPECT_EXEC="sbx exec -w ${REPO_ROOT} -e CANDIDATE -e PROMOTE -e REVERT -e CANDIDATE_DOWN -e CANDIDATE_PORT -e ROLLBACK_IMAGE_REF -e ENV_FILE -e DEPLOY_IDENTITY ${S_NAME} deploy/deploy.sh"
+# DEPLOY_ARTIFACT and RUNNING_IDENTITY joined them on 24 September 2026, for the
+# same reason: the first is the artifact's own id, captured when the candidate
+# was checked, which the promote now refuses without; the second asks deploy.sh,
+# read-only, what the live container is running, which forge asks before it
+# decides whether to deploy anything at all.
+EXPECT_EXEC="sbx exec -w ${REPO_ROOT} -e CANDIDATE -e PROMOTE -e REVERT -e CANDIDATE_DOWN -e CANDIDATE_PORT -e ROLLBACK_IMAGE_REF -e ENV_FILE -e DEPLOY_IDENTITY -e DEPLOY_ARTIFACT -e RUNNING_IDENTITY ${S_NAME} deploy/deploy.sh"
 EXPECT_KEEPER="systemctl --user start forge-sandbox-keeper@${S_NAME}"
 # One "is this address allowed?" question per entry of the profile's list. A
 # bare host is asked about over plain HTTP, because the sandbox tool judges a
@@ -263,9 +268,9 @@ CANDIDATE=1 CANDIDATE_PORT=8902 ROLLBACK_IMAGE_REF="apitest-app:rollback-pre-dep
   FAKE_SBX_LS="${S_NAME}" FAKE_SBX_DENIED="" \
   run_case "S6 runs deploy.sh inside with exactly the expected arguments"
 assert "exit 0" test "${LAST_RC}" -eq 0
-assert "exact arguments: working directory, the eight passed-through names, sandbox, script" \
+assert "exact arguments: working directory, the ten passed-through names, sandbox, script" \
   has_line "${EXPECT_EXEC}" "${LAST_SBX_LOG}"
-for _n in CANDIDATE PROMOTE REVERT CANDIDATE_DOWN CANDIDATE_PORT ROLLBACK_IMAGE_REF ENV_FILE DEPLOY_IDENTITY; do
+for _n in CANDIDATE PROMOTE REVERT CANDIDATE_DOWN CANDIDATE_PORT ROLLBACK_IMAGE_REF ENV_FILE DEPLOY_IDENTITY DEPLOY_ARTIFACT RUNNING_IDENTITY; do
   assert "passes ${_n} through to the inner run" \
     has "sbx-exec-env ${_n}=" "${LAST_SBX_LOG}"
 done
@@ -282,8 +287,8 @@ assert "the identity forge handed over really reaches the inner run" \
   has_line "sbx-exec-env DEPLOY_IDENTITY=j-0123456789ab@fedcba9876543210" "${LAST_SBX_LOG}"
 assert "runs the repository's own deploy script, unchanged" \
   has "${S_NAME} deploy/deploy.sh" "${LAST_SBX_LOG}"
-assert "does not pass any name beyond the eight agreed" \
-  test "$(printf '%s\n' "${LAST_SBX_LOG}" | grep -c '^sbx-exec-env ')" -eq 8
+assert "does not pass any name beyond the ten agreed" \
+  test "$(printf '%s\n' "${LAST_SBX_LOG}" | grep -c '^sbx-exec-env ')" -eq 10
 
 # --- S7: the order of the steps ---------------------------------------------
 SANDBOX_NAME="${S_NAME}" SANDBOX_MEMORY="${S_MEMORY}" SANDBOX_CPUS="${S_CPUS}" \

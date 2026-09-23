@@ -29,11 +29,26 @@ compose:
 # sandbox, but until they were written down here the deploy worked by matching
 # forge's defaults rather than by this project having said anything — and a
 # project that declares nothing is not deployed blind, it is not deployed.
-#   setting     -- the setting the identity is handed to the step in
-#   reported_as -- the marker the step prints one "<marker>=<identity>" line with
+#   setting          -- the setting the identity is handed to the step in
+#   reported_as      -- the marker the step prints one "<marker>=<identity>" line with
+# Added 24 September 2026, after the second review of the executor stage. The
+# promote used to make its unique name out of the SHARED candidate name, at
+# promote time, so a second build that replaced that name in between had its
+# image put live under this build's identity. The artifact is captured where it
+# is CHECKED now and carried by its own immutable id, and what is running is
+# read off the running container rather than off a tag.
+#   checked_as       -- the marker the CHECK prints the artifact it checked under
+#   artifact_setting -- the setting that artifact is handed BACK to the promote in
+#   asked_with       -- the setting that asks this project, read-only and changing
+#                       nothing, what it is running right now
+#   running_as       -- the marker that read-only answer prints under
 identity:
   setting: DEPLOY_IDENTITY
   reported_as: DEPLOYED_IDENTITY
+  checked_as: CHECKED_ARTIFACT
+  artifact_setting: DEPLOY_ARTIFACT
+  asked_with: RUNNING_IDENTITY
+  running_as: RUNNING_IDENTITY
 # The Docker Sandbox this repository deploys into (Rich's decision, 2026-09-06:
 # every merge deploys the feature into a microVM with its own kernel and its own
 # Docker engine, made by Docker's `sbx` tool). One long-lived sandbox per

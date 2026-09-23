@@ -312,6 +312,16 @@ allow_network() {
 # a commit-derived name and a fingerprint of the content, both public facts
 # about this repository's own history. The name this project declares for it is
 # in deploy/profile.yaml's identity block, and the two must stay the same.
+#
+# DEPLOY_ARTIFACT and RUNNING_IDENTITY joined the list on 24 September 2026, for
+# the same reason and with the same consequence if they are left off.
+# DEPLOY_ARTIFACT is the artifact's own id, captured when the candidate was
+# CHECKED; without it the promote refuses rather than resolving the shared
+# candidate name, which is the defect that change removes. RUNNING_IDENTITY asks
+# deploy.sh, read-only, what the live container is running; forge asks that
+# before it decides whether to deploy at all, so that the decision is made
+# against the target rather than against forge's own ledger. Neither carries a
+# secret: one is an image id, the other is a mode flag.
 run_deploy_inside() {
   local rc=0
   log "running deploy/deploy.sh inside ${SANDBOX_NAME} (working directory ${REPO_ROOT})"
@@ -324,6 +334,8 @@ run_deploy_inside() {
     -e ROLLBACK_IMAGE_REF \
     -e ENV_FILE \
     -e DEPLOY_IDENTITY \
+    -e DEPLOY_ARTIFACT \
+    -e RUNNING_IDENTITY \
     "${SANDBOX_NAME}" deploy/deploy.sh || rc=$?
   return "${rc}"
 }

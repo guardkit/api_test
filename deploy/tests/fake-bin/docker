@@ -21,16 +21,39 @@ printf 'docker %s\n' "$*" >>"${LOG}"
 
 # The id recorded for a ref, or empty when nothing knows it. A line with no id
 # beside it is a seeded image and gets one made from its own name.
+#
+# AN ID IS ALSO A REF (24 September 2026). Real docker resolves an image id the
+# same way it resolves a tag, and that is the whole point of the promote's cure:
+# the recorded artifact is handed back as an ID and resolved as one, never
+# through the shared candidate tag. So a lookup that matches no ref is tried
+# again against every id in the store.
 id_of() {
-  local line
-  line="$(grep -m1 -E "^$(printf '%s' "$1" | sed 's/[][\.*^$/]/\\&/g')( |$)" \
-    "${STATE}" 2>/dev/null || true)"
-  [[ -z "${line}" ]] && return 1
-  if [[ "${line}" == *" "* ]]; then
-    printf '%s\n' "${line#* }"
-  else
-    printf 'sha256:fake-%s\n' "$(printf '%s' "$1" | tr '/:' '__')"
+  local line escaped
+  escaped="$(printf '%s' "$1" | sed 's/[][\.*^$/]/\\&/g')"
+  line="$(grep -m1 -E "^${escaped}( |$)" "${STATE}" 2>/dev/null || true)"
+  if [[ -n "${line}" ]]; then
+    if [[ "${line}" == *" "* ]]; then
+      printf '%s\n' "${line#* }"
+    else
+      printf 'sha256:fake-%s\n' "$(printf '%s' "$1" | tr '/:' '__')"
+    fi
+    return 0
   fi
+  # Not a ref. Is it an id something in the store points at?
+  while IFS= read -r line; do
+    [[ -z "${line}" ]] && continue
+    if [[ "${line}" == *" "* && "${line#* }" == "$1" ]]; then
+      printf '%s\n' "$1"
+      return 0
+    fi
+    if [[ "${line}" != *" "* ]]; then
+      if [[ "sha256:fake-$(printf '%s' "${line}" | tr '/:' '__')" == "$1" ]]; then
+        printf '%s\n' "$1"
+        return 0
+      fi
+    fi
+  done <"${STATE}"
+  return 1
 }
 
 known() { id_of "$1" >/dev/null 2>&1; }
@@ -47,17 +70,58 @@ put() {
   printf '%s %s\n' "${ref}" "${id}" >>"${STATE}"
 }
 
+#: The container the LIVE compose project runs its app service in. One is
+#: enough for this harness; its line in the store is "container:<id> <image id>",
+#: written when `compose up` runs on the live project and read by
+#: `docker inspect`, which is how deploy.sh now finds out what is RUNNING
+#: rather than what a tag happens to point at today.
+LIVE_CONTAINER="${FAKE_LIVE_CONTAINER:-apitest-f2-app-1}"
+LIVE_PROJECT="${FAKE_LIVE_PROJECT:-apitest-f2}"
+
 case "${1:-}" in
   image)
-    # docker image inspect --format '{{.Id}}' <ref>
+    # docker image inspect --format <fmt> <ref>. Two formats are modelled:
+    #   {{.Id}}                 -> the image's own id
+    #   {{range .RepoTags}}...  -> every ref in the store sharing that id
     if [[ "${2:-}" == "inspect" ]]; then
       ref=""
       for a in "$@"; do ref="$a"; done # last arg is the ref
-      if id_of "${ref}"; then
+      fmt=""
+      prev=""
+      for a in "$@"; do
+        if [[ "${prev}" == "--format" ]]; then fmt="$a"; fi
+        prev="$a"
+      done
+      if ! this_id="$(id_of "${ref}")"; then
+        exit 1 # absent -> non-zero, like real docker
+      fi
+      if [[ "${fmt}" == *RepoTags* ]]; then
+        # Every ref sharing this id, one per line — what real docker's RepoTags
+        # range prints. Each line is resolved the way id_of does, because a
+        # seeded ref with no id beside it derives one from its own name.
+        while IFS= read -r line; do
+          [[ -z "${line}" ]] && continue
+          other="${line%% *}"
+          case "${other}" in container:*) continue ;; esac
+          other_id="$(id_of "${other}")" || continue
+          [[ "${other_id}" == "${this_id}" ]] && printf '%s\n' "${other}"
+        done <"${STATE}"
         exit 0
       fi
-      exit 1 # absent -> non-zero, like real docker
+      printf '%s\n' "${this_id}"
+      exit 0
     fi
+    ;;
+  inspect)
+    # docker inspect --format '{{.Image}}' <container id> — what the CONTAINER
+    # was started from. A tag can be moved onto another image after a container
+    # started; this cannot, which is why the promote's confirmation reads it.
+    cid=""
+    for a in "$@"; do cid="$a"; done
+    if id_of "container:${cid}"; then
+      exit 0
+    fi
+    exit 1
     ;;
   tag)
     src="${2:?}"
@@ -70,7 +134,40 @@ case "${1:-}" in
     exit 1
     ;;
   compose)
-    exit 0 # record-only (already logged above)
+    # Which project, and which verb? Only the LIVE project's container is
+    # modelled: the -cand project has its own lifecycle and nothing here reads
+    # it back.
+    project=""
+    prev=""
+    verb=""
+    for a in "$@"; do
+      if [[ "${prev}" == "-p" ]]; then project="$a"; fi
+      case "$a" in up | down | ps) [[ -z "${verb}" ]] && verb="$a" ;; esac
+      prev="$a"
+    done
+    if [[ "${project}" == "${LIVE_PROJECT}" ]]; then
+      case "${verb}" in
+        up)
+          # The container is (re)created from whatever the live tag names NOW.
+          if live_id="$(id_of "${FAKE_LIVE_IMAGE:-apitest-f2-app:latest}")"; then
+            put "container:${LIVE_CONTAINER}" "${live_id}"
+          fi
+          ;;
+        ps)
+          # `ps -q app` — the container id, or nothing when none is up.
+          if id_of "container:${LIVE_CONTAINER}" >/dev/null 2>&1; then
+            printf '%s\n' "${LIVE_CONTAINER}"
+          fi
+          ;;
+        down)
+          put_remove="container:${LIVE_CONTAINER}"
+          escaped="$(printf '%s' "${put_remove}" | sed 's/[][\.*^$/]/\\&/g')"
+          grep -v -E "^${escaped}( |$)" "${STATE}" >"${STATE}.next" 2>/dev/null || true
+          mv "${STATE}.next" "${STATE}"
+          ;;
+      esac
+    fi
+    exit 0
     ;;
 esac
 exit 0
