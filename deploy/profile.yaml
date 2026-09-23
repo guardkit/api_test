@@ -20,6 +20,20 @@ compose:
   # revert mode re-tags the rollback image and `up -d --no-build`. It now talks to
   # the Docker engine inside the sandbox instead of the one on the host.
   script: deploy/sandbox-deploy.sh
+# How THIS project wants the identity of the thing forge checked handed to its
+# deploy step, and what that step prints to say what is now running. Both names
+# are the project's own to choose; forge carries them as text and knows nothing
+# about what they mean here (here they mean a docker image tag and that image's
+# own id). Declared 23 September 2026: these are the two names deploy/deploy.sh
+# already reads and prints and deploy/sandbox-deploy.sh forwards into the
+# sandbox, but until they were written down here the deploy worked by matching
+# forge's defaults rather than by this project having said anything — and a
+# project that declares nothing is not deployed blind, it is not deployed.
+#   setting     -- the setting the identity is handed to the step in
+#   reported_as -- the marker the step prints one "<marker>=<identity>" line with
+identity:
+  setting: DEPLOY_IDENTITY
+  reported_as: DEPLOYED_IDENTITY
 # The Docker Sandbox this repository deploys into (Rich's decision, 2026-09-06:
 # every merge deploys the feature into a microVM with its own kernel and its own
 # Docker engine, made by Docker's `sbx` tool). One long-lived sandbox per

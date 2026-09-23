@@ -113,7 +113,11 @@ before() {
 # The exact argument lists the wrapper must produce.
 EXPECT_CREATE="sbx create shell ${REPO_ROOT} --name ${S_NAME} --memory ${S_MEMORY} --cpus ${S_CPUS} --publish 127.0.0.1:8901:8901 --publish 127.0.0.1:8902:8902"
 EXPECT_ALLOW="sbx policy allow network --sandbox ${S_NAME} ${S_ALLOW}"
-EXPECT_EXEC="sbx exec -w ${REPO_ROOT} -e CANDIDATE -e PROMOTE -e REVERT -e CANDIDATE_DOWN -e CANDIDATE_PORT -e ROLLBACK_IMAGE_REF -e ENV_FILE ${S_NAME} deploy/deploy.sh"
+# The names the wrapper forwards into the sandbox. DEPLOY_IDENTITY joined
+# them on 23 September 2026: forge hands the wrapper the name it made for the
+# exact thing it checked, and the promote that has to use it runs on the
+# other side of this line. Left off, deploy_promote refuses outright.
+EXPECT_EXEC="sbx exec -w ${REPO_ROOT} -e CANDIDATE -e PROMOTE -e REVERT -e CANDIDATE_DOWN -e CANDIDATE_PORT -e ROLLBACK_IMAGE_REF -e ENV_FILE -e DEPLOY_IDENTITY ${S_NAME} deploy/deploy.sh"
 EXPECT_KEEPER="systemctl --user start forge-sandbox-keeper@${S_NAME}"
 # One "is this address allowed?" question per entry of the profile's list. A
 # bare host is asked about over plain HTTP, because the sandbox tool judges a
@@ -253,14 +257,15 @@ assert "never stopped or disabled anything" lacks "stop" "${LAST_SYSTEMCTL_LOG}"
 
 # --- S6: the inner run, exact arguments and a real mode signal ---------------
 CANDIDATE=1 CANDIDATE_PORT=8902 ROLLBACK_IMAGE_REF="apitest-app:rollback-pre-deploy" \
+  DEPLOY_IDENTITY="j-0123456789ab@fedcba9876543210" \
   SANDBOX_NAME="${S_NAME}" SANDBOX_MEMORY="${S_MEMORY}" SANDBOX_CPUS="${S_CPUS}" \
   SANDBOX_PUBLISH="${S_PUBLISH}" SANDBOX_ALLOW_NETWORK="${S_ALLOW}" \
   FAKE_SBX_LS="${S_NAME}" FAKE_SBX_DENIED="" \
   run_case "S6 runs deploy.sh inside with exactly the expected arguments"
 assert "exit 0" test "${LAST_RC}" -eq 0
-assert "exact arguments: working directory, the seven passed-through names, sandbox, script" \
+assert "exact arguments: working directory, the eight passed-through names, sandbox, script" \
   has_line "${EXPECT_EXEC}" "${LAST_SBX_LOG}"
-for _n in CANDIDATE PROMOTE REVERT CANDIDATE_DOWN CANDIDATE_PORT ROLLBACK_IMAGE_REF ENV_FILE; do
+for _n in CANDIDATE PROMOTE REVERT CANDIDATE_DOWN CANDIDATE_PORT ROLLBACK_IMAGE_REF ENV_FILE DEPLOY_IDENTITY; do
   assert "passes ${_n} through to the inner run" \
     has "sbx-exec-env ${_n}=" "${LAST_SBX_LOG}"
 done
@@ -270,10 +275,15 @@ assert "the candidate port really reaches the inner run" \
   has_line "sbx-exec-env CANDIDATE_PORT=8902" "${LAST_SBX_LOG}"
 assert "the rollback tag really reaches the inner run" \
   has_line "sbx-exec-env ROLLBACK_IMAGE_REF=apitest-app:rollback-pre-deploy" "${LAST_SBX_LOG}"
+# THE IDENTITY ITSELF REACHES THE INNER RUN. Not just the name on the list:
+# the value forge handed this wrapper is what deploy_promote refuses without,
+# and this is the only line between the two.
+assert "the identity forge handed over really reaches the inner run" \
+  has_line "sbx-exec-env DEPLOY_IDENTITY=j-0123456789ab@fedcba9876543210" "${LAST_SBX_LOG}"
 assert "runs the repository's own deploy script, unchanged" \
   has "${S_NAME} deploy/deploy.sh" "${LAST_SBX_LOG}"
-assert "does not pass any name beyond the seven agreed" \
-  test "$(printf '%s\n' "${LAST_SBX_LOG}" | grep -c '^sbx-exec-env ')" -eq 7
+assert "does not pass any name beyond the eight agreed" \
+  test "$(printf '%s\n' "${LAST_SBX_LOG}" | grep -c '^sbx-exec-env ')" -eq 8
 
 # --- S7: the order of the steps ---------------------------------------------
 SANDBOX_NAME="${S_NAME}" SANDBOX_MEMORY="${S_MEMORY}" SANDBOX_CPUS="${S_CPUS}" \

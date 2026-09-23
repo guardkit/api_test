@@ -302,6 +302,16 @@ allow_network() {
 # candidate leg, promote, revert, or the candidate teardown) reaches deploy.sh
 # inside the sandbox unchanged. A name that is not set arrives empty, which is
 # exactly what deploy.sh already expects when the signal is off.
+#
+# DEPLOY_IDENTITY is on the list for the same reason and was added 23 September
+# 2026. It is the name forge made for the exact thing it checked, and forge
+# hands it to THIS script; the promote that has to use it runs on the other side
+# of this line, inside the sandbox. Left off the list it never arrives, and
+# deploy_promote refuses outright rather than promoting the shared candidate
+# name — safe, and it would make every promote fail. It carries no secret: it is
+# a commit-derived name and a fingerprint of the content, both public facts
+# about this repository's own history. The name this project declares for it is
+# in deploy/profile.yaml's identity block, and the two must stay the same.
 run_deploy_inside() {
   local rc=0
   log "running deploy/deploy.sh inside ${SANDBOX_NAME} (working directory ${REPO_ROOT})"
@@ -313,6 +323,7 @@ run_deploy_inside() {
     -e CANDIDATE_PORT \
     -e ROLLBACK_IMAGE_REF \
     -e ENV_FILE \
+    -e DEPLOY_IDENTITY \
     "${SANDBOX_NAME}" deploy/deploy.sh || rc=$?
   return "${rc}"
 }
