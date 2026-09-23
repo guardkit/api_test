@@ -161,17 +161,31 @@ assert "bounded (<= 10s wall for a 2s timeout)" test "${_t4_elapsed}" -le 10
 
 # --- T5: CANDIDATE deploy ----------------------------------------------------
 # Changed 24 September 2026: the candidate leg is where the artifact's identity
-# is CAPTURED, so it is handed the identity and reports the built image's own id.
-CANDIDATE=1 DEPLOY_IDENTITY="j-0123456789ab@ffeeddccbbaa9988" \
-  SEED_IMAGES="apitest-f2-app:latest apitest-f2-cand-app:latest" \
+# is CAPTURED, so it is handed the identity and reports the built image's id.
+# Changed AGAIN 25 September 2026, after the third review. The check used to
+# resolve the SHARED compose-built name after the health check; it now runs on
+# a compose project of its own and reads the image off the container it started.
+_T5_IDENTITY="j-0123456789ab@ffeeddccbbaa9988"
+_T5_PROJECT="apitest-f2-cand-j-0123456789ab-ffeeddccbbaa9988"
+_T5_IMAGE="sha256:fake-${_T5_PROJECT}-app_latest"
+CANDIDATE=1 DEPLOY_IDENTITY="${_T5_IDENTITY}" \
+  SEED_IMAGES="apitest-f2-app:latest" \
   run_case "T5 candidate deploy"
 assert "exit 0" test "${LAST_RC}" -eq 0
-assert "names the built image with the identity, at the CHECK" \
-  has "docker tag sha256:fake-apitest-f2-cand-app_latest apitest-app:j-0123456789ab-ffeeddccbbaa9988" "${LAST_DOCKER_LOG}"
-assert "REPORTS the artifact's own id, which is what forge records" \
-  has "CHECKED_ARTIFACT=sha256:fake-apitest-f2-cand-app_latest" "${LAST_OUT}"
-assert "candidate up on the -cand project with BOTH -f files and --build" \
-  has "docker compose -p apitest-f2-cand -f docker-compose.yml -f deploy/docker-compose.candidate.yml up -d --build" "${LAST_DOCKER_LOG}"
+assert "the candidate project is THIS CHECK'S OWN, made from the identity" \
+  has "docker compose -p ${_T5_PROJECT} -f docker-compose.yml -f deploy/docker-compose.candidate.yml up -d --build" "${LAST_DOCKER_LOG}"
+assert "no other build's check can share it: the old shared -cand name is never used" \
+  lacks "-p apitest-f2-cand " "${LAST_DOCKER_LOG}"
+assert "asks THE PROJECT IT STARTED which container is up" \
+  has "docker compose -p ${_T5_PROJECT} -f docker-compose.yml ps -q app" "${LAST_DOCKER_LOG}"
+assert "reads the image off THAT CONTAINER, by container id" \
+  has "docker inspect --format {{.Image}} ${_T5_PROJECT}-app-1" "${LAST_DOCKER_LOG}"
+assert "never resolves a shared compose-built image name" \
+  lacks "docker image inspect --format {{.Id}} apitest-f2-cand" "${LAST_DOCKER_LOG}"
+assert "names the container's own image with the identity, at the CHECK" \
+  has "docker tag ${_T5_IMAGE} apitest-app:j-0123456789ab-ffeeddccbbaa9988" "${LAST_DOCKER_LOG}"
+assert "REPORTS that image's own id, which is what forge records" \
+  has "CHECKED_ARTIFACT=${_T5_IMAGE}" "${LAST_OUT}"
 assert "probes the CANDIDATE port :8902 (not live :8901)" \
   has "localhost:8902/health" "${LAST_CURL_LOG}"
 assert "does NOT probe the live :8901 port" \
@@ -180,6 +194,25 @@ assert "takes NO rollback snapshot (candidate is throwaway)" \
   lacks "docker tag apitest-f2-app:latest apitest-app:rollback-pre-deploy" "${LAST_DOCKER_LOG}"
 assert "never touches the LIVE project" \
   lacks "-p apitest-f2 " "${LAST_DOCKER_LOG}"
+
+# --- T5b: two checks in flight do not share a project, a container or an image
+_T5B_A="j-aaaa11112222@1111"
+_T5B_B="j-bbbb33334444@2222"
+_T5B_DIR="$(mktemp -d)"
+SCRATCH="${_T5B_DIR}" CANDIDATE=1 DEPLOY_IDENTITY="${_T5B_A}" \
+  SEED_IMAGES="apitest-f2-app:latest" \
+  run_case "T5b A's check"
+assert "A's check passed" test "${LAST_RC}" -eq 0
+_T5B_A_ARTIFACT="$(said CHECKED_ARTIFACT "${LAST_OUT}")"
+SCRATCH="${_T5B_DIR}" CANDIDATE=1 DEPLOY_IDENTITY="${_T5B_B}" \
+  run_case "T5b B's check, while A's is up"
+assert "B's check passed" test "${LAST_RC}" -eq 0
+_T5B_B_ARTIFACT="$(said CHECKED_ARTIFACT "${LAST_OUT}")"
+assert "A and B checked DIFFERENT artifacts" \
+  test "${_T5B_A_ARTIFACT}" != "${_T5B_B_ARTIFACT}"
+assert "A's candidate container is still A's, untouched by B" \
+  has "container:apitest-f2-cand-j-aaaa11112222-1111-app-1 ${_T5B_A_ARTIFACT}" "${LAST_STATE}"
+rm -rf "${_T5B_DIR}"
 
 # --- T6: PROMOTE, by the artifact captured at the check ----------------------
 # Changed AGAIN 24 September 2026, after the stage's second review. The 23
@@ -265,15 +298,36 @@ assert "never re-tagged anything (LIVE untouched)" \
   lacks "docker tag" "${LAST_DOCKER_LOG}"
 
 # --- T8: CANDIDATE_DOWN teardown ---------------------------------------------
-CANDIDATE_DOWN=1 SEED_IMAGES="apitest-f2-cand-app:latest" \
-  run_case "T8 candidate teardown"
+# Changed 25 September 2026 with the candidate project. A teardown handed the
+# same identity as the check tears down exactly that check's project.
+CANDIDATE_DOWN=1 DEPLOY_IDENTITY="${_T5_IDENTITY}" \
+  run_case "T8 candidate teardown, by the identity it was handed"
 assert "exit 0" test "${LAST_RC}" -eq 0
-assert "tears the -cand project down WITH volumes + orphans" \
-  has "docker compose -p apitest-f2-cand -f docker-compose.yml -f deploy/docker-compose.candidate.yml down -v --remove-orphans" "${LAST_DOCKER_LOG}"
+assert "tears THAT CHECK'S project down WITH volumes + orphans" \
+  has "docker compose -p ${_T5_PROJECT} -f docker-compose.yml -f deploy/docker-compose.candidate.yml down -v --remove-orphans" "${LAST_DOCKER_LOG}"
 assert "never brings anything up during teardown" \
   lacks "up -d" "${LAST_DOCKER_LOG}"
 assert "never touches the LIVE project" \
   lacks "-p apitest-f2 " "${LAST_DOCKER_LOG}"
+
+# --- T8b: a teardown handed nothing GOES AND LOOKS ---------------------------
+# There is no single shared name to assume any more, so a teardown with no
+# identity asks docker which candidate projects of this repository are up.
+_T8B_DIR="$(mktemp -d)"
+SCRATCH="${_T8B_DIR}" CANDIDATE=1 DEPLOY_IDENTITY="${_T5_IDENTITY}" \
+  SEED_IMAGES="apitest-f2-app:latest" \
+  run_case "T8b a check, so there is something to find"
+assert "the check passed" test "${LAST_RC}" -eq 0
+SCRATCH="${_T8B_DIR}" CANDIDATE_DOWN=1 \
+  run_case "T8b teardown with nothing handed to it"
+assert "exit 0" test "${LAST_RC}" -eq 0
+assert "asks docker which projects are up" \
+  has "docker compose ls --all -q" "${LAST_DOCKER_LOG}"
+assert "tears down the candidate project it FOUND" \
+  has "docker compose -p ${_T5_PROJECT} -f docker-compose.yml -f deploy/docker-compose.candidate.yml down -v --remove-orphans" "${LAST_DOCKER_LOG}"
+assert "never tears the LIVE project down" \
+  lacks "-p apitest-f2 -f docker-compose.yml -f deploy/docker-compose.candidate.yml down" "${LAST_DOCKER_LOG}"
+rm -rf "${_T8B_DIR}"
 
 # --- T9: ambiguous mode combos -> loud refuse, nothing runs ------------------
 REVERT=1 CANDIDATE=1 SEED_IMAGES="apitest-f2-app:latest" \
@@ -292,39 +346,40 @@ assert "loud FATAL on ambiguous mode signal" \
 assert "ran no docker at all" \
   lacks "docker" "${LAST_DOCKER_LOG}"
 
-# --- T11: THE SHARED NAME IS REPLACED BETWEEN A'S CHECK AND A'S PROMOTE ------
-# This is the failure a reviewer drove on 24 September 2026 with a fake docker:
-# A was checked, B replaced the shared candidate name, and A's promote deployed
-# B while reporting A's identity. Both legs run here against ONE image store, so
+# --- T11: A NAME IS REPLACED BETWEEN A'S CHECK AND A'S PROMOTE ---------------
+# The failure a reviewer drove on 24 September 2026 with a fake docker: A was
+# checked, B replaced the candidate image name, and A's promote deployed B
+# while reporting A's identity. Both legs run here against ONE image store, so
 # the window is real rather than described.
 _T11_DIR="$(mktemp -d)"
 _A_IDENTITY="j-aaaaaaaaaaaa@1111111111111111"
+_A_PROJECT="apitest-f2-cand-j-aaaaaaaaaaaa-1111111111111111"
 
 SCRATCH="${_T11_DIR}" CANDIDATE=1 DEPLOY_IDENTITY="${_A_IDENTITY}" \
-  SEED_IMAGES="apitest-f2-app:latest apitest-f2-cand-app:latest" \
+  SEED_IMAGES="apitest-f2-app:latest" \
   run_case "T11a A's candidate check"
 assert "A's check passed" test "${LAST_RC}" -eq 0
 _A_ARTIFACT="$(said CHECKED_ARTIFACT "${LAST_OUT}")"
 assert "A's check captured an artifact id" test -n "${_A_ARTIFACT}"
 
-# B's candidate leg now replaces the SHARED name with its own image, exactly as
-# a second build in flight does.
+# A second build now replaces the compose-built image NAME with its own image,
+# exactly as a build in flight does.
 printf 'build-b-app:latest sha256:fake-BUILD-B\n' >>"${_T11_DIR}/images"
 FAKE_DOCKER_LOG="${_T11_DIR}/docker.log" FAKE_DOCKER_STATE="${_T11_DIR}/images" \
-  PATH="${FAKE_BIN}:${PATH}" docker tag build-b-app:latest apitest-f2-cand-app:latest
+  PATH="${FAKE_BIN}:${PATH}" docker tag build-b-app:latest "${_A_PROJECT}-app:latest"
 
 SCRATCH="${_T11_DIR}" PROMOTE=1 DEPLOY_IDENTITY="${_A_IDENTITY}" \
   DEPLOY_ARTIFACT="${_A_ARTIFACT}" \
-  run_case "T11b A's promote, with the shared name now B's"
+  run_case "T11b A's promote, with the candidate name now B's"
 assert "exit 0" test "${LAST_RC}" -eq 0
-assert "the shared candidate name now points at B" \
-  has "apitest-f2-cand-app:latest sha256:fake-BUILD-B" "${LAST_STATE}"
+assert "the candidate image name now points at B" \
+  has "${_A_PROJECT}-app:latest sha256:fake-BUILD-B" "${LAST_STATE}"
 assert "A PROMOTES A: the live tag is given A's recorded artifact" \
   has "docker tag ${_A_ARTIFACT} apitest-f2-app:latest" "${LAST_DOCKER_LOG}"
 assert "B's image is never named anywhere in the promote" \
   lacks "sha256:fake-BUILD-B" "${LAST_DOCKER_LOG}"
-assert "the shared candidate name is never read" \
-  lacks "apitest-f2-cand-app:latest" "${LAST_DOCKER_LOG}"
+assert "the candidate image NAME is never read (only the recorded id is)" \
+  lacks "${_A_PROJECT}-app:latest" "${LAST_DOCKER_LOG}"
 assert "what is RUNNING is A's artifact, read off the container" \
   has "DEPLOYED_ARTIFACT=${_A_ARTIFACT}" "${LAST_OUT}"
 assert "and it reports A's identity, because A is what is running" \
@@ -348,11 +403,13 @@ rm -rf "${_T11_DIR}"
 RUNNING_IDENTITY=1 SEED_IMAGES="apitest-f2-app:latest" \
   run_case "T12b what is running, with nothing up"
 assert "exit 0" test "${LAST_RC}" -eq 0
-# An EMPTY value is how a project says "nothing is running here", and it is the
-# only way it says it: a project that knows something is up but cannot name it
-# answers with a token forge cannot place (T12d), never with nothing.
-assert "answers with an empty identity, which means nothing is running" \
-  has_line "RUNNING_IDENTITY=" "${LAST_OUT}"
+# "Nothing is running" is the WORD `none`, and it is printed only after a query
+# that SUCCEEDED. Changed 25 September 2026: it used to be an empty value, and
+# every query that FAILED produced exactly that (T14).
+assert "answers RUNNING_IDENTITY=none, which means nothing is running" \
+  has_line "RUNNING_IDENTITY=none" "${LAST_OUT}"
+assert "never answers with an empty value" \
+  lacks_line "RUNNING_IDENTITY=" "${LAST_OUT}"
 assert "changes nothing" lacks "docker tag" "${LAST_DOCKER_LOG}"
 
 # --- T12d: something IS up but carries no identity of ours ------------------
@@ -364,9 +421,107 @@ SCRATCH="${_T12D_DIR}" RUNNING_IDENTITY=1 \
 assert "exit 0" test "${LAST_RC}" -eq 0
 assert "does NOT answer empty, which would mean the target is free" \
   lacks_line "RUNNING_IDENTITY=" "${LAST_OUT}"
+assert "does NOT answer none, which would mean the same" \
+  lacks_line "RUNNING_IDENTITY=none" "${LAST_OUT}"
 assert "answers with a token forge cannot place" \
   has "RUNNING_IDENTITY=unidentified-sha256:fake-SOMEBODY-ELSE" "${LAST_OUT}"
 rm -rf "${_T12D_DIR}"
+
+# --- T13: THE CHECK CAPTURES THE CONTAINER IT CHECKED, NOT A NAME ------------
+# The third review's first fault, driven. A's candidate container stays up and
+# checked while another build re-points the compose-built image NAME at B. The
+# check used to resolve that name after the health check and report B as the
+# checked artifact; the promote then put B live under A's identity.
+_T13_DIR="$(mktemp -d)"
+_T13_IDENTITY="j-cccccccccccc@3333333333333333"
+_T13_PROJECT="apitest-f2-cand-j-cccccccccccc-3333333333333333"
+printf 'build-b-app:latest sha256:fake-BUILD-B-T13\n' >"${_T13_DIR}/images"
+printf 'apitest-f2-app:latest\n' >>"${_T13_DIR}/images"
+# THE SECOND BUILD, acting in the one window it really has: while A is being
+# health-checked. It gives A's compose-built image name B's image.
+cat >"${_T13_DIR}/hook" <<HOOK
+#!/usr/bin/env bash
+export FAKE_DOCKER_LOG="${_T13_DIR}/hook-docker.log"
+export FAKE_DOCKER_STATE="${_T13_DIR}/images"
+exec "${FAKE_BIN}/docker" tag build-b-app:latest "${_T13_PROJECT}-app:latest"
+HOOK
+chmod +x "${_T13_DIR}/hook"
+SCRATCH="${_T13_DIR}" CANDIDATE=1 DEPLOY_IDENTITY="${_T13_IDENTITY}" \
+  FAKE_CURL_HOOK="${_T13_DIR}/hook" \
+  run_case "T13 the image name is re-pointed while A's candidate is up and checked"
+assert "A's check passed" test "${LAST_RC}" -eq 0
+_T13_ARTIFACT="$(said CHECKED_ARTIFACT "${LAST_OUT}")"
+assert "the name really was re-pointed at B during the check" \
+  has "${_T13_PROJECT}-app:latest sha256:fake-BUILD-B-T13" "${LAST_STATE}"
+assert "A's CHECKED_ARTIFACT is A'S CONTAINER'S image, not B's" \
+  test "${_T13_ARTIFACT}" = "sha256:fake-${_T13_PROJECT}-app_latest"
+assert "B's image is never reported as what was checked" \
+  test "${_T13_ARTIFACT}" != "sha256:fake-BUILD-B-T13"
+# And A promotes A, through the same image store.
+SCRATCH="${_T13_DIR}" PROMOTE=1 DEPLOY_IDENTITY="${_T13_IDENTITY}" \
+  DEPLOY_ARTIFACT="${_T13_ARTIFACT}" \
+  run_case "T13b A's promote, with that name still B's"
+assert "exit 0" test "${LAST_RC}" -eq 0
+assert "A promotes A" \
+  has "docker tag ${_T13_ARTIFACT} apitest-f2-app:latest" "${LAST_DOCKER_LOG}"
+assert "B is never promoted" lacks "sha256:fake-BUILD-B-T13" "${LAST_DOCKER_LOG}"
+assert "and A's identity is what is reported running" \
+  has "DEPLOYED_IDENTITY=${_T13_IDENTITY}" "${LAST_OUT}"
+rm -rf "${_T13_DIR}"
+
+# --- T13c: the CONTAINER itself is replaced during the check -> refuse -------
+# The other half of the same rule: if what was checked is not what is here when
+# the check ends, this leg reports nothing rather than a name for it.
+_T13C_DIR="$(mktemp -d)"
+_T13C_IDENTITY="j-dddddddddddd@4444444444444444"
+_T13C_PROJECT="apitest-f2-cand-j-dddddddddddd-4444444444444444"
+printf 'build-b-app:latest sha256:fake-BUILD-B-T13C\n' >"${_T13C_DIR}/images"
+cat >"${_T13C_DIR}/hook" <<HOOK
+#!/usr/bin/env bash
+export FAKE_DOCKER_LOG="${_T13C_DIR}/hook-docker.log"
+export FAKE_DOCKER_STATE="${_T13C_DIR}/images"
+"${FAKE_BIN}/docker" tag build-b-app:latest "${_T13C_PROJECT}-app:latest"
+exec "${FAKE_BIN}/docker" compose -p "${_T13C_PROJECT}" -f docker-compose.yml up -d
+HOOK
+chmod +x "${_T13C_DIR}/hook"
+SCRATCH="${_T13C_DIR}" CANDIDATE=1 DEPLOY_IDENTITY="${_T13C_IDENTITY}" \
+  FAKE_CURL_HOOK="${_T13C_DIR}/hook" \
+  run_case "T13c the candidate container is re-made from another image mid-check"
+assert "non-zero exit" test "${LAST_RC}" -ne 0
+assert "says what was checked is not what is here" \
+  has "so what was checked is not what is here" "${LAST_OUT}"
+assert "reports NO artifact at all" lacks "CHECKED_ARTIFACT=" "${LAST_OUT}"
+rm -rf "${_T13C_DIR}"
+
+# --- T14: A FAILED OBSERVATION IS A FAILURE, NEVER "NOTHING IS RUNNING" ------
+# The third review's second fault, driven. `docker compose ps` failed, the
+# script swallowed the error, exited zero and printed an empty identity — and
+# forge read that as a free target and put an older result over a newer one.
+_T14_DIR="$(mktemp -d)"
+printf 'apitest-f2-app:latest sha256:fake-SOMETHING-LIVE\n' >"${_T14_DIR}/images"
+printf 'container:apitest-f2-app-1 sha256:fake-SOMETHING-LIVE\n' >>"${_T14_DIR}/images"
+SCRATCH="${_T14_DIR}" RUNNING_IDENTITY=1 FAKE_DOCKER_PS_FAILS=1 \
+  run_case "T14 the query itself fails"
+assert "NON-ZERO exit: a failed query is a failed run" test "${LAST_RC}" -ne 0
+assert "never says an empty identity" lacks_line "RUNNING_IDENTITY=" "${LAST_OUT}"
+assert "never says nothing is running" lacks_line "RUNNING_IDENTITY=none" "${LAST_OUT}"
+assert "says the question could not be answered, and why" \
+  has "RUNNING_IDENTITY_UNKNOWN=the query failed" "${LAST_OUT}"
+assert "says plainly that this is not 'nothing is running'" \
+  has "this is NOT 'nothing is running'" "${LAST_OUT}"
+assert "changes nothing" lacks "docker tag" "${LAST_DOCKER_LOG}"
+rm -rf "${_T14_DIR}"
+
+# --- T14b: the container is up and cannot be asked what it runs -------------
+_T14B_DIR="$(mktemp -d)"
+printf 'container:apitest-f2-app-1 sha256:fake-SOMETHING-LIVE\n' >"${_T14B_DIR}/images"
+SCRATCH="${_T14B_DIR}" RUNNING_IDENTITY=1 FAKE_DOCKER_INSPECT_FAILS=1 \
+  run_case "T14b something is up and cannot be asked what it is running"
+assert "non-zero exit" test "${LAST_RC}" -ne 0
+assert "never says nothing is running" lacks_line "RUNNING_IDENTITY=none" "${LAST_OUT}"
+assert "says which container could not be asked" \
+  has "RUNNING_IDENTITY_UNKNOWN=" "${LAST_OUT}"
+rm -rf "${_T14B_DIR}"
 
 # --- T12c: RUNNING_IDENTITY is a mode like the others (ambiguity refused) ----
 RUNNING_IDENTITY=1 PROMOTE=1 SEED_IMAGES="apitest-f2-app:latest" \

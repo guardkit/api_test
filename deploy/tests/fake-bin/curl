@@ -9,6 +9,19 @@ set -u
 LOG="${FAKE_CURL_LOG:?FAKE_CURL_LOG unset}"
 printf 'curl %s\n' "$*" >>"${LOG}"
 
+# WHAT ANOTHER BUILD DOES WHILE THIS CHECK IS HEALTH-CHECKING (25 September
+# 2026). $FAKE_CURL_HOOK is a script run once, on the first probe — the one
+# moment in a check when a second build really can be doing something. It is
+# how the third review's sequence is DRIVEN rather than described: A's
+# candidate container is up and being checked, and the hook moves a name, or
+# replaces a container, in that window.
+if [[ -n "${FAKE_CURL_HOOK:-}" && -x "${FAKE_CURL_HOOK}" ]]; then
+  if [[ ! -f "${FAKE_CURL_HOOK}.ran" ]]; then
+    : >"${FAKE_CURL_HOOK}.ran"
+    "${FAKE_CURL_HOOK}" >>"${LOG}.hook" 2>&1 || true
+  fi
+fi
+
 if [[ "${FAKE_CURL_HEALTHY:-1}" == "1" ]]; then
   printf '{"status":"ok","database":"connected"}'
   exit 0

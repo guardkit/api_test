@@ -78,6 +78,18 @@ put() {
 LIVE_CONTAINER="${FAKE_LIVE_CONTAINER:-apitest-f2-app-1}"
 LIVE_PROJECT="${FAKE_LIVE_PROJECT:-apitest-f2}"
 
+# EVERY compose project has a container here now, not only the live one (25
+# September 2026). The candidate check reads the image off the container IT
+# started, so a harness that models containers for the live project alone
+# cannot exercise the thing being proved. A non-live project's `up --build`
+# makes its own image, <project>-app:latest, exactly as compose does.
+container_of_project() { printf 'container:%s-app-1\n' "$1"; }
+
+# `docker compose ... ps` FAILS while this is set, so a failed observation can
+# be driven rather than described: it is the fault the third review found, in
+# which the script turned a failing docker into "nothing is running".
+FAIL_PS="${FAKE_DOCKER_PS_FAILS:-}"
+
 case "${1:-}" in
   image)
     # docker image inspect --format <fmt> <ref>. Two formats are modelled:
@@ -116,6 +128,13 @@ case "${1:-}" in
     # docker inspect --format '{{.Image}}' <container id> — what the CONTAINER
     # was started from. A tag can be moved onto another image after a container
     # started; this cannot, which is why the promote's confirmation reads it.
+    #
+    # $FAKE_DOCKER_INSPECT_FAILS makes this fail, so "something is up and
+    # cannot be asked what it is running" can be driven too.
+    if [[ -n "${FAKE_DOCKER_INSPECT_FAILS:-}" ]]; then
+      printf 'Error response from daemon: dial unix docker.raw.sock: no such file\n' >&2
+      exit 1
+    fi
     cid=""
     for a in "$@"; do cid="$a"; done
     if id_of "container:${cid}"; then
@@ -134,39 +153,66 @@ case "${1:-}" in
     exit 1
     ;;
   compose)
-    # Which project, and which verb? Only the LIVE project's container is
-    # modelled: the -cand project has its own lifecycle and nothing here reads
-    # it back.
+    # Which project, and which verb? EVERY project has a container modelled,
+    # because the candidate check reads the image off the container it started.
     project=""
     prev=""
     verb=""
+    builds=""
     for a in "$@"; do
       if [[ "${prev}" == "-p" ]]; then project="$a"; fi
-      case "$a" in up | down | ps) [[ -z "${verb}" ]] && verb="$a" ;; esac
+      case "$a" in up | down | ps | ls) [[ -z "${verb}" ]] && verb="$a" ;; esac
+      case "$a" in --build) builds=1 ;; esac
       prev="$a"
     done
-    if [[ "${project}" == "${LIVE_PROJECT}" ]]; then
-      case "${verb}" in
-        up)
-          # The container is (re)created from whatever the live tag names NOW.
-          if live_id="$(id_of "${FAKE_LIVE_IMAGE:-apitest-f2-app:latest}")"; then
-            put "container:${LIVE_CONTAINER}" "${live_id}"
-          fi
-          ;;
-        ps)
-          # `ps -q app` — the container id, or nothing when none is up.
-          if id_of "container:${LIVE_CONTAINER}" >/dev/null 2>&1; then
-            printf '%s\n' "${LIVE_CONTAINER}"
-          fi
-          ;;
-        down)
-          put_remove="container:${LIVE_CONTAINER}"
-          escaped="$(printf '%s' "${put_remove}" | sed 's/[][\.*^$/]/\\&/g')"
-          grep -v -E "^${escaped}( |$)" "${STATE}" >"${STATE}.next" 2>/dev/null || true
-          mv "${STATE}.next" "${STATE}"
-          ;;
-      esac
+    # `docker compose ls --all -q` — the projects that have something up. Read
+    # off the container lines, which is where this harness keeps them.
+    if [[ "${verb}" == "ls" ]]; then
+      while IFS= read -r line; do
+        [[ -z "${line}" ]] && continue
+        ref="${line%% *}"
+        case "${ref}" in container:*) ;; *) continue ;; esac
+        name="${ref#container:}"
+        printf '%s\n' "${name%-app-1}"
+      done <"${STATE}"
+      exit 0
     fi
+    [[ -z "${project}" ]] && exit 0
+    if [[ "${project}" == "${LIVE_PROJECT}" ]]; then
+      this_container="container:${LIVE_CONTAINER}"
+      this_image="${FAKE_LIVE_IMAGE:-apitest-f2-app:latest}"
+    else
+      this_container="$(container_of_project "${project}")"
+      this_image="${project}-app:latest"
+    fi
+    case "${verb}" in
+      up)
+        # The container is (re)created from whatever this project's image names
+        # NOW. `--build` makes that image first, as compose does.
+        if [[ -n "${builds}" ]] && ! known "${this_image}"; then
+          put "${this_image}" "sha256:fake-$(printf '%s' "${this_image}" | tr '/:' '__')"
+        fi
+        if this_id="$(id_of "${this_image}")"; then
+          put "${this_container}" "${this_id}"
+        fi
+        ;;
+      ps)
+        # `ps -q app` — the container id, or nothing when none is up. A DOCKER
+        # THAT FAILS says so on stderr and exits non-zero; it never answers.
+        if [[ -n "${FAIL_PS}" ]]; then
+          printf 'Cannot connect to the Docker daemon. Is the docker daemon running?\n' >&2
+          exit 1
+        fi
+        if id_of "${this_container}" >/dev/null 2>&1; then
+          printf '%s\n' "${this_container#container:}"
+        fi
+        ;;
+      down)
+        escaped="$(printf '%s' "${this_container}" | sed 's/[][\.*^$/]/\\&/g')"
+        grep -v -E "^${escaped}( |$)" "${STATE}" >"${STATE}.next" 2>/dev/null || true
+        mv "${STATE}.next" "${STATE}"
+        ;;
+    esac
     exit 0
     ;;
 esac

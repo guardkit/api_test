@@ -21,12 +21,13 @@
 #                      compose image tag, then `up -d --no-build` (the ROLLBACK
 #                      image serves), then wait for health.
 #   * Candidate       : $CANDIDATE truthy    -> bring a THROWAWAY sandbox copy up
-#                      on the -cand project (offset host port $CANDIDATE_PORT) with
-#                      the candidate overlay, `up -d --build`, wait for health on
-#                      the candidate port. NO rollback snapshot; the LIVE name is
-#                      never touched (design §3 candidate-then-promote). It then
-#                      READS THE BUILT IMAGE'S OWN ID and names it with the
-#                      identity forge handed over, and prints both.
+#                      on a candidate compose project OF THIS CHECK'S OWN
+#                      (offset host port $CANDIDATE_PORT) with the candidate
+#                      overlay, `up -d --build`, wait for health on the candidate
+#                      port. NO rollback snapshot; the LIVE name is never touched
+#                      (design §3 candidate-then-promote). It then READS THE
+#                      IMAGE OFF THE CONTAINER IT STARTED, names that image with
+#                      the identity forge handed over, and prints it.
 #   * Promote         : $PROMOTE truthy       -> snapshot the current LIVE image as
 #                      the rollback tag, re-tag THE RECORDED ARTIFACT ($DEPLOY_ARTIFACT,
 #                      an image id, never a shared tag) as the live image (NO
@@ -35,8 +36,13 @@
 #                      actually running.
 #   * What is running : $RUNNING_IDENTITY truthy -> read-only. Inspects the live
 #                      container and prints what it is running. Changes NOTHING.
-#   * Candidate down  : $CANDIDATE_DOWN truthy -> `down -v --remove-orphans` on the
-#                      -cand project (teardown of the sandbox + its db volume).
+#                      A query that FAILED is never reported as "nothing is
+#                      running": it prints RUNNING_IDENTITY_UNKNOWN=<reason> and
+#                      exits non-zero. "Nothing is running" is the word `none`,
+#                      and it is printed only after a query that SUCCEEDED.
+#   * Candidate down  : $CANDIDATE_DOWN truthy -> `down -v --remove-orphans` on
+#                      this check's own candidate project (teardown of the
+#                      sandbox + its db volume).
 #
 #   The forge revert runbook (runbook_builder.build_revert_runbook) puts
 #   `revert: True` and `rollback_image_ref` in the deploy_compose STEP PARAMS;
@@ -67,14 +73,20 @@ ROLLBACK_IMAGE_REF="${ROLLBACK_IMAGE_REF:-apitest-app:rollback-pre-deploy}"
 # --- candidate-then-promote sandbox config (design §3) -----------------------
 # Offset host port the candidate publishes (verified free; convention = 8902).
 CANDIDATE_PORT="${CANDIDATE_PORT:-8902}"
-# The -cand compose project: a lifecycle namespace with its OWN network + db.
-CANDIDATE_PROJECT="${CANDIDATE_PROJECT:-${COMPOSE_PROJECT}-cand}"
+# THE CANDIDATE PROJECT IS THIS CHECK'S OWN (25 September 2026, the third
+# review). It used to be one shared name, ${COMPOSE_PROJECT}-cand, so two
+# builds checking at the same time shared one compose project, one container
+# and one built image name — and the second one to start replaced what the
+# first one was in the middle of checking. Every candidate project this script
+# makes now begins with the prefix below and ends with a token belonging to
+# this check alone, so nothing another build does can land inside it.
+CANDIDATE_PROJECT_PREFIX="${CANDIDATE_PROJECT_PREFIX:-${COMPOSE_PROJECT}-cand}"
 # The candidate overlay layered on top of $COMPOSE_FILE (remaps the app port).
 CANDIDATE_COMPOSE_FILE="${CANDIDATE_COMPOSE_FILE:-deploy/docker-compose.candidate.yml}"
-# The image `docker compose -p <cand project> build` produces for the app service:
-# compose names build-only images <project>-<service>, so apitest-f2-cand-app:latest.
-# PROMOTE re-tags THIS as $APP_IMAGE so the live `up --no-build` serves it.
-CANDIDATE_APP_IMAGE="${CANDIDATE_APP_IMAGE:-${CANDIDATE_PROJECT}-app:latest}"
+# There is deliberately NO shared candidate image name here any more. The
+# compose-built image name (<project>-<service>) is a name a second build can
+# be given, and reading it is what the promote was doing wrong; the artifact is
+# read off the CONTAINER this check started instead, by its own image id.
 # Health wait (curl the app /health until it reports the DB connected).
 HEALTH_URL="${HEALTH_URL:-http://localhost:8901/health}"
 HEALTH_EXPECT="${HEALTH_EXPECT:-\"database\":\"connected\"}"
@@ -105,21 +117,64 @@ identity_ref() {
   printf '%s:%s\n' "${IDENTITY_IMAGE_PREFIX:-apitest-app}" "${1//@/-}"
 }
 
-# The container id currently serving the LIVE compose project's app service, or
-# empty when nothing is up. `ps -q` is compose's own answer to "what is running".
+# ASK A COMPOSE PROJECT WHICH CONTAINER IS SERVING ITS app SERVICE.
+#
+# WHAT CHANGED HERE (25 September 2026, the third review of the executor
+# stage). This used to be `... ps -q app 2>/dev/null | head -n1 || true`, which
+# threw the query's own verdict away: a docker that FAILED gave an empty answer
+# and an exit code of zero, and the read-only mode below then told forge that
+# NOTHING WAS RUNNING. Forge read that as a free target and deployed an older
+# result over a newer one. That was driven with a failing docker, so it is a
+# fact about this script rather than a worry about it.
+#
+# A failed observation is a FAILURE. The answer is one line:
+#   ok <container id>   -- a query that SUCCEEDED and found that container
+#   ok                  -- a query that SUCCEEDED and found nothing up
+#   error <reason>      -- the query did not succeed; NOTHING may be concluded
+compose_container() {
+  local project="$1" out rc first
+  out="$(docker compose -p "${project}" -f "${COMPOSE_FILE}" ps -q app 2>&1)" \
+    && rc=0 || rc=$?
+  if ((rc != 0)); then
+    printf 'error the query failed: `docker compose -p %s ps -q app` exited %s (%s)\n' \
+      "${project}" "${rc}" "$(printf '%s' "${out}" | tr '\n' ' ' | cut -c1-160)"
+    return 0
+  fi
+  first="$(printf '%s' "${out}" | head -n1)"
+  # An answer that cannot be read is not an answer. `ps -q` prints container
+  # ids, one per line; anything else means the query's own output could not be
+  # understood, and a guess at what it meant would be the same defect again.
+  if [[ -n "${first}" && ! "${first}" =~ ^[A-Za-z0-9_.-]+$ ]]; then
+    printf 'error the query answered something this script cannot read as a container id: %s\n' \
+      "$(printf '%s' "${first}" | cut -c1-160)"
+    return 0
+  fi
+  printf 'ok %s\n' "${first}"
+}
+
+# The container id currently serving the LIVE compose project's app service, in
+# the same three-way shape as above.
 live_container() {
-  docker compose -p "${COMPOSE_PROJECT}" -f "${COMPOSE_FILE}" ps -q app 2>/dev/null \
-    | head -n1 || true
+  compose_container "${COMPOSE_PROJECT}"
 }
 
 # The image id a RUNNING container was started from -- read off the container
 # itself, never off a tag. This is the line that makes "what is running" a fact
 # rather than a repetition of what this script was told: a tag can be moved onto
 # another image after the container started; the container's own image id cannot.
+#
+# Non-zero when the container could not be asked (25 September 2026): a docker
+# that fails here is a failed observation too, and the caller says so rather
+# than carrying an empty string forward as if it meant something.
 running_image_id() {
-  local cid="$1"
-  [[ -z "${cid}" ]] && return 0
-  docker inspect --format '{{.Image}}' "${cid}" 2>/dev/null || true
+  local cid="$1" out
+  if [[ -z "${cid}" ]]; then
+    return 1
+  fi
+  out="$(docker inspect --format '{{.Image}}' "${cid}" 2>/dev/null)" || return 1
+  out="$(printf '%s' "${out}" | head -n1)"
+  [[ -z "${out}" ]] && return 1
+  printf '%s\n' "${out}"
 }
 
 # The identity name carried by an image id, worked out from the identity-prefixed
@@ -129,11 +184,15 @@ running_image_id() {
 # The identity text is "<name>@<fingerprint>" and the tag is "<name>-<fingerprint>",
 # where the fingerprint carries no dash, so the LAST dash is the one that was the
 # '@'. Nothing else in this file needs to know the shape of an identity.
+#
+# Non-zero when the IMAGE ITSELF could not be inspected (25 September 2026):
+# that is a failed observation, not an image without an identity, and the two
+# are answered differently.
 identity_of_image() {
   local id="$1" tags tag body
-  [[ -z "${id}" ]] && return 0
+  [[ -z "${id}" ]] && return 1
   tags="$(docker image inspect --format '{{range .RepoTags}}{{println .}}{{end}}' \
-    "${id}" 2>/dev/null || true)"
+    "${id}" 2>/dev/null)" || return 1
   while IFS= read -r tag; do
     [[ -z "${tag}" ]] && continue
     case "${tag}" in
@@ -149,6 +208,20 @@ identity_of_image() {
     return 0
   done <<<"${tags}"
   return 0
+}
+
+# THE TOKEN THAT MAKES A CANDIDATE PROJECT THIS CHECK'S OWN. It is the
+# identity forge handed over, reduced to what a compose project name may
+# carry, so the teardown that is handed the same identity finds the same
+# project. $CANDIDATE_TOKEN overrides it; with neither, the caller decides
+# what to do (the check makes a fresh one, the teardown goes looking).
+candidate_token() {
+  local raw="${CANDIDATE_TOKEN:-${DEPLOY_IDENTITY:-}}"
+  [[ -z "${raw}" ]] && return 1
+  raw="$(printf '%s' "${raw}" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '-')"
+  raw="${raw%%-}"
+  [[ -z "${raw}" ]] && return 1
+  printf '%s\n' "${raw}"
 }
 
 # Truthy test for the env var NAMED by $1 (indirect expansion), so one helper
@@ -220,49 +293,103 @@ deploy_revert() {
 }
 
 deploy_candidate() {
-  # A throwaway sandbox copy on the -cand project + offset host port. NO rollback
-  # snapshot is taken and the LIVE image/name is NEVER touched: a failing
-  # candidate is simply torn down (candidate_down) with the live leg untouched.
-  # Health is probed on the CANDIDATE port (the app still listens on 8901 inside
-  # the container; only the host publish moves).
+  # A throwaway sandbox copy on a candidate project OF THIS CHECK'S OWN, on the
+  # offset host port. NO rollback snapshot is taken and the LIVE image/name is
+  # NEVER touched: a failing candidate is simply torn down (candidate_down) with
+  # the live leg untouched. Health is probed on the CANDIDATE port (the app
+  # still listens on 8901 inside the container; only the host publish moves).
   #
-  # WHAT CHANGED HERE (24 September 2026, the second review of the executor
-  # stage). The promote used to make the unique name FROM the shared candidate
-  # name, AT PROMOTE TIME. Between this check and that promote a second build's
-  # candidate leg re-points ${CANDIDATE_APP_IMAGE} at ITS image, so the promote
-  # named somebody else's build with this build's identity and put it live while
-  # reporting this build's identity back. The window was real and it was driven.
+  # WHAT CHANGED HERE, TWICE.
   #
-  # The cure is here, not there: the thing that was checked is pinned AT THE
-  # MOMENT IT WAS CHECKED. This leg reads the built image's OWN ID -- the one
-  # name in docker nothing can move onto another image -- gives it the identity's
-  # tag immediately, and prints the id. Forge records that id, and the promote is
-  # handed it back and resolves THAT, never the shared name.
-  local cand_id checked_ref
+  # 24 September 2026, the second review. The promote used to make the unique
+  # name FROM the shared candidate image name, AT PROMOTE TIME, so a second
+  # build that re-pointed that name between the check and the promote had its
+  # image put live under this build's identity.
+  #
+  # 25 September 2026, the third review. That cure moved the read earlier but
+  # still READ A SHARED NAME: this leg resolved ${CANDIDATE_PROJECT}-app:latest
+  # after the health check, and a reviewer kept this candidate's container up
+  # while another build re-pointed that name at ITS image. The line reported as
+  # the checked artifact was the other build's, and the promote then put the
+  # other build's work live under this build's identity. Reading the shared
+  # name EARLIER would not have cured it either: the name is not authoritative
+  # at any moment, because it is not this check's to begin with.
+  #
+  # So two things are true here now and neither depends on a name:
+  #   1. the compose project, its container and its built image belong to THIS
+  #      CHECK -- the token is the identity forge handed over, or a fresh one --
+  #      so no other build's check can land inside it;
+  #   2. the artifact is read OFF THE CONTAINER THIS CHECK STARTED, by that
+  #      container's own image id, before the health check and again after it,
+  #      and the two must be the same container and the same image. Anything
+  #      else means the thing that was checked is not the thing that is here,
+  #      and this leg refuses rather than reporting a name for it.
+  local project token cid cid_after started_on running_now checked_ref
+  if ! token="$(candidate_token)"; then
+    # No identity and no token handed over: a check nobody will promote. It
+    # still gets a project of its own rather than a shared one.
+    token="fresh-$(date -u +%Y%m%d%H%M%S)-$$"
+    log "no DEPLOY_IDENTITY and no CANDIDATE_TOKEN were handed to this check, so it made a token of its own: ${token}"
+  fi
+  project="${CANDIDATE_PROJECT_PREFIX}-${token}"
   HEALTH_URL="http://localhost:${CANDIDATE_PORT}/health"
-  log "MODE=candidate project=${CANDIDATE_PROJECT} port=${CANDIDATE_PORT} app_image=${CANDIDATE_APP_IMAGE}"
-  log "candidate is a throwaway sandbox: no rollback snapshot, the LIVE name is untouched"
-  docker compose -p "${CANDIDATE_PROJECT}" \
+  log "MODE=candidate project=${project} port=${CANDIDATE_PORT}"
+  log "candidate is a throwaway sandbox of this check's own: no rollback snapshot, the LIVE name is untouched, and no other build shares this compose project"
+  docker compose -p "${project}" \
     -f "${COMPOSE_FILE}" -f "${CANDIDATE_COMPOSE_FILE}" up -d --build
+  # WHICH CONTAINER THIS CHECK STARTED, and what it is running -- before the
+  # health check, so what is checked and what is captured are the same thing.
+  cid="$(compose_container "${project}")"
+  if [[ "${cid}" == error\ * ]]; then
+    log "FATAL: ${project} could not be asked which container it started -- ${cid#error }. Nothing may be concluded from a failed query, so this check reports no artifact (LIVE untouched)"
+    return 1
+  fi
+  cid="${cid#ok}"
+  cid="${cid# }"
+  if [[ -z "${cid}" ]]; then
+    log "FATAL: nothing came up on ${project}, so there is no container whose image could be captured. Refusing (LIVE untouched)"
+    return 1
+  fi
+  if ! started_on="$(running_image_id "${cid}")"; then
+    log "FATAL: container ${cid} is up on ${project} and could not be asked which image it is running. Refusing (LIVE untouched)"
+    return 1
+  fi
+  log "the candidate this check started: container=${cid} image=${started_on}"
   wait_for_health
-  cand_id="$(image_id "${CANDIDATE_APP_IMAGE}")"
-  if [[ -z "${cand_id}" ]]; then
-    log "FATAL: the candidate came up but ${CANDIDATE_APP_IMAGE} names no image, so there is nothing whose identity could be captured. Refusing (LIVE untouched)"
+  # AND AGAIN, AFTER THE CHECK. The thing that passed the health check has to
+  # be the thing whose id is reported, or the report is about something else.
+  cid_after="$(compose_container "${project}")"
+  if [[ "${cid_after}" == error\ * ]]; then
+    log "FATAL: ${project} passed its health check and then could not be asked what it is running -- ${cid_after#error }. Refusing (LIVE untouched)"
+    return 1
+  fi
+  cid_after="${cid_after#ok}"
+  cid_after="${cid_after# }"
+  if [[ "${cid_after}" != "${cid}" ]]; then
+    log "FATAL: the container on ${project} changed during the check (${cid} -> ${cid_after:-<none>}), so what was checked is not what is here. Refusing (LIVE untouched)"
+    return 1
+  fi
+  if ! running_now="$(running_image_id "${cid}")"; then
+    log "FATAL: container ${cid} could not be asked which image it is running after the check. Refusing (LIVE untouched)"
+    return 1
+  fi
+  if [[ "${running_now}" != "${started_on}" ]]; then
+    log "FATAL: container ${cid} was started from ${started_on} and is now running ${running_now}, so what was checked is not what is here. Refusing (LIVE untouched)"
     return 1
   fi
   if [[ -n "${DEPLOY_IDENTITY:-}" ]]; then
     # PIN IT NOW, under a name nothing else can be given.
     checked_ref="$(identity_ref "${DEPLOY_IDENTITY}")"
-    docker tag "${cand_id}" "${checked_ref}"
+    docker tag "${started_on}" "${checked_ref}"
     log "named what is being checked: ${checked_ref}=$(image_id "${checked_ref}")"
   else
     log "no DEPLOY_IDENTITY was handed to this check, so the artifact is reported by its own id alone"
   fi
-  log "after: ${CANDIDATE_APP_IMAGE}=${cand_id}"
   # THE LINE FORGE READS BACK AND RECORDS. It is the artifact's own immutable
-  # identity, captured here, and it is what the promote will be handed.
-  printf 'CHECKED_ARTIFACT=%s\n' "${cand_id}"
-  log "candidate up + healthy on :${CANDIDATE_PORT}"
+  # identity, read off the container that was checked, and it is what the
+  # promote will be handed.
+  printf 'CHECKED_ARTIFACT=%s\n' "${started_on}"
+  log "candidate up + healthy on :${CANDIDATE_PORT} (project ${project}, container ${cid}, image ${started_on})"
 }
 
 running_identity() {
@@ -271,29 +398,58 @@ running_identity() {
   # than against a line in forge's own ledger that a crash may have left stale.
   # It changes nothing: no tag is moved, no compose project is brought up or
   # down, and it is safe to run at any time.
-  # THE ANSWER IS ONE LINE, and forge reads exactly three things into it:
-  #   RUNNING_IDENTITY=<token>  -- that is what is running here
-  #   RUNNING_IDENTITY=         -- NOTHING is running here
-  #   (no line at all)          -- this project did not answer
-  # So "something is up but I cannot name it" must NOT print an empty value:
-  # it prints a token forge cannot place, and forge then deploys nothing.
-  local cid running identity
-  cid="$(live_container)"
+  #
+  # THE ANSWER IS ONE LINE, and it says one of exactly three things:
+  #   RUNNING_IDENTITY=<token>          -- that is what is running here
+  #   RUNNING_IDENTITY=none             -- NOTHING is running here, and this is
+  #                                        said only after a query that SUCCEEDED
+  #   RUNNING_IDENTITY_UNKNOWN=<reason> -- the question could not be answered
+  #                                        (exit is non-zero as well)
+  #
+  # WHAT CHANGED HERE (25 September 2026, the third review of the executor
+  # stage). "Nothing is running" used to be an EMPTY value, and every query
+  # that FAILED produced exactly that: the docker call's error was thrown away,
+  # the empty answer was printed, forge read a free target, and an older result
+  # went over a newer one. It was driven with a failing docker. An empty
+  # answer is not printed any more in any circumstance, and the only way this
+  # project says the target is free is the word `none` after a query that
+  # worked. "Something is up but I cannot name it" is still a token forge
+  # cannot place, which stops the deploy just as firmly.
+  local answer cid running identity
+  answer="$(live_container)"
+  if [[ "${answer}" == error\ * ]]; then
+    log "MODE=running-identity project=${COMPOSE_PROJECT}: THE QUESTION COULD NOT BE ANSWERED -- ${answer#error }"
+    log "this is NOT 'nothing is running': nothing at all may be concluded from a query that failed"
+    printf 'RUNNING_IDENTITY_UNKNOWN=%s\n' "${answer#error }"
+    return 1
+  fi
+  cid="${answer#ok}"
+  cid="${cid# }"
   if [[ -z "${cid}" ]]; then
-    log "MODE=running-identity project=${COMPOSE_PROJECT}: nothing is up"
-    printf 'RUNNING_IDENTITY=\n'
+    log "MODE=running-identity project=${COMPOSE_PROJECT}: the query succeeded and nothing is up"
+    printf 'RUNNING_IDENTITY=none\n'
     return 0
   fi
-  running="$(running_image_id "${cid}")"
-  identity="$(identity_of_image "${running}")"
-  log "MODE=running-identity project=${COMPOSE_PROJECT} container=${cid} image=${running:-<unknown>}"
+  if ! running="$(running_image_id "${cid}")"; then
+    log "MODE=running-identity project=${COMPOSE_PROJECT}: container ${cid} is up and could not be asked which image it is running"
+    printf 'RUNNING_IDENTITY_UNKNOWN=container %s is up on %s and could not be asked which image it is running\n' \
+      "${cid}" "${COMPOSE_PROJECT}"
+    return 1
+  fi
+  log "MODE=running-identity project=${COMPOSE_PROJECT} container=${cid} image=${running}"
   printf 'RUNNING_ARTIFACT=%s\n' "${running}"
+  if ! identity="$(identity_of_image "${running}")"; then
+    log "the image ${running} could not be inspected, so this project cannot say what it is"
+    printf 'RUNNING_IDENTITY_UNKNOWN=the image %s the live container is running could not be inspected\n' \
+      "${running}"
+    return 1
+  fi
   if [[ -z "${identity}" ]]; then
     # Something IS running and this project cannot say which build it is: the
-    # image carries no identity tag. Answering empty here would tell forge the
-    # target is free, which is the opposite of the truth.
+    # image carries no identity tag. Saying the target is free here would be
+    # the opposite of the truth.
     log "the running image carries no identity of this project's own"
-    printf 'RUNNING_IDENTITY=unidentified-%s\n' "${running:-no-image}"
+    printf 'RUNNING_IDENTITY=unidentified-%s\n' "${running}"
     return 0
   fi
   printf 'RUNNING_IDENTITY=%s\n' "${identity}"
@@ -379,15 +535,34 @@ deploy_promote() {
   # 5) SAY WHAT IS RUNNING, read off the RUNNING CONTAINER. A tag says what a
   #    name points at now; the container says what it was started from, which
   #    is the only thing that answers "what is running".
+  #    A query that FAILED is not an answer (25 September 2026): saying "not
+  #    this identity" on the strength of a docker that fell over would put a
+  #    red ending on a deploy that may well have worked, and saying the
+  #    identity would claim something nobody looked at. It exits loudly instead
+  #    and reports no identity at all, which forge reads as a failed deploy
+  #    with the target's state unknown -- which is exactly what it is.
   cid="$(live_container)"
-  live_running="$(running_image_id "${cid}")"
-  if [[ -n "${live_running}" && "${live_running}" == "${artifact}" ]]; then
+  if [[ "${cid}" == error\ * ]]; then
+    log "FATAL: the promote ran and ${COMPOSE_PROJECT} could not then be asked what it is running -- ${cid#error }. What is live is NOT known, and this leg will not guess either way."
+    return 1
+  fi
+  cid="${cid#ok}"
+  cid="${cid# }"
+  if [[ -z "${cid}" ]]; then
+    log "FATAL: the promote ran and nothing is up on ${COMPOSE_PROJECT}. What is live is NOT what was checked."
+    return 1
+  fi
+  if ! live_running="$(running_image_id "${cid}")"; then
+    log "FATAL: the promote ran and container ${cid} could not be asked which image it is running. What is live is NOT known."
+    return 1
+  fi
+  if [[ "${live_running}" == "${artifact}" ]]; then
     running="${DEPLOY_IDENTITY}"
   else
     running="not-${DEPLOY_IDENTITY}"
-    log "WARNING: the live container ${cid:-<none>} is running ${live_running:-<unknown>}, not the artifact that was checked (${artifact})"
+    log "WARNING: the live container ${cid} is running ${live_running}, not the artifact that was checked (${artifact})"
   fi
-  log "after: container=${cid:-<none>} image=${live_running:-<unknown>} (checked artifact ${artifact})"
+  log "after: container=${cid} image=${live_running} (checked artifact ${artifact})"
   # THE TWO LINES FORGE READS BACK. The first is the identity comparison the
   # press fails a deploy on; the second is the artifact, for the record.
   printf 'DEPLOYED_ARTIFACT=%s\n' "${live_running}"
@@ -395,14 +570,46 @@ deploy_promote() {
   log "promote complete"
 }
 
+tear_one_candidate_down() {
+  local project="$1"
+  log "tearing ${project} down with its volumes"
+  docker compose -p "${project}" \
+    -f "${COMPOSE_FILE}" -f "${CANDIDATE_COMPOSE_FILE}" down -v --remove-orphans
+  log "candidate ${project} torn down"
+}
+
 candidate_down() {
-  # Teardown helper: remove the -cand project + its db volume + orphans. Used
+  # Teardown helper: remove a candidate project + its db volume + orphans. Used
   # when a candidate gate FAILS (live never touched) or after a promote when
   # candidate.keep is false. The LIVE project is never named here.
-  log "MODE=candidate_down project=${CANDIDATE_PROJECT} (tearing the sandbox down with volumes)"
-  docker compose -p "${CANDIDATE_PROJECT}" \
-    -f "${COMPOSE_FILE}" -f "${CANDIDATE_COMPOSE_FILE}" down -v --remove-orphans
-  log "candidate ${CANDIDATE_PROJECT} torn down"
+  #
+  # Changed 25 September 2026 with the candidate project itself. A teardown
+  # that is handed the same identity the check was handed tears down exactly
+  # that check's project and nothing else. One that is handed nothing goes and
+  # LOOKS for candidate projects of this repository's, because there is no
+  # longer one name it could assume -- and it says which ones it found.
+  local project token found any
+  if token="$(candidate_token)"; then
+    project="${CANDIDATE_PROJECT_PREFIX}-${token}"
+    log "MODE=candidate_down project=${project} (named by the identity this teardown was handed)"
+    tear_one_candidate_down "${project}"
+    return 0
+  fi
+  log "MODE=candidate_down: no identity and no token were handed to this teardown, so it asks docker which candidate projects of ${CANDIDATE_PROJECT_PREFIX} are up"
+  found="$(docker compose ls --all -q 2>/dev/null || true)"
+  any=0
+  while IFS= read -r project; do
+    [[ -z "${project}" ]] && continue
+    case "${project}" in
+      "${CANDIDATE_PROJECT_PREFIX}"-*) ;;
+      *) continue ;;
+    esac
+    any=1
+    tear_one_candidate_down "${project}"
+  done <<<"${found}"
+  if ((any == 0)); then
+    log "no candidate project of ${CANDIDATE_PROJECT_PREFIX} is up; nothing to tear down"
+  fi
 }
 
 # Resolve the single active mode from the truthy flags; refuse ambiguity loudly.
