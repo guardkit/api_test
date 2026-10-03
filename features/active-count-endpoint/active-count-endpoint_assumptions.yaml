@@ -1,0 +1,18 @@
+feature: Active Count Endpoint
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A request to the active count endpoint returns both counts
+  assumption: The endpoint returns a JSON response with active_count and inactive_count
+    fields
+  confidence: low
+  basis: Inferred from request description; exact field names not specified in input
+  human_response: deferred
+- id: ASSUM-002
+  scenario: The endpoint returns zero for both counts when no users exist
+  assumption: The endpoint returns 0 for both counts when no users exist
+  confidence: low
+  basis: Inferred from request description; behaviour for empty user set not stated
+  human_response: deferred

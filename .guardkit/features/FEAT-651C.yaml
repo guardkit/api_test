@@ -1,0 +1,76 @@
+id: FEAT-651C
+name: "Active Count Endpoint"
+description: "Implement GET /users/active-count endpoint returning active and inactive user counts"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 4
+estimated_tasks: 4
+
+tasks:
+  - id: TASK-651C-001
+    name: "Create active count schema"
+    file_path: "tasks/backlog/active-count/TASK-651C-001-create-active-count-schema.md"
+    complexity: 2
+    dependencies: []
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 20
+
+  - id: TASK-651C-002
+    name: "Implement active count query"
+    file_path: "tasks/backlog/active-count/TASK-651C-002-implement-active-count-query.md"
+    complexity: 4
+    dependencies:
+      - TASK-651C-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 45
+
+  - id: TASK-651C-003
+    name: "Add active count endpoint"
+    file_path: "tasks/backlog/active-count/TASK-651C-003-add-active-count-endpoint.md"
+    complexity: 3
+    dependencies:
+      - TASK-651C-002
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-651C-004
+    name: "Add active count tests"
+    file_path: "tasks/backlog/active-count/TASK-651C-004-add-active-count-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-651C-003
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 45
+
+orchestration:
+  parallel_groups:
+    - - TASK-651C-001
+    - - TASK-651C-002
+    - - TASK-651C-003
+    - - TASK-651C-004
+  estimated_duration_minutes: 140
+  recommended_parallel: 1
+
+scenario_owners:
+  "A request to the active count endpoint returns both counts": TASK-651C-003
+  "The endpoint returns zero for both counts when no users exist": TASK-651C-003
+  "A POST request to the active count endpoint is rejected": TASK-651C-003
+  "A request to an invalid path on the user statistics service is rejected": TASK-651C-003
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/active-count-endpoint/active-count-endpoint.feature"
+scenarios:
+  "A request to the active count endpoint returns both counts":
+    verifier: "hurl"
+  "The endpoint returns zero for both counts when no users exist":
+    verifier: "hurl"
+  "A POST request to the active count endpoint is rejected":
+    verifier: "hurl"
+  "A request to an invalid path on the user statistics service is rejected":
+    verifier: "hurl"

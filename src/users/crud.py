@@ -6,7 +6,7 @@ import logging
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,11 +56,7 @@ async def get_user(db: AsyncSession, user_id: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.id == user_id)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.id == user_id).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -78,12 +74,7 @@ async def get_users(
     Returns:
         Sequence of User objects.
     """
-    stmt = (
-        select(User)
-        .where(User.deleted_at.is_(None))
-        .offset(skip)
-        .limit(limit)
-    )
+    stmt = select(User).where(User.deleted_at.is_(None)).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -98,11 +89,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     Returns:
         The User object if found, None otherwise.
     """
-    stmt = (
-        select(User)
-        .where(User.email == email)
-        .where(User.deleted_at.is_(None))
-    )
+    stmt = select(User).where(User.email == email).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -160,8 +147,6 @@ async def delete_user(db: AsyncSession, user_id: str) -> bool:
     if user.deleted_at is not None:
         return False
 
-    from datetime import UTC, datetime
-
     user.deleted_at = datetime.now(UTC)
     db.add(user)
     try:
@@ -187,6 +172,40 @@ async def count_users(db: AsyncSession) -> int:
     stmt = select(func.count()).select_from(User).where(User.deleted_at.is_(None))
     result = await db.execute(stmt)
     return result.scalar_one() or 0
+
+
+async def get_active_user_counts(db: AsyncSession) -> dict[str, int]:
+    """Count live users split by their ``is_active`` flag.
+
+    Backs ``GET /users/active-count``. Soft-deleted users are excluded, the
+    same way ``count_users`` excludes them, so ``active_count`` plus
+    ``inactive_count`` equals the total that function returns.
+
+    One round trip with one conditional aggregate per state: ``COUNT`` ignores
+    the NULL that a non-matching ``CASE`` yields, so both counts come from a
+    single scan and neither needs a ``COALESCE`` — ``COUNT`` is 0, never NULL,
+    on an empty result set.
+
+    Args:
+        db: The async database session.
+
+    Returns:
+        Dict with 'active_count' and 'inactive_count' (both int), each 0 when
+        no live users exist.
+    """
+    stmt = (
+        select(
+            func.count(case((User.is_active.is_(True), 1))).label("active_count"),
+            func.count(case((User.is_active.is_(False), 1))).label("inactive_count"),
+        )
+        .select_from(User)
+        .where(User.deleted_at.is_(None))
+    )
+    row = (await db.execute(stmt)).one()
+    return {
+        "active_count": int(row.active_count),
+        "inactive_count": int(row.inactive_count),
+    }
 
 
 async def count_users_today(db: AsyncSession) -> int:

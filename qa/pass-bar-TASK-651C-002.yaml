@@ -1,0 +1,18 @@
+format_version: '2.0'
+task_id: TASK-651C-002
+registered_at:
+  sha: f470b8bbfd636bfc962cf63070548c090bf1343d
+  date: '2026-10-03'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: active-count-endpoint-AC-001
+  text: A request to the active count endpoint returns both counts
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

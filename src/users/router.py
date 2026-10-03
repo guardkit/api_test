@@ -16,6 +16,7 @@ from src.users import crud
 from src.users.calculations import calculate_days_since_created
 from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
+    ActiveCountResponse,
     DomainCountResponse,
     RecentUsersResponse,
     UserCountResponse,
@@ -274,6 +275,59 @@ async def get_domain_count(
             detail=f"Database unavailable: {exc}",
         ) from exc
     return [DomainCountResponse(**row) for row in rows]
+
+
+@router.get(
+    "/active-count",
+    response_model=ActiveCountResponse,
+    tags=["users"],
+    summary="Get active and inactive user counts",
+    description=(
+        "Returns the number of active and the number of inactive users as "
+        "separate counts. Soft-deleted users are excluded from both, so the "
+        "two counts add up to the total from /users/count."
+    ),
+    responses={
+        405: {"description": "Method not allowed: this endpoint is read-only"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_active_user_count(
+    db: AsyncSession = Depends(get_db),
+) -> ActiveCountResponse:
+    """Get the number of active and inactive users.
+
+    Returns both counts, each 0 when there are no users to count.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        counts = await crud.get_active_user_counts(db)
+    except SQLAlchemyError as exc:
+        logger.error("Database error while counting active users: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return ActiveCountResponse(**counts)
+
+
+@router.api_route(
+    "/active-count",
+    methods=["POST", "PUT", "PATCH", "DELETE"],
+    include_in_schema=False,
+)
+async def reject_active_user_count_writes() -> Response:
+    """Reject every write to ``/users/active-count``.
+
+    Without this, PUT and DELETE on this path would fall through to
+    ``/users/{user_id}``, which answers 400 for an ID that is not a UUID
+    rather than saying the endpoint takes no writes.
+    """
+    raise HTTPException(
+        status_code=405,
+        detail="Method not allowed: /users/active-count is read-only",
+        headers={"Allow": "GET"},
+    )
 
 
 @router.get(

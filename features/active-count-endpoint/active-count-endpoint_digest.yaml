@@ -1,0 +1,30 @@
+feature: active-count-endpoint
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/active-count
+scenarios:
+- title: A request to the active count endpoint returns both counts
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A request to the active count endpoint returns the number of active and inactive users as separate counts.
+- title: The endpoint returns zero for both counts when no users exist
+  tags:
+  - '@boundary'
+  sentence: When no users exist the endpoint returns zero for both active and inactive counts.
+- title: A POST request to the active count endpoint is rejected
+  tags:
+  - '@negative'
+  sentence: The endpoint only accepts GET requests and rejects any POST requests.
+- title: A request to an invalid path on the user statistics service is rejected
+  tags:
+  - '@negative'
+  sentence: The service rejects any requests made to paths other than the active count endpoint.
+assumptions:
+- id: ASSUM-001
+  text: The endpoint returns a JSON response with active_count and inactive_count fields
+  basis: Inferred from request description; exact field names not specified in input
+- id: ASSUM-002
+  text: The endpoint returns 0 for both counts when no users exist
+  basis: Inferred from request description; behaviour for empty user set not stated
