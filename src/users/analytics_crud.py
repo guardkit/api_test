@@ -25,22 +25,19 @@ from src.users.models import User
 WINDOW_DAYS = 7
 
 
-def _window(days: int = WINDOW_DAYS) -> list[tuple[date, datetime, datetime]]:
+def _window() -> list[tuple[date, datetime, datetime]]:
     """Build the window's days, oldest first, with each day's bounds.
 
     The bounds are naive datetimes at midnight of the day and midnight of the
     day after it, matching the naive ``created_at`` column the way
     ``crud.count_users_today`` does. ``end`` is exclusive.
 
-    Args:
-        days: Number of calendar days in the window, including today.
-
     Returns:
         One ``(day, start, end)`` tuple per day, oldest day first.
     """
     today = date.today()
     window: list[tuple[date, datetime, datetime]] = []
-    for offset in range(days - 1, -1, -1):
+    for offset in range(WINDOW_DAYS - 1, -1, -1):
         day = today - timedelta(days=offset)
         start = datetime.combine(day, time.min)
         end = datetime.combine(day + timedelta(days=1), time.min)
