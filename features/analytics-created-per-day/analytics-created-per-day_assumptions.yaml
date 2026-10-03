@@ -1,0 +1,28 @@
+feature: User Creation Analytics - Created Per Day
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A successful request returns the last 7 days of creation counts
+  assumption: The response includes exactly 7 entries, one for each of the last 7
+    days, ordered oldest to newest
+  confidence: low
+  basis: Inferred from 'last 7 days' and 'oldest first' in request; exact count and
+    ordering not explicitly confirmed
+  human_response: deferred
+- id: ASSUM-002
+  scenario: A successful request returns the last 7 days of creation counts
+  assumption: The response format is a JSON array of objects with 'date' (ISO-8601)
+    and 'count' (integer) keys
+  confidence: low
+  basis: Inferred from 'JSON array of objects' in request; exact key names and date
+    format not confirmed
+  human_response: deferred
+- id: ASSUM-003
+  scenario: All users created in the last 7 days are soft-deleted
+  assumption: Soft-deleted users are indistinguishable from active users in the count
+  confidence: low
+  basis: Inferred from 'counting soft-deleted users too' in request; exact storage
+    mechanism not confirmed
+  human_response: deferred

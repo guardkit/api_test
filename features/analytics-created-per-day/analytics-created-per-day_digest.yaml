@@ -1,0 +1,42 @@
+feature: analytics-created-per-day
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/created-per-day
+scenarios:
+- title: A successful request returns the last 7 days of creation counts
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A successful request returns the number of users created each day for
+    the last week, including soft-deleted users, ordered from oldest to newest.
+- title: The response includes exactly the last 7 days including today
+  tags:
+  - '@boundary'
+  sentence: The response includes exactly the last seven days, starting from today
+    and going back six days.
+- title: No users created in the last 7 days returns zero counts for each day
+  tags:
+  - '@negative'
+  sentence: If no users were created in the last week, the response still lists all
+    seven days but shows a count of zero for each.
+- title: All users created in the last 7 days are soft-deleted
+  tags:
+  - '@edge-case'
+  sentence: If every user created in the last week has been soft-deleted, the counts
+    still include them.
+assumptions:
+- id: ASSUM-001
+  text: The response includes exactly 7 entries, one for each of the last 7 days,
+    ordered oldest to newest
+  basis: Inferred from 'last 7 days' and 'oldest first' in request; exact count and
+    ordering not explicitly confirmed
+- id: ASSUM-002
+  text: The response format is a JSON array of objects with 'date' (ISO-8601) and
+    'count' (integer) keys
+  basis: Inferred from 'JSON array of objects' in request; exact key names and date
+    format not confirmed
+- id: ASSUM-003
+  text: Soft-deleted users are indistinguishable from active users in the count
+  basis: Inferred from 'counting soft-deleted users too' in request; exact storage
+    mechanism not confirmed
