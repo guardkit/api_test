@@ -9,7 +9,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PY="${PWD}/.venv/bin/python"
-[[ -x "$PY" ]] || { echo "qa/run-suite.sh: no interpreter at ${PY} — the work leg's bootstrap makes it" >&2; exit 2; }
+# 2026-10-03: make the venv when it is missing (a fresh checkout, such as the merge
+# word's integration copy, has none) instead of refusing, so this suite can run
+# from any clean copy of the repository.
+if [[ ! -x "$PY" ]]; then
+  python3 -m venv "${PWD}/.venv" || { echo "qa/run-suite.sh: no interpreter at ${PY}, and python3 -m venv could not make one" >&2; exit 2; }
+fi
 # The suite's own needs (the app's requirements and the test extras: pytest,
 # pytest-forked, pyyaml, aiosqlite, httpx) are declared in pyproject; the
 # bootstrap may have installed only the app, so make sure of them here.
