@@ -1,14 +1,15 @@
 ---
-id: TASK-E592-003
-title: Add analytics endpoint
-task_type: feature
-parent_review: TASK-REV-E592
-feature_id: FEAT-E592
-wave: 3
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-E592-002
+- TASK-E592-002
+feature_id: FEAT-E592
+id: TASK-E592-003
+implementation_mode: task-work
+parent_review: TASK-REV-E592
+status: design_approved
+task_type: feature
+title: Add analytics endpoint
+wave: 3
 ---
 
 Expose the analytics query via a GET endpoint.

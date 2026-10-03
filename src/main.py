@@ -22,6 +22,7 @@ from src.stats.router import StatsCounterMiddleware
 from src.stats.router import router as stats_router
 from src.time.router import router as time_router
 from src.uptime.router import router as uptime_router
+from src.users.analytics_router import router as analytics_router
 from src.users.router import recent_router
 from src.users.router import router as users_router
 from src.version.router import router as version_router
@@ -126,6 +127,11 @@ app.include_router(health_router)
 
 # Include whoami router with empty prefix so endpoint is at /whoami
 app.include_router(whoami_router, tags=["whoami"])
+
+# Include the analytics router before the users router: both carry the /users
+# prefix, and the users router's GET /users/{user_id} would otherwise match
+# /users/created-per-day first and reject it as a malformed UUID.
+app.include_router(analytics_router, tags=["users"])
 
 # Include users router (prefix already set in router.py)
 app.include_router(users_router, tags=["users"])
