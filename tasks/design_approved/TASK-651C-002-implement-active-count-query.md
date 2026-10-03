@@ -1,14 +1,15 @@
 ---
-id: TASK-651C-002
-title: Implement active count query
-task_type: feature
-parent_review: TASK-REV-651C
-feature_id: FEAT-651C
-wave: 2
-implementation_mode: task-work
 complexity: 4
 dependencies:
-  - TASK-651C-001
+- TASK-651C-001
+feature_id: FEAT-651C
+id: TASK-651C-002
+implementation_mode: task-work
+parent_review: TASK-REV-651C
+status: design_approved
+task_type: feature
+title: Implement active count query
+wave: 2
 ---
 
 Implement the database query to count active and inactive users.
