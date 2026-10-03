@@ -1,5 +1,6 @@
 """Users feature module."""
 
+from src.users.analytics_crud import get_created_per_day
 from src.users.analytics_schemas import (
     UserCreatedPerDayEntry,
     UserCreatedPerDayResponse,
@@ -15,6 +16,7 @@ from src.users.schemas import (
 )
 
 __all__ = [
+    "get_created_per_day",
     "User",
     "UserCountResponse",
     "UserCreate",

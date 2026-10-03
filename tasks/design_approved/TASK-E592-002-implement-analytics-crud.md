@@ -1,14 +1,15 @@
 ---
-id: TASK-E592-002
-title: Implement analytics CRUD
-task_type: feature
-parent_review: TASK-REV-E592
-feature_id: FEAT-E592
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-E592-001
+- TASK-E592-001
+feature_id: FEAT-E592
+id: TASK-E592-002
+implementation_mode: task-work
+parent_review: TASK-REV-E592
+status: design_approved
+task_type: feature
+title: Implement analytics CRUD
+wave: 2
 ---
 
 Implement the database query for user creation counts.
