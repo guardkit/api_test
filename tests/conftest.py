@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import os
 import uuid
-from collections.abc import AsyncGenerator, AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -22,6 +23,8 @@ from sqlalchemy.orm import sessionmaker
 from src.db.base import DeclarativeBase
 from src.db.dependencies import get_db as app_get_db
 from src.main import app
+from src.users.domain_extraction import extract_domain
+from src.users.models import User
 from tests import WHAT_THIS_RUN_TESTS_AGAINST, WHY_THERE_IS_NO_DATABASE
 
 
@@ -295,6 +298,50 @@ async def override_get_db(
     # Remove override after test
     if app_get_db in app.dependency_overrides:
         del app.dependency_overrides[app_get_db]
+
+
+@pytest.fixture
+def seed_user(db_session: AsyncSession) -> Callable[..., Awaitable[User]]:
+    """Return a function that stores one user at an instant the test names.
+
+    Why it is here rather than in one test file: crud.create_user leaves
+    created_at to the database's clock, so a test about a date window has to
+    write the row and then move its timestamp afterwards — two writes for a
+    fact it knew before the first one. This writes it once, at the instant
+    given, which is the only way a test can say "this user was created on the
+    fourth day back" and mean it.
+
+    Soft-deleting is deliberately not this fixture's business: a test that
+    wants a deleted user deletes one with the application's own
+    crud.delete_user, so "soft-deleted" here means deleted the way the service
+    does it.
+
+    Args:
+        db_session: The session belonging to the calling test.
+
+    Returns:
+        Callable[..., Awaitable[User]]: An async function taking the email
+        address and the created_at instant, and optionally a full name. It
+        commits, so the row is in the database when the call returns.
+    """
+
+    async def seed(
+        email: str, created_at: datetime, *, full_name: str | None = None
+    ) -> User:
+        user = User(
+            email=email,
+            domain=extract_domain(email),
+            full_name=full_name,
+            is_active=True,
+            created_at=created_at,
+            updated_at=created_at,
+        )
+        db_session.add(user)
+        await db_session.flush()
+        await db_session.commit()
+        return user
+
+    return seed
 
 
 @pytest.fixture
