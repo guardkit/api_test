@@ -17,7 +17,7 @@ tags:
 autobuild_state:
   current_turn: 5
   max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-3CC2
+  worktree_path: .guardkit/worktrees/FEAT-3CC2
   base_branch: main
   started_at: '2026-02-25T07:31:49.895392'
   last_updated: '2026-02-25T08:11:51.358866'

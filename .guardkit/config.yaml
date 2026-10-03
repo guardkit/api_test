@@ -42,7 +42,7 @@ qa:
   # (card Q11, ruled 2026-08-15; guardkit b138d92c) and from the forge planning
   # driver the same day. Gherkin is the only track; nothing reads either key.
 
-# QAV shadow mode (2026-07-25, design: ai-transition docs/qav-shadow-mode-design-2026-07-25.md).
+# QAV shadow mode (2026-07-25, design: docs/qav-shadow-mode-design-2026-07-25.md in the factory's private planning repository).
 # Log-only second opinion beside every coach verdict — never blocks, absent-not-fail,
 # default OFF when this block is missing. Reversible one-line kill: enabled: false or
 # delete the block. Zero verdict impact by construction (never-raise wrappers; the
@@ -85,7 +85,7 @@ autobuild:
 # rule can decide is refused BY NAME on a card. Feature-level `routing_law:`
 # in a feature YAML wins over this key (the 7 legacy no-Gherkin features carry
 # `off`). Reversible: set to off. Card of record:
-# ai-transition docs/bdd-replacement-options-card-2026-08-09.md (Q8/A.2).
+# docs/bdd-replacement-options-card-2026-08-09.md (Q8/A.2), in the factory's private planning repository.
 routing_law: enforced
 
 # Project-selected Fleet guidance; a new input for subsequent local evaluations.

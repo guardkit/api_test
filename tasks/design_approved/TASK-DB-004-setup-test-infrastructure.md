@@ -13,7 +13,7 @@ autobuild_state:
     player_summary: Implementation via task-work delegation
     timestamp: '2026-02-26T16:07:08.784015'
     turn: 1
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-947C
+  worktree_path: .guardkit/worktrees/FEAT-947C
 complexity: 5
 dependencies:
 - TASK-DB-001

@@ -168,7 +168,7 @@ assert "created its own sandbox, not reusing the similarly-named one" \
 # --- S3: the addresses are asked about one at a time, in the right form ------
 SANDBOX_NAME="${S_NAME}" SANDBOX_MEMORY="${S_MEMORY}" SANDBOX_CPUS="${S_CPUS}" \
   SANDBOX_PUBLISH="${S_PUBLISH}" \
-  SANDBOX_ALLOW_NETWORK="${S_ALLOW},172.30.1.253:4000" \
+  SANDBOX_ALLOW_NETWORK="${S_ALLOW},192.0.2.10:4000" \
   FAKE_SBX_LS="${S_NAME}" FAKE_SBX_DENIED="" \
   run_case "S3 each address is asked about, bare hosts over plain HTTP"
 assert "exit 0" test "${LAST_RC}" -eq 0
@@ -177,9 +177,9 @@ for _h in deb.debian.org security.debian.org '*.debian.org' pypi.org files.pytho
     has_line "${CHECK_PREFIX} http://${_h}" "${LAST_SBX_LOG}"
 done
 assert "asked about the address that already names a port exactly as written" \
-  has_line "${CHECK_PREFIX} 172.30.1.253:4000" "${LAST_SBX_LOG}"
+  has_line "${CHECK_PREFIX} 192.0.2.10:4000" "${LAST_SBX_LOG}"
 assert "did not put http:// in front of the address that names a port" \
-  lacks "${CHECK_PREFIX} http://172.30.1.253:4000" "${LAST_SBX_LOG}"
+  lacks "${CHECK_PREFIX} http://192.0.2.10:4000" "${LAST_SBX_LOG}"
 assert "asked once per address and no more" \
   test "$(count "sbx policy check network" "${LAST_SBX_LOG}")" -eq 6
 assert "never used a form the sandbox tool does not have" \
@@ -352,12 +352,21 @@ _PROFILE="$(cat "${REPO_ROOT}/deploy/profile.yaml")"
 assert "the profile runs the sandbox wrapper for the compose step" \
   has "script: deploy/sandbox-deploy.sh" "${_PROFILE}"
 assert "the profile names the sandbox" has "name: api-test-deploy" "${_PROFILE}"
-assert "the profile asks for 6g of memory" has "memory: 6g" "${_PROFILE}"
-assert "the profile asks for 4 processors" has "cpus: 4" "${_PROFILE}"
+assert "the profile asks for 12g of memory" has "memory: 12g" "${_PROFILE}"
+assert "the profile asks for 6 processors" has "cpus: 6" "${_PROFILE}"
 assert "the profile publishes both ports to the host loopback" \
   has 'publish: ["127.0.0.1:8901:8901", "127.0.0.1:8902:8902"]' "${_PROFILE}"
 assert "the profile carries the five outbound rules" \
   has 'allow_network: ["deb.debian.org", "security.debian.org", "*.debian.org", "pypi.org", "files.pythonhosted.org"]' "${_PROFILE}"
+# THIS REPOSITORY IS PUBLIC (3 October 2026). The profile names no machine:
+# no home folder, no private network address, no machine name. Values that
+# belong to one machine live in that machine's sandbox setup instead.
+assert "the profile names no home folder" lacks "/home/" "${_PROFILE}"
+assert "the profile names no private network address" \
+  test "$(printf '%s\n' "${_PROFILE}" | grep -cE '(^|[^0-9.])(10|172\.(1[6-9]|2[0-9]|3[01])|192\.168)\.[0-9]+\.[0-9]+')" -eq 0
+assert "the profile names no tailnet machine" lacks ".ts.net" "${_PROFILE}"
+assert "the profile's working directory is the repository root, not a path on one machine" \
+  has 'cwd: "."' "${_PROFILE}"
 assert "the repository's own deploy script is still there, unchanged in role" \
   test -x "${REPO_ROOT}/deploy/deploy.sh"
 # The same file ships as forge's template for a newly registered repository, so

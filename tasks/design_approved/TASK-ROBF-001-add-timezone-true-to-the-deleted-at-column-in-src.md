@@ -6,7 +6,7 @@ autobuild_state:
   max_turns: 3
   started_at: '2026-09-10T14:25:10.816105'
   turns: []
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.forge/worktrees/build-FEAT-39F6-20260910141815
+  worktree_path: .forge/worktrees/build-FEAT-39F6-20260910141815
 complexity: 5
 conductor_workspace: repair-of-build-feat-39f6-20260907055525-attempt11-wave1-1
 created: 2025-12-04 00:00:00+00:00

@@ -1,7 +1,7 @@
 # Runtime smoke — users round-trip in a sandboxed candidate · Scope + Build Plan
 ## For: /feature-spec → Rich's Gherkin review → /feature-plan → guardkit autobuild (shadow watching)
 ## Status: EXECUTED 2026-07-25 (merge `bea55e2`) · R5 feature 1 of the review-and-mission program · NOTE: runsc is now ACTIVE on the app service (§2.1's "commented line" text describes the pre-install plan; Rich's attended install + the B1 green runs flipped it same-day, with the db dialed by static IP — the gVisor/embedded-DNS note lives in the compose file)
-## Rulings embodied: ai-transition docs/software-factory-sandbox-options-card-2026-07-25.md (all five axes) + docs/software-factory-mission-statement-2026-07-25.md (moves M3: 0 → 1, and instruments M2)
+## Rulings embodied (the factory's private planning repository): docs/software-factory-sandbox-options-card-2026-07-25.md (all five axes) + docs/software-factory-mission-statement-2026-07-25.md (moves M3: 0 → 1, and instruments M2)
 
 ## 1. What and why (one minute)
 

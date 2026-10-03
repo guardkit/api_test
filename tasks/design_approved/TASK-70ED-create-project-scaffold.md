@@ -13,7 +13,7 @@ autobuild_state:
     player_summary: Implementation via task-work delegation
     timestamp: '2026-02-23T17:02:38.790902'
     turn: 1
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-EC3C
+  worktree_path: .guardkit/worktrees/FEAT-EC3C
 complexity: 3
 created: 2026-02-23 00:00:00+00:00
 dependencies: []

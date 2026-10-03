@@ -58,7 +58,7 @@ evidence_repos: []
 execution:
   started_at: '2026-07-12T08:07:58.346115'
   completed_at: '2026-07-12T08:30:27.497593'
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-FD8D
+  worktree_path: .guardkit/worktrees/FEAT-FD8D
   total_turns: 3
   tasks_completed: 1
   tasks_failed: 0

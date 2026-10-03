@@ -12,7 +12,7 @@ status: blocked
 autobuild_state:
   current_turn: 3
   max_turns: 30
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-8737
+  worktree_path: .guardkit/worktrees/FEAT-8737
   base_branch: ddd-demo
   started_at: '2026-07-25T11:40:20.763325'
   last_updated: '2026-07-25T11:40:22.136037'
@@ -26,7 +26,7 @@ autobuild_state:
       \ 'AC-002', 'AC-003', 'AC-004', 'AC-005', 'AC-006', 'AC-007']). Direct mode\
       \ relaxes coverage/arch but NOT AC delivery.\n\n[Command Execution Advisory]\n\
       - Command `docker compose -f deploy/docker-compose.smoke.yml config` failed\
-      \ (unknown (may be implementation-related)):\n  open /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-8737/deploy/docker-compose.smoke.yml:\
+      \ (unknown (may be implementation-related)):\n  open .guardkit/worktrees/FEAT-8737/deploy/docker-compose.smoke.yml:\
       \ no such file or directory"
     timestamp: '2026-07-25T11:40:20.763325'
     player_summary: '[RECOVERED via player_report] Original error: Unexpected error:
@@ -45,7 +45,7 @@ autobuild_state:
       \ 'AC-002', 'AC-003', 'AC-004', 'AC-005', 'AC-006', 'AC-007']). Direct mode\
       \ relaxes coverage/arch but NOT AC delivery.\n\n[Command Execution Advisory]\n\
       - Command `docker compose -f deploy/docker-compose.smoke.yml config` failed\
-      \ (unknown (may be implementation-related)):\n  open /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-8737/deploy/docker-compose.smoke.yml:\
+      \ (unknown (may be implementation-related)):\n  open .guardkit/worktrees/FEAT-8737/deploy/docker-compose.smoke.yml:\
       \ no such file or directory"
     timestamp: '2026-07-25T11:40:21.462151'
     player_summary: '[RECOVERED via player_report] Original error: Unexpected error:
@@ -64,7 +64,7 @@ autobuild_state:
       \ 'AC-002', 'AC-003', 'AC-004', 'AC-005', 'AC-006', 'AC-007']). Direct mode\
       \ relaxes coverage/arch but NOT AC delivery.\n\n[Command Execution Advisory]\n\
       - Command `docker compose -f deploy/docker-compose.smoke.yml config` failed\
-      \ (unknown (may be implementation-related)):\n  open /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-8737/deploy/docker-compose.smoke.yml:\
+      \ (unknown (may be implementation-related)):\n  open .guardkit/worktrees/FEAT-8737/deploy/docker-compose.smoke.yml:\
       \ no such file or directory"
     timestamp: '2026-07-25T11:40:21.806786'
     player_summary: '[RECOVERED via player_report] Original error: Unexpected error:

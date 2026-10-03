@@ -24,7 +24,7 @@ test_results:
 autobuild_state:
   current_turn: 2
   max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-B2D7
+  worktree_path: .guardkit/worktrees/FEAT-B2D7
   base_branch: main
   started_at: '2026-02-24T14:29:12.118770'
   last_updated: '2026-02-24T14:40:21.472186'

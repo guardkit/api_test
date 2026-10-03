@@ -1,7 +1,7 @@
 # Flip-back drill + both-tracks proof — DCL spec track (Phase D / D3)
 
 **Date:** 2026-07-16 · **Feature:** stats endpoint (`TASK-STAT-001` / `FEAT-AE43`)
-**Spec:** `ai-transition/docs/dcl-adoption-phase-d-design-2026-07-16.md` §3 (D3).
+**Spec:** `docs/dcl-adoption-phase-d-design-2026-07-16.md` (in the factory's private planning repository) §3 (D3).
 
 ## The one idea
 

@@ -12,7 +12,7 @@ status: in_review
 autobuild_state:
   current_turn: 1
   max_turns: 30
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-8737
+  worktree_path: .guardkit/worktrees/FEAT-8737
   base_branch: ddd-demo
   started_at: '2026-07-25T11:42:26.257163'
   last_updated: '2026-07-25T12:05:16.512466'

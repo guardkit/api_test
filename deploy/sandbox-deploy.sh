@@ -250,7 +250,7 @@ create_sandbox() {
 # bare host name as if it were being reached over HTTPS on port 443, but the
 # Debian mirrors are fetched over plain HTTP, so a bare host is asked about as
 # "http://<host>". An entry that already names a port, such as
-# "172.30.1.253:4000", is asked about exactly as written, and so is an entry
+# "192.0.2.10:4000", is asked about exactly as written, and so is an entry
 # that already begins with a scheme.
 check_target_for() {
   local entry="$1"

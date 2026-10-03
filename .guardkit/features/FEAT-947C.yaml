@@ -168,7 +168,7 @@ orchestration:
 execution:
   started_at: '2026-02-27T07:56:30.004200'
   completed_at: '2026-02-27T10:59:16.182741'
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-947C
+  worktree_path: .guardkit/worktrees/FEAT-947C
   total_turns: 12
   tasks_completed: 8
   tasks_failed: 0

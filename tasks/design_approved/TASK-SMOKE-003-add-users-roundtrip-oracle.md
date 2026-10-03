@@ -21,7 +21,7 @@ status: in_review
 autobuild_state:
   current_turn: 2
   max_turns: 30
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-8737
+  worktree_path: .guardkit/worktrees/FEAT-8737
   base_branch: ddd-demo
   started_at: '2026-07-25T12:35:12.482671'
   last_updated: '2026-07-25T13:31:25.432156'
@@ -33,7 +33,7 @@ autobuild_state:
       \ feature's test suite \u2014 fix the failing test(s) named in the output below.\
       \ Command: set -e\npython -m pytest tests/acceptance -x -q\n:\n  \n===============================\
       \ warnings summary ===============================\n.venv/lib/python3.11/site-packages/fastapi/testclient.py:1\n\
-      \  /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-8737/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1:\
+      \  .guardkit/worktrees/FEAT-8737/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1:\
       \ StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is\
       \ deprecated; install `httpx2` instead.\n    from starlette.testclient import\
       \ TestClient as TestClient  # noqa\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n\

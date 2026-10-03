@@ -63,7 +63,7 @@ evidence_repos: []
 execution:
   started_at: '2026-07-12T15:01:21.499571'
   completed_at: '2026-07-12T15:50:23.867620'
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-AE43
+  worktree_path: .guardkit/worktrees/FEAT-AE43
   total_turns: 1
   tasks_completed: 1
   tasks_failed: 0

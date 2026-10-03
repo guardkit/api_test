@@ -5,7 +5,7 @@
 This feature addresses improvements identified in the TASK-FEAT39F6FIX1 review.
 
 **Parent Review**: [TASK-FEAT39F6FIX1](../TASK-FEAT39F6FIX1.md)
-**Review Report**: [TASK-FEAT39F6FIX1-review-report.md](/home/richardwoollcott/Projects/appmilla_github/api_test/.forge/worktrees/build-FEAT-39F6-20260910141815/.claude/reviews/TASK-FEAT39F6FIX1-review-report.md)
+**Review Report**: [TASK-FEAT39F6FIX1-review-report.md](.forge/worktrees/build-FEAT-39F6-20260910141815/.claude/reviews/TASK-FEAT39F6FIX1-review-report.md)
 
 ## Problem Statement
 

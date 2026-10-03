@@ -8,7 +8,7 @@
 - **status**: complete
 - **dry_run**: false
 - **runbook_ref**: deploy-2e7f5e46-65ba-47b9-b412-fdaf89df074d
-- **deploy_profile_ref**: /home/richardwoollcott/Projects/appmilla_github/api_test/deploy/profile.yaml
+- **deploy_profile_ref**: deploy/profile.yaml
 
 ## Claims
 

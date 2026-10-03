@@ -23,7 +23,7 @@ test_results:
 autobuild_state:
   current_turn: 1
   max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-EC3C
+  worktree_path: .guardkit/worktrees/FEAT-EC3C
   base_branch: main
   started_at: '2026-02-24T13:04:59.552866'
   last_updated: '2026-02-24T13:12:01.612714'

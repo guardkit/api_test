@@ -54,7 +54,7 @@ present on `ddd-demo`.
 - Base branch: `ddd-demo` (the repo's autobuild base of record).
 - Suite gate: zero net-new failures vs the recorded baseline (155 passed /
   2 known env-drift middleware failures under `--forked`; see the Factory-1
-  C2 pre-stage record in ai-transition).
+  C2 pre-stage record in the factory's private planning repository).
 - BDD `@task:` tagging deliberately skipped: `pytest-bdd` is not a project
   dependency, so the R2 task-level runner stays dormant for this target.
   The `.feature` file is the human-readable spec of record.

@@ -71,7 +71,7 @@ orchestration:
 execution:
   started_at: '2026-02-24T14:13:28.309756'
   completed_at: '2026-02-24T14:40:21.479326'
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-B2D7
+  worktree_path: .guardkit/worktrees/FEAT-B2D7
   total_turns: 4
   tasks_completed: 3
   tasks_failed: 0

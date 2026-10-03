@@ -70,7 +70,7 @@ orchestration:
 execution:
   started_at: '2026-02-24T13:04:59.545913'
   completed_at: '2026-02-24T13:41:49.816506'
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-EC3C
+  worktree_path: .guardkit/worktrees/FEAT-EC3C
   total_turns: 4
   tasks_completed: 3
   tasks_failed: 0

@@ -6,11 +6,11 @@ Architectural review of the delete-by-email feature (FEAT-39F6) that fails 2 of 
 
 ## Context Used
 
-- task file: `/home/richardwoollcott/Projects/appmilla_github/api_test/.forge/worktrees/build-FEAT-39F6-20260910141815/tasks/backlog/add-deleted-at-column/TASK-FEAT39F6FIX1-repair.md`
+- task file: `.forge/worktrees/build-FEAT-39F6-20260910141815/tasks/backlog/add-deleted-at-column/TASK-FEAT39F6FIX1-repair.md`
 - scope: `src/users/models.py`, `src/users/crud.py`, `src/users/router.py`, `src/users/exceptions.py`, `src/users/validators.py`, `src/users/schemas.py`, `src/db/session.py`, `src/db/base.py`, `src/main.py`, `alembic/versions/39f6_add_deleted_at_column_to_users.py`, `features/users-delete-by-email/users-delete-by-email.feature`, `features/users-delete-by-email/users-delete-by-email_assumptions.yaml`, `qa/twins/users-delete-by-email/delete-existing-user.hurl`, `qa/twins/users-delete-by-email/double-delete-honest-404.hurl`, `tests/acceptance/test_deleted_at_acceptance.py`
 - clarification: defaults applied (unattended)
 - fleet memory (MCP tier): DECLARED-ABSENT — no MCP in a headless harness run
-- fleet memory (CLI tier): {"attempted": true, "ok": true, "exit_code": 0, "output": "\nSearch Results for 'Repair of build-FEAT-39F6-20260907055525-attempt11':\n\n1. [0.63] {\"approach\":\"guardkit autobuild player/coach \nloop\",\"domain_tags\":[\"task\"],\"duration_seconds\":240,\"id...\n", "stderr_tail": "INFO:httpx:HTTP Request: POST http://172.30.1.135:9000/v1/embeddings \"HTTP/1.1 200 OK\"\n"}
+- fleet memory (CLI tier): {"attempted": true, "ok": true, "exit_code": 0, "output": "\nSearch Results for 'Repair of build-FEAT-39F6-20260907055525-attempt11':\n\n1. [0.63] {\"approach\":\"guardkit autobuild player/coach \nloop\",\"domain_tags\":[\"task\"],\"duration_seconds\":240,\"id...\n", "stderr_tail": "INFO:httpx:HTTP Request: POST http://<embedder host>:9000/v1/embeddings \"HTTP/1.1 200 OK\"\n"}
 
 ## Findings
 

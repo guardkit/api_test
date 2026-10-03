@@ -15,7 +15,7 @@ estimated_minutes: 20
 autobuild_state:
   current_turn: 2
   max_turns: 5
-  worktree_path: /home/richardwoollcott/Projects/appmilla_github/api_test/.guardkit/worktrees/FEAT-947C
+  worktree_path: .guardkit/worktrees/FEAT-947C
   base_branch: main
   started_at: '2026-02-26T16:46:26.195439'
   last_updated: '2026-02-26T19:02:22.838134'

@@ -19,6 +19,10 @@ compose:
   # snapshots the running image as the rollback tag then `up -d --build`, and in
   # revert mode re-tags the rollback image and `up -d --no-build`. It now talks to
   # the Docker engine inside the sandbox instead of the one on the host.
+  # When the factory itself runs inside the sandbox (as it does for this
+  # repository), forge does not run this wrapper: it runs deploy/deploy.sh
+  # directly, by the wrapper's own name without "sandbox-". The wrapper stays
+  # the attended, by-hand way to create the sandbox from the host.
   script: deploy/sandbox-deploy.sh
 # How THIS project wants the identity of the thing forge checked handed to its
 # deploy step, and what that step prints to say what is now running. Both names
@@ -60,10 +64,13 @@ identity:
 #                    keep running from the host exactly as they do today.
 #   allow_network -- the sandbox refuses every outbound address unless it is
 #                    named here. These five let the image build: the Debian
-#                    mirrors and the Python package index. A repository whose app
-#                    calls the model door on the host adds the host's own LAN
-#                    address and port here (the name host.docker.internal
-#                    resolves to an address the policy blocks).
+#                    mirrors and the Python package index. Nothing that names
+#                    one machine belongs in this file (it is public): the
+#                    routes the factory's services inside need to reach this
+#                    machine's model router, bus, memory and embedder are
+#                    added to the sandbox's own network policy when the
+#                    sandbox is set up on that machine, from settings kept
+#                    off GitHub. `sbx policy ls <sandbox> --wide` shows them.
 sandbox:
   name: api-test-deploy
   # Raised from 6g/4 on 2026-09-08: the sandbox now also carries the factory's
@@ -71,24 +78,19 @@ sandbox:
   memory: 12g
   cpus: 6
   publish: ["127.0.0.1:8901:8901", "127.0.0.1:8902:8902"]
-  # The last five let the factory's services inside reach the host: the model
-  # router (4000), the bus (4222), the memory door (8005), the embedder (9000),
-  # and the memory database on another machine over Tailscale (5433).
-  allow_network: ["deb.debian.org", "security.debian.org", "*.debian.org", "pypi.org", "files.pythonhosted.org", "172.30.1.135:4000", "172.30.1.135:4222", "172.30.1.135:8005", "172.30.1.135:9000", "whitestocks.tailebf801.ts.net:5433"]
+  allow_network: ["deb.debian.org", "security.debian.org", "*.debian.org", "pypi.org", "files.pythonhosted.org"]
   # The sandbox carries the factory (sandbox first, 2026-09-07; the spec's Part
   # O rule 68): the deploy sidecar and the build runner run INSIDE it, on the
   # factory's own clone of this repository, reached by forge-prod on these two
-  # loopback ports. The receipts root is mounted read-write (data the pipeline
-  # reads, never code it runs); forge's config lives beside it, so the whole
-  # state folder is the mount. The sandbox's own settings (the router's address
-  # and key, the bus, the memory leg) are a sops file rendered for the length of
-  # the attended create command only, never named here and never in a shell:
-  #   sops --config ~/.config/fleet-secrets/.sops.yaml exec-file \
-  #     ~/.config/fleet-secrets/forge/sandbox-api-test-deploy.enc.env \
-  #     'SANDBOX_ENV_FILE={} deploy/sandbox-deploy.sh'
+  # loopback ports. The sandbox's own settings (the router's address and key,
+  # the bus, the memory leg) are a sops-encrypted file rendered for the length
+  # of the attended create command only, never named here and never in a shell.
+  # The receipts folder mounted read-write into the sandbox is a path on one
+  # machine, so it is not written here either: whoever creates the sandbox by
+  # hand sets SANDBOX_RECEIPTS_PATH for that one command, and the sandbox's
+  # own setup records it on the machine it belongs to.
   sidecar_publish: "127.0.0.1:8925:8125"
   runner_publish: "127.0.0.1:8924:8124"
-  receipts_path: "/home/richardwoollcott/forge-state"
 hosts:
   - host: localhost
     role: app
@@ -104,11 +106,13 @@ health_checks:
 # it brings the prior known-good build back up. Absent ⇒ a revert is a LOUD
 # terminal failure (never a silent keep-serving of the unverified build).
 rollback_image_ref: "apitest-app:rollback-pre-deploy"
-# Absolute repo root (the api_test bind mount is at this same path inside the
-# forge-prod container). deploy_compose resolves `script` relative to this cwd,
-# and the forge daemon's own cwd is /home/forge — a relative "." would NOT find
-# deploy/deploy.sh, so cwd MUST be absolute for the C4 attended deploy.
-cwd: "/home/richardwoollcott/Projects/appmilla_github/api_test"
+# The working directory the scripts run in: the repository root. Written as
+# "." rather than as a path on one machine (3 October 2026). The deploy helper
+# inside the sandbox resolves a relative cwd against its own copy of this
+# repository, and the factory runs every deploy leg of this repository through
+# that helper. (The note this replaces required an absolute path because, in
+# July, forge ran the scripts itself from its own home folder.)
+cwd: "."
 # Per-target live-gate driver (the F16 real backend). RepoDriverLiveGateInvoker
 # runs this argv with cwd=repo root and env overlaid with `env` below, appending
 # --feature/--target (and --gates when a subset is set). `python3` inside
