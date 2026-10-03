@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 
 class UserBase(BaseModel):
@@ -137,6 +144,35 @@ class UserCountResponse(BaseModel):
     count: int
 
     model_config = ConfigDict(json_schema_extra={"examples": [{"count": 42}]})
+
+
+class ActiveCountResponse(BaseModel):
+    """Schema for the active/inactive user count response.
+
+    Both counts are non-negative integers: a user is counted in exactly one of
+    the two, and a database with no users yields 0 for both.
+    """
+
+    active_count: int = Field(
+        ge=0,
+        description="Number of users flagged active",
+    )
+    inactive_count: int = Field(
+        ge=0,
+        description="Number of users flagged inactive",
+    )
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "examples": [
+                {
+                    "active_count": 40,
+                    "inactive_count": 2,
+                }
+            ]
+        },
+    )
 
 
 class UserSummaryResponse(BaseModel):

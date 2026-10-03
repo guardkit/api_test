@@ -9,6 +9,7 @@ import pytest
 from pydantic import ValidationError
 
 from src.users.schemas import (
+    ActiveCountResponse,
     UserCreate,
     UserList,
     UserPublic,
@@ -360,3 +361,92 @@ class TestUserList:
         assert len(examples) >= 1
         assert "items" in examples[0]
         assert "total" in examples[0]
+
+
+class TestActiveCountResponse:
+    """Tests for ActiveCountResponse schema."""
+
+    def test_holds_both_counts_separately(self) -> None:
+        """The two counts are kept as two distinct fields."""
+        response = ActiveCountResponse(active_count=7, inactive_count=2)
+
+        assert response.active_count == 7
+        assert response.inactive_count == 2
+
+    def test_zero_is_a_valid_value_for_both_counts(self) -> None:
+        """A data store with no users is expressible as 0 and 0."""
+        response = ActiveCountResponse(active_count=0, inactive_count=0)
+
+        assert response.active_count == 0
+        assert response.inactive_count == 0
+
+    @pytest.mark.parametrize("field", ["active_count", "inactive_count"])
+    def test_negative_count_is_rejected(self, field: str) -> None:
+        """A count cannot be below zero."""
+        payload = {"active_count": 0, "inactive_count": 0}
+        payload[field] = -1
+
+        with pytest.raises(ValidationError) as exc_info:
+            ActiveCountResponse(**payload)
+
+        assert field in str(exc_info.value)
+
+    @pytest.mark.parametrize("field", ["active_count", "inactive_count"])
+    def test_count_must_be_provided(self, field: str) -> None:
+        """Both counts are part of the contract, so neither is optional."""
+        payload = {"active_count": 1, "inactive_count": 1}
+        payload.pop(field)
+
+        with pytest.raises(ValidationError) as exc_info:
+            ActiveCountResponse(**payload)
+
+        assert field in str(exc_info.value)
+
+    @pytest.mark.parametrize("field", ["active_count", "inactive_count"])
+    def test_count_must_be_a_whole_number(self, field: str) -> None:
+        """A fractional count is not a number of users."""
+        payload: dict[str, object] = {"active_count": 1, "inactive_count": 1}
+        payload[field] = 1.5
+
+        with pytest.raises(ValidationError) as exc_info:
+            ActiveCountResponse.model_validate(payload)
+
+        assert field in str(exc_info.value)
+
+    def test_serializes_both_counts(self) -> None:
+        """The wire shape carries both count keys."""
+        payload = ActiveCountResponse(active_count=3, inactive_count=4).model_dump()
+
+        assert payload == {"active_count": 3, "inactive_count": 4}
+
+    def test_json_schema_declares_non_negative_integers(self) -> None:
+        """The published contract types both fields as integers >= 0."""
+        schema = ActiveCountResponse.model_json_schema()
+
+        assert set(schema["required"]) == {"active_count", "inactive_count"}
+        for field in ("active_count", "inactive_count"):
+            assert schema["properties"][field]["type"] == "integer"
+            assert schema["properties"][field]["minimum"] == 0
+
+    def test_json_schema_examples_validate(self) -> None:
+        """The documented example validates against the schema itself."""
+        examples = ActiveCountResponse.model_json_schema()["examples"]
+
+        assert isinstance(examples, list)
+        assert len(examples) >= 1
+        example = examples[0]
+        assert isinstance(example, dict)
+        assert set(example) == {"active_count", "inactive_count"}
+        ActiveCountResponse(**example)
+
+    def test_accepts_a_plain_object_with_both_attributes(self) -> None:
+        """A query result object can populate the schema directly."""
+
+        class _Result:
+            active_count = 5
+            inactive_count = 1
+
+        response = ActiveCountResponse.model_validate(_Result())
+
+        assert response.active_count == 5
+        assert response.inactive_count == 1
