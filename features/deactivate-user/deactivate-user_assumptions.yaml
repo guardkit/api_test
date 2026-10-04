@@ -11,12 +11,6 @@ assumptions:
     not specified
   human_response: deferred
 - id: ASSUM-002
-  scenario: Deactivating a user without authentication is rejected
-  assumption: The endpoint requires authentication
-  confidence: low
-  basis: Not stated in the input; common security practice for user management endpoints
-  human_response: deferred
-- id: ASSUM-003
   scenario: Concurrent deactivation requests for the same user are handled gracefully
   assumption: Concurrent requests to deactivate the same user are handled gracefully
   confidence: low
