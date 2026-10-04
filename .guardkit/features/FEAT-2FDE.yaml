@@ -1,0 +1,88 @@
+id: FEAT-2FDE
+name: "Deactivate User Endpoint"
+description: "Implement PATCH /users/{user_id}/deactivate endpoint to deactivate user accounts"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 5
+estimated_tasks: 5
+
+tasks:
+  - id: TASK-2FDE-001
+    name: "Create deactivation endpoint"
+    file_path: "tasks/backlog/deactivate-user/TASK-2FDE-001-create-deactivation-endpoint.md"
+    complexity: 5
+    dependencies: []
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-2FDE-002
+    name: "Implement deactivation logic"
+    file_path: "tasks/backlog/deactivate-user/TASK-2FDE-002-implement-deactivation-logic.md"
+    complexity: 5
+    dependencies:
+      - TASK-2FDE-001
+    status: pending
+    implementation_mode: task-work
+    estimated_minutes: 60
+
+  - id: TASK-2FDE-003
+    name: "Add deactivation tests"
+    file_path: "tasks/backlog/deactivate-user/TASK-2FDE-003-add-deactivation-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-2FDE-002
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 45
+
+  - id: TASK-2FDE-004
+    name: "Update user models"
+    file_path: "tasks/backlog/deactivate-user/TASK-2FDE-004-update-user-models.md"
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+  - id: TASK-2FDE-005
+    name: "Add API documentation"
+    file_path: "tasks/backlog/deactivate-user/TASK-2FDE-005-add-api-documentation.md"
+    complexity: 2
+    dependencies:
+      - TASK-2FDE-001
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+orchestration:
+  parallel_groups:
+    - - TASK-2FDE-001
+      - TASK-2FDE-004
+    - - TASK-2FDE-002
+    - - TASK-2FDE-003
+    - - TASK-2FDE-005
+  estimated_duration_minutes: 225
+  recommended_parallel: 2
+scenario_owners:
+  "Deactivating an active user succeeds": TASK-2FDE-001
+  "Deactivating a non-existent user returns not found": TASK-2FDE-001
+  "Deactivating an already inactive user returns conflict": TASK-2FDE-001
+  "Concurrent deactivation requests for the same user are handled gracefully": TASK-2FDE-001
+  "Deactivation fails gracefully when the user service is unavailable": TASK-2FDE-001
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/deactivate-user/deactivate-user.feature"
+scenarios:
+  "Deactivating an active user succeeds":
+    verifier: "hurl"
+  "Deactivating a non-existent user returns not found":
+    verifier: "hurl"
+  "Deactivating an already inactive user returns conflict":
+    verifier: "hurl"
+  "Concurrent deactivation requests for the same user are handled gracefully":
+    verifier: "hurl"
+  "Deactivation fails gracefully when the user service is unavailable":
+    verifier: "probe:process"
