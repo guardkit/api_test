@@ -18,6 +18,7 @@ from src.users.exceptions import UserNotFoundError
 from src.users.schemas import (
     ActiveCountResponse,
     DomainCountResponse,
+    DomainListResponse,
     RecentUsersResponse,
     UserCountResponse,
     UserCreate,
@@ -275,6 +276,44 @@ async def get_domain_count(
             detail=f"Database unavailable: {exc}",
         ) from exc
     return [DomainCountResponse(**row) for row in rows]
+
+
+@router.get(
+    "/domains",
+    response_model=DomainListResponse,
+    tags=["users"],
+    summary="List distinct user email domains",
+    description=(
+        "Returns a JSON array of the distinct email domains of the users in "
+        "the database, in alphabetical order. An address with no usable "
+        "domain part contributes nothing, and a database with no users yields "
+        "an empty array rather than an error. Takes no parameters."
+    ),
+    responses={
+        503: {"description": "Database unavailable"},
+    },
+)
+async def get_user_domains(
+    db: AsyncSession = Depends(get_db),
+) -> DomainListResponse:
+    """List the distinct user email domains in alphabetical order.
+
+    Returns a JSON array of domain strings, empty when there are none.
+    Returns 503 if the database is unavailable.
+
+    Registered ahead of ``GET /users/{user_id}`` on purpose: FastAPI answers
+    the first route that matches, so a literal path declared after the ID
+    route would be swallowed and refused as a malformed UUID.
+    """
+    try:
+        domains = await crud.get_distinct_domains(db)
+    except SQLAlchemyError as exc:
+        logger.error("Database error while listing user domains: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+    return DomainListResponse.model_validate(domains)
 
 
 @router.get(

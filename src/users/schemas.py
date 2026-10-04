@@ -9,6 +9,7 @@ from pydantic import (
     ConfigDict,
     EmailStr,
     Field,
+    RootModel,
     field_validator,
     model_validator,
 )
@@ -61,6 +62,26 @@ class DomainCountResponse(BaseModel):
                     "domain": "example.com",
                     "count": 5,
                 }
+            ]
+        }
+    )
+
+
+class DomainListResponse(RootModel[list[str]]):
+    """Schema for the distinct-domain list: a list of domain strings.
+
+    Serializes as a bare JSON array of strings, i.e.
+    ``["alpha.example", "beta.example"]``, ordered alphabetically by the
+    query that produced it. An empty list is a valid answer, not an error.
+    """
+
+    root: list[str]
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                ["alpha.example", "beta.example", "example.com"],
+                [],
             ]
         }
     )

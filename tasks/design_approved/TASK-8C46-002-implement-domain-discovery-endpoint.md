@@ -1,14 +1,15 @@
 ---
-id: TASK-8C46-002
-title: Implement domain discovery endpoint
-task_type: feature
-parent_review: TASK-REV-8C46
-feature_id: FEAT-8C46
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-8C46-001
+- TASK-8C46-001
+feature_id: FEAT-8C46
+id: TASK-8C46-002
+implementation_mode: task-work
+parent_review: TASK-REV-8C46
+status: design_approved
+task_type: feature
+title: Implement domain discovery endpoint
+wave: 2
 ---
 
 Implement the GET /users/domains endpoint.
