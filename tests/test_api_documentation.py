@@ -1419,3 +1419,194 @@ def test_api_documentation_domain_count_consistent_with_implementation(
         f"Documented fields {documented_fields} must match "
         f"DomainCountResponse fields {schema_fields}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Deactivate user endpoint documentation tests (TASK-2FDE-005)
+# ---------------------------------------------------------------------------
+
+
+DEACTIVATION_PATH = "/users/{user_id}/deactivate"
+
+
+@pytest.fixture
+def deactivation_docs_path() -> Path:
+    """Return the path to the dedicated deactivation endpoint documentation."""
+    return Path(__file__).parent.parent / "docs" / "api" / "deactivate-user.md"
+
+
+def _deactivation_section(content: str) -> str:
+    """Return only the Deactivate User section of the API documentation.
+
+    Scoping the assertions to that section keeps them about the deactivation
+    endpoint rather than about anything else the document happens to mention.
+    """
+    assert "### Deactivate User" in content, (
+        "Documentation must have a Deactivate User section"
+    )
+    return content.split("### Deactivate User", 1)[1].split("\n## Rate Limiting", 1)[0]
+
+
+def test_api_documentation_contains_deactivation_endpoint_path_and_method(
+    api_docs_path: Path,
+) -> None:
+    """Test that the deactivation endpoint is documented with its path and method.
+
+    AC-001: API documentation includes deactivation endpoint
+    """
+    section = _deactivation_section(api_docs_path.read_text())
+
+    assert DEACTIVATION_PATH in section, (
+        "Documentation must include the deactivation endpoint path"
+    )
+    assert f"PATCH {DEACTIVATION_PATH}" in section, (
+        "Documentation must specify the PATCH method for the deactivation endpoint"
+    )
+
+
+def test_api_documentation_deactivation_endpoint_is_registered(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented deactivation route is a route the app serves.
+
+    This is an invariant test: the path and method in the documentation must be
+    the path and method the application actually registers, so the document
+    cannot drift onto an endpoint that does not exist.
+    """
+    from src.main import app
+
+    section = _deactivation_section(api_docs_path.read_text())
+    documented_path = app.openapi()["paths"].get(DEACTIVATION_PATH)
+
+    assert DEACTIVATION_PATH in section, (
+        "Documentation must name the deactivation path the app serves"
+    )
+    assert documented_path is not None, (
+        f"No route registered at {DEACTIVATION_PATH} to match the documentation"
+    )
+    assert "patch" in documented_path, (
+        "The app must serve PATCH on the documented deactivation path"
+    )
+    documented_codes = set(documented_path["patch"]["responses"])
+    for code in ("404", "409"):
+        assert code in section, (
+            f"Documentation must name the {code} status the app declares"
+        )
+        assert code in documented_codes, (
+            f"The app must declare {code} for the documented deactivation route"
+        )
+
+
+def test_api_documentation_deactivation_status_codes(api_docs_path: Path) -> None:
+    """Test that the deactivation documentation covers 200, 404 and 409.
+
+    AC-001: API documentation includes deactivation endpoint
+    """
+    section = _deactivation_section(api_docs_path.read_text())
+
+    assert "200" in section, "Documentation must document the 200 status code"
+    assert "404" in section, (
+        "Documentation must document the 404 status code for an unknown id"
+    )
+    assert "Not Found" in section, "Documentation must name the 404 condition"
+    assert "409" in section, (
+        "Documentation must document the 409 status code for an inactive user"
+    )
+    assert "Conflict" in section, "Documentation must name the 409 condition"
+
+
+def test_api_documentation_deactivation_example_request_and_response(
+    api_docs_path: Path,
+) -> None:
+    """Test that the deactivation documentation carries request and response examples.
+
+    AC-001: API documentation includes deactivation endpoint
+    """
+    section = _deactivation_section(api_docs_path.read_text())
+
+    assert "Example Request" in section, "Documentation must include an example request"
+    assert "curl -X PATCH" in section, "The example request must show a PATCH call"
+    assert "Example Response" in section, (
+        "Documentation must include an example response"
+    )
+    assert '"is_active": false' in section, (
+        "The example response must show the user returned as inactive"
+    )
+
+
+def test_api_documentation_deactivation_response_fields_match_schema(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented response fields are exactly the UserPublic fields.
+
+    This is an invariant test: the deactivation endpoint answers with UserPublic,
+    so the fields named in its documentation must be that schema's fields.
+    """
+    from src.users.schemas import UserPublic
+
+    section = _deactivation_section(api_docs_path.read_text())
+    schema_fields = set(UserPublic.model_fields.keys())
+
+    documented_fields = {
+        field
+        for field in schema_fields
+        if f'"{field}"' in section or f"`{field}`" in section
+    }
+
+    assert documented_fields == schema_fields, (
+        f"Documented fields {documented_fields} must match "
+        f"UserPublic fields {schema_fields}"
+    )
+
+
+def test_deactivation_reference_documentation_exists(
+    deactivation_docs_path: Path,
+) -> None:
+    """Test that the endpoint has its own documentation page.
+
+    AC-001: API documentation includes deactivation endpoint
+    """
+    assert deactivation_docs_path.is_file(), (
+        "docs/api/deactivate-user.md must document the deactivation endpoint"
+    )
+
+
+def test_deactivation_reference_documentation_content(
+    deactivation_docs_path: Path,
+) -> None:
+    """Test that the dedicated page covers the path, method, errors and examples.
+
+    AC-001: API documentation includes deactivation endpoint
+    """
+    content = deactivation_docs_path.read_text()
+
+    assert f"PATCH {DEACTIVATION_PATH}" in content, (
+        "The page must name the endpoint and its method"
+    )
+    assert "404" in content and "409" in content, (
+        "The page must document the 404 and 409 error codes"
+    )
+    assert "not found" in content.lower(), "The page must explain the 404 case"
+    assert "already inactive" in content.lower(), (
+        "The page must explain the 409 case in the words the API answers"
+    )
+    assert "curl" in content, "The page must include example requests"
+    assert '"detail"' in content, "The page must show the error response bodies"
+    assert "is_active" in content, "The page must document the flag it changes"
+
+
+def test_api_documentation_links_to_deactivation_reference(
+    api_docs_path: Path, deactivation_docs_path: Path
+) -> None:
+    """Test that the API index points at the dedicated deactivation page.
+
+    AC-001: API documentation includes deactivation endpoint
+    """
+    section = _deactivation_section(api_docs_path.read_text())
+
+    assert "deactivate-user.md" in section, (
+        "The deactivation section must link to the dedicated page"
+    )
+    assert deactivation_docs_path.is_file(), (
+        "The linked page must exist for the link to resolve"
+    )

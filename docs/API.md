@@ -954,13 +954,16 @@ HTTP/1.1 204 No Content
 Sets an existing, active user's ``is_active`` flag to ``false`` and returns the
 updated user. The record is kept, so the account can be brought back with
 ``PUT /users/{user_id}`` (``{"is_active": true}``). Deactivation is not a
-delete: ``deleted_at`` is untouched, and the user still appears in
-``GET /users`` and in ``GET /users/active-count`` — as inactive.
+delete: ``deleted_at`` is untouched, so the user still appears in ``GET /users``
+and moves from ``active_count`` to ``inactive_count`` in
+``GET /users/active-count``.
+
+**Detailed documentation**: [`docs/api/deactivate-user.md`](api/deactivate-user.md)
 
 **Tags**: `users`
 
-**Authentication**: Handled by the service's auth middleware; this endpoint adds no
-route-level token check of its own.
+**Authentication**: None required. Unlike ``DELETE /users/{user_id}``, this route
+checks no ``X-Auth-Token`` header of its own.
 
 **Path Parameters**:
 
@@ -1013,11 +1016,14 @@ curl -X PATCH http://localhost:8000/users/550e8400-e29b-41d4-a716-446655440000/d
 **Implementation Notes**:
 
 - The route lives in ``src/users/router.py`` (``deactivate_user``) and writes
-  through ``crud.update_user``, which commits, so the change is visible to the
-  next request
-- The existence check comes before the state check, so an unknown ID answers
-  404 and only a known-but-inactive user answers 409
-- A soft-deleted user is not found by ``crud.get_user``, so deactivating one
+  through ``crud.deactivate_user``, which commits, so the change is visible to
+  the next request
+- The check and the write are one guarded ``UPDATE`` whose ``WHERE`` clause
+  requires the row to be live and active, so two concurrent callers cannot both
+  report success — the one that claims nothing is the one that answers 409
+- When the claim matches nothing, one read decides the answer: no live row
+  answers 404, a live but inactive row answers 409
+- A soft-deleted user is neither claimed nor found, so deactivating one
   answers 404 rather than reviving it
 - The route is registered with the rest of the users router in ``src/main.py``
   and appears in the interactive docs at ``/docs``
