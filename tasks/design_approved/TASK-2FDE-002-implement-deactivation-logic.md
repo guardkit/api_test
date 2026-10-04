@@ -1,14 +1,15 @@
 ---
-id: TASK-2FDE-002
-title: Implement deactivation logic
-task_type: feature
-parent_review: TASK-REV-2FDE
-feature_id: FEAT-2FDE
-wave: 2
-implementation_mode: task-work
 complexity: 5
 dependencies:
-  - TASK-2FDE-001
+- TASK-2FDE-001
+feature_id: FEAT-2FDE
+id: TASK-2FDE-002
+implementation_mode: task-work
+parent_review: TASK-REV-2FDE
+status: design_approved
+task_type: feature
+title: Implement deactivation logic
+wave: 2
 ---
 
 Implement the deactivation logic in the CRUD layer.

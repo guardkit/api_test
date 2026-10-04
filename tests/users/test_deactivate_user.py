@@ -233,11 +233,16 @@ class TestDeactivateWhenTheDatabaseFails:
         override_get_db: None,
         db_session: AsyncSession,
     ) -> None:
-        """The write failing after the read is translated, not reported as done."""
+        """The write failing after the read is translated, not reported as done.
+
+        The write itself moved into ``crud.deactivate_user`` (TASK-2FDE-002),
+        so that is the operation made to fail here; what is asserted is
+        unchanged.
+        """
         user_id = await _make_user(db_session, "write-fails@example.com")
 
         with patch(
-            "src.users.router.crud.update_user",
+            "src.users.router.crud.deactivate_user",
             side_effect=sqlalchemy_exc.SQLAlchemyError("write failed"),
         ):
             response = await async_client.patch(f"/users/{user_id}/deactivate")

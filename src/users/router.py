@@ -585,33 +585,13 @@ async def deactivate_user(
     Returns 404 if no live user has that ID.
     Returns 409 if the user is already inactive.
     Returns 503 if the database is unavailable.
+
+    The 404 and the 409 come from the CRUD layer, which decides them as part of
+    the write itself; this route only translates what the database says into
+    HTTP.
     """
     try:
-        user = await crud.get_user(db, validated_user_id)
-    except SQLAlchemyError as exc:
-        logger.error(
-            "Database error while fetching user %s for deactivation: %s",
-            validated_user_id,
-            exc,
-        )
-        raise HTTPException(
-            status_code=503,
-            detail=f"Database unavailable: {exc}",
-        ) from exc
-
-    if user is None:
-        raise UserNotFoundError(user_id=validated_user_id)
-
-    if not user.is_active:
-        raise HTTPException(
-            status_code=409,
-            detail=f"User with id '{validated_user_id}' is already inactive",
-        )
-
-    try:
-        updated = await crud.update_user(
-            db, validated_user_id, UserUpdate(is_active=False)
-        )
+        user = await crud.deactivate_user(db, validated_user_id)
     except SQLAlchemyError as exc:
         logger.error(
             "Database error while deactivating user %s: %s", validated_user_id, exc
@@ -621,10 +601,7 @@ async def deactivate_user(
             detail=f"Database unavailable: {exc}",
         ) from exc
 
-    if updated is None:
-        raise UserNotFoundError(user_id=validated_user_id)
-
-    return UserPublic.model_validate(updated)
+    return UserPublic.model_validate(user)
 
 
 @router.delete(
