@@ -1,0 +1,30 @@
+feature: user-domain-discovery
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: GET
+  path: /users/domains
+scenarios:
+- title: A request to the domains endpoint returns a sorted list of unique domains
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: A request for the list of user domains returns a sorted list of unique domains.
+- title: The domains endpoint returns an empty list when no users exist
+  tags:
+  - '@boundary'
+  sentence: If no users are registered, the request still succeeds but returns an empty list.
+- title: Malformed email addresses are excluded from the domain list
+  tags:
+  - '@negative'
+  sentence: Email addresses that do not contain a domain part are ignored and do not appear in the list.
+- title: Concurrent requests to the domains endpoint both succeed
+  tags:
+  - '@edge-case'
+  sentence: Two simultaneous requests for the domain list both succeed and return the same result.
+assumptions:
+- id: ASSUM-001
+  text: The endpoint returns a JSON array of strings
+  basis: 'Inferred from ''returns a JSON array of distinct email domains'' in the feature description; exact JSON structure not specified'
+- id: ASSUM-002
+  text: An empty domain list returns an empty array rather than a 404
+  basis: 'Open question in input: ''What is the expected response format for empty domain lists (empty array vs 404)?''. Defaulted to empty array as it is common for collection endpoints.'
