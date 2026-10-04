@@ -345,6 +345,45 @@ def seed_user(db_session: AsyncSession) -> Callable[..., Awaitable[User]]:
 
 
 @pytest.fixture
+def seed_user_row(db_session: AsyncSession) -> Callable[..., Awaitable[User]]:
+    """Return a function that stores one user with the address given verbatim.
+
+    Why it is here rather than in one test file: the application's own
+    creation schema validates the address with ``EmailStr``, so an address
+    with no usable domain part cannot be stored through the API at all. A test
+    of what a read does with such a row — the row a bulk import or a
+    hand-edited table leaves behind — has to put it in at the ORM level, and
+    more than one test file needs to.
+
+    Unlike ``seed_user`` this takes no instant: it exists for what is stored,
+    not for when it was stored, so it leaves both timestamps to the database's
+    clock.
+
+    Args:
+        db_session: The session belonging to the calling test.
+
+    Returns:
+        Callable[..., Awaitable[User]]: An async function taking the address
+        to store as it stands, and optionally a full name. It commits, so the
+        row is in the database when the call returns.
+    """
+
+    async def seed(email: str, *, full_name: str | None = None) -> User:
+        user = User(
+            email=email,
+            domain=extract_domain(email),
+            full_name=full_name,
+            is_active=True,
+        )
+        db_session.add(user)
+        await db_session.flush()
+        await db_session.commit()
+        return user
+
+    return seed
+
+
+@pytest.fixture
 def client() -> TestClient:
     """Provide a FastAPI TestClient for sync tests.
 

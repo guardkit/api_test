@@ -12,6 +12,7 @@ from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.users.domain_extraction import extract_domains
 from src.users.exceptions import (
     UserAlreadyExistsError,
     UserAlreadyInactiveError,
@@ -371,6 +372,32 @@ async def count_users_by_domain(
     result = await db.execute(stmt)
     rows = result.fetchall()
     return [{"domain": row.domain, "count": row.count} for row in rows]
+
+
+async def get_distinct_domains(db: AsyncSession) -> list[str]:
+    """List the distinct email domains of the live users.
+
+    The emails are read from the database and handed to the domain extraction
+    utility, which is the project's one rule for what counts as a domain: an
+    address with no usable domain part contributes nothing, and every domain
+    that does contribute is lowercased, so ``User@Example.COM`` and
+    ``user@example.com`` are one entry rather than two. Neither of those is
+    something a ``DISTINCT`` over the column can say, which is why the rows
+    come back to Python rather than being deduped in SQL.
+
+    Soft-deleted users are excluded, as in every other read here.
+
+    Args:
+        db: The async database session.
+
+    Returns:
+        The distinct domains in alphabetical order. Empty when no live user
+        has an address with a domain in it.
+    """
+    stmt = select(User.email).where(User.deleted_at.is_(None))
+    result = await db.execute(stmt)
+    emails = list(result.scalars().all())
+    return sorted(set(extract_domains(emails)))
 
 
 async def get_recent_users(db: AsyncSession, limit: int = 10) -> Sequence[User]:

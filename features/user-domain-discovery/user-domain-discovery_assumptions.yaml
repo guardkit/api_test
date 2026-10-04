@@ -1,0 +1,20 @@
+feature: User Domain Discovery
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: A request to the domains endpoint returns a sorted list of unique domains
+  assumption: The endpoint returns a JSON array of strings
+  confidence: low
+  basis: Inferred from 'returns a JSON array of distinct email domains' in the feature
+    description; exact JSON structure not specified
+  human_response: deferred
+- id: ASSUM-002
+  scenario: The domains endpoint returns an empty list when no users exist
+  assumption: An empty domain list returns an empty array rather than a 404
+  confidence: low
+  basis: 'Open question in input: ''What is the expected response format for empty
+    domain lists (empty array vs 404)?''. Defaulted to empty array as it is common
+    for collection endpoints.'
+  human_response: deferred
