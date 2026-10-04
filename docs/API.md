@@ -664,6 +664,86 @@ Note: Domains with fewer than 3 users are excluded from the response.
 
 ---
 
+### User Domains
+
+#### GET /users/domains
+
+Returns a JSON array of the distinct email domains of the users in the database,
+in alphabetical order. It takes no parameters and carries no counts — use
+`GET /users/count-by-domain` for the number of users behind each domain.
+
+**Detailed documentation**: [`docs/api/domains.md`](api/domains.md)
+
+**Tags**: `users`
+
+**Authentication**: None required
+
+**Response**: `200 OK`
+
+**Response Schema**:
+
+```json
+["string"]
+```
+
+**Field Descriptions**:
+- `[n]` (string): One distinct email domain, lowercase — the part after the `@` of
+  an address. The array is a bare JSON array, not an object, and it is sorted
+  alphabetically.
+
+**Example Request**:
+```bash
+curl -X GET http://localhost:8000/users/domains
+```
+
+**Example Response (Happy Path — Multiple Domains)**:
+```json
+[
+  "alpha.example",
+  "beta.example",
+  "example.com",
+  "test.org"
+]
+```
+
+**Example Response (Happy Path — No Users, or No Usable Addresses)**:
+```json
+[]
+```
+Note: an empty list is a valid answer, not an error.
+
+**Example Response (Error — Database Unavailable)**:
+```json
+{
+  "detail": "Database unavailable: connection to server at 'localhost', port 5432 failed: Connection refused"
+}
+```
+
+**Status Codes**:
+- `200 OK`: Domains returned successfully. The response body is a JSON array of domain strings, empty when there are none.
+- `405 Method Not Allowed`: HTTP method not allowed (only GET is supported).
+- `503 Service Unavailable`: Database error when reading the user addresses.
+
+**Use Cases**:
+- Populating a domain dropdown or filter without knowing the domains in advance
+- Auditing which domains the user base is spread over
+- Verifying that a domain onboarding path produced the expected entries
+
+**Implementation Notes**:
+- The endpoint reads the addresses of the live users and extracts the domains in
+  Python, because case-folding and the "no usable domain" rule are what define a
+  domain here and neither is a `DISTINCT` over the column
+- Addresses with no usable domain part contribute nothing; a domain is counted
+  once regardless of the case it was written in
+- Soft-deleted users are excluded, as in every other read in this feature
+- Results are deduplicated and sorted alphabetically by the endpoint, not by row
+  order
+- The route is registered ahead of `GET /users/{user_id}` so that the literal
+  path is not answered as a malformed UUID
+- This endpoint does not require authentication and is publicly accessible
+
+---
+
 ## Common Response Formats
 
 ### Success Response

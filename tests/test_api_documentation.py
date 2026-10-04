@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 from pathlib import Path
 
 import pytest
@@ -1608,5 +1610,276 @@ def test_api_documentation_links_to_deactivation_reference(
         "The deactivation section must link to the dedicated page"
     )
     assert deactivation_docs_path.is_file(), (
+        "The linked page must exist for the link to resolve"
+    )
+
+
+# ---------------------------------------------------------------------------
+# User Domains endpoint documentation tests (TASK-8C46-004)
+# ---------------------------------------------------------------------------
+
+DOMAINS_PATH = "/users/domains"
+
+
+@pytest.fixture
+def domains_docs_path() -> Path:
+    """Return the path to the dedicated domain-listing endpoint documentation."""
+    return Path(__file__).parent.parent / "docs" / "api" / "domains.md"
+
+
+def _domains_section(content: str) -> str:
+    """Return only the User Domains section of the API documentation.
+
+    Scoping the assertions to that section keeps them about the domain-listing
+    endpoint rather than about anything else the document happens to mention.
+    """
+    assert "### User Domains" in content, (
+        "Documentation must have a User Domains section"
+    )
+    return content.split("### User Domains", 1)[1].split(
+        "\n## Common Response Formats", 1
+    )[0]
+
+
+def _documented_domain_arrays(content: str) -> list[list[str]]:
+    """Return every non-empty JSON array of strings in the given text.
+
+    These are the documented example responses for an endpoint whose whole
+    body is an array of domain strings.
+    """
+    blocks = re.findall(r"```json\n(\[[^\[\]]*\])\n```", content)
+    arrays: list[list[str]] = []
+    for block in blocks:
+        parsed = json.loads(block)
+        if isinstance(parsed, list) and parsed:
+            arrays.append([str(item) for item in parsed])
+    return arrays
+
+
+def test_api_documentation_contains_domains_endpoint_path_and_method(
+    api_docs_path: Path,
+) -> None:
+    """Test that the domain-listing endpoint is documented with path and method.
+
+    AC-001: Documentation includes endpoint description
+    """
+    section = _domains_section(api_docs_path.read_text())
+
+    assert DOMAINS_PATH in section, (
+        "Documentation must include the domain-listing endpoint path"
+    )
+    assert f"GET {DOMAINS_PATH}" in section, (
+        "Documentation must specify the GET method for the domain listing"
+    )
+    assert "distinct" in section.lower(), (
+        "The description must say the list holds distinct domains"
+    )
+    assert "alphabetical" in section.lower(), (
+        "The description must say the list comes back in alphabetical order"
+    )
+
+
+def test_api_documentation_domains_endpoint_is_registered(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented route is a route the app serves.
+
+    This is an invariant test: the path and method in the documentation must be
+    the path and method the application actually registers, so the document
+    cannot drift onto an endpoint that does not exist.
+    """
+    from src.main import app
+
+    section = _domains_section(api_docs_path.read_text())
+    documented_path = app.openapi()["paths"].get(DOMAINS_PATH)
+
+    assert DOMAINS_PATH in section, (
+        "Documentation must name the domain-listing path the app serves"
+    )
+    assert documented_path is not None, (
+        f"No route registered at {DOMAINS_PATH} to match the documentation"
+    )
+    assert "get" in documented_path, (
+        "The app must serve GET on the documented domain-listing path"
+    )
+    documented_codes = set(documented_path["get"]["responses"])
+    for code in ("200", "503"):
+        assert code in section, (
+            f"Documentation must name the {code} status the app declares"
+        )
+        assert code in documented_codes, (
+            f"The app must declare {code} for the documented domain-listing route"
+        )
+
+
+def test_api_documentation_domains_response_schema(api_docs_path: Path) -> None:
+    """Test that the documented response shape is the array the schema produces.
+
+    AC-001: Documentation includes endpoint description
+    """
+    from src.users.schemas import DomainListResponse
+
+    section = _domains_section(api_docs_path.read_text())
+
+    assert "Response Schema" in section, (
+        "Documentation must include a response schema for the domain listing"
+    )
+    assert '["string"]' in section, (
+        "The schema must be a bare JSON array of strings, not an object"
+    )
+    assert "DomainListResponse" in section or "array" in section.lower(), (
+        "Documentation must name the response type it describes"
+    )
+    root_annotation = DomainListResponse.model_fields["root"].annotation
+    assert root_annotation == list[str], (
+        "The documented array-of-strings shape must match the response model"
+    )
+
+
+def test_api_documentation_domains_example_request_and_response(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documentation carries a request example and responses.
+
+    AC-002: Documentation includes request/response examples
+    """
+    section = _domains_section(api_docs_path.read_text())
+
+    assert "Example Request" in section, "Documentation must include an example request"
+    assert f"curl -X GET http://localhost:8000{DOMAINS_PATH}" in section, (
+        "The example request must show the GET call to the documented path"
+    )
+    assert "Example Response" in section, (
+        "Documentation must include an example response"
+    )
+    arrays = _documented_domain_arrays(section)
+    assert arrays, "Documentation must show at least one example response array"
+    assert any("example.com" in array for array in arrays), (
+        "An example response must show real domain strings"
+    )
+
+
+def test_api_documentation_domains_examples_are_sorted_and_deduplicated(
+    api_docs_path: Path,
+) -> None:
+    """Test that the documented examples obey the ordering the endpoint promises.
+
+    This is an invariant test: every example array in the documentation must be
+    alphabetical and free of repeats, the same contract the endpoint holds.
+    """
+    section = _domains_section(api_docs_path.read_text())
+
+    for array in _documented_domain_arrays(section):
+        assert array == sorted(array), (
+            f"Documented example {array} must be in alphabetical order"
+        )
+        assert array == sorted(set(array)), (
+            f"Documented example {array} must hold distinct domains"
+        )
+        assert all(item == item.lower() for item in array), (
+            f"Documented example {array} must use lowercase domains"
+        )
+
+
+def test_api_documentation_domains_empty_example(api_docs_path: Path) -> None:
+    """Test that the empty answer is documented as a valid response.
+
+    AC-002: Documentation includes request/response examples
+    """
+    section = _domains_section(api_docs_path.read_text())
+
+    assert "```json\n[]\n```" in section, (
+        "Documentation must show the empty array the endpoint returns when "
+        "there are no domains"
+    )
+
+
+def test_api_documentation_domains_status_codes(api_docs_path: Path) -> None:
+    """Test that the domain-listing documentation covers 200, 405 and 503.
+
+    AC-003: Documentation includes error response formats
+    """
+    section = _domains_section(api_docs_path.read_text())
+
+    assert "200 OK" in section, "Documentation must document the 200 status code"
+    assert "405 Method Not Allowed" in section, (
+        "Documentation must document the 405 status code for other methods"
+    )
+    assert "503 Service Unavailable" in section, (
+        "Documentation must document the 503 status code for database errors"
+    )
+
+
+def test_api_documentation_domains_error_response_format(api_docs_path: Path) -> None:
+    """Test that the documented error body uses the API-wide error shape.
+
+    AC-003: Documentation includes error response formats
+    """
+    section = _domains_section(api_docs_path.read_text())
+
+    assert '"detail"' in section, (
+        "Documentation must show the error body with its detail key"
+    )
+    assert "Database unavailable" in section, (
+        "Documentation must give the 503 detail in the words the API answers"
+    )
+
+
+def test_domains_reference_documentation_exists(domains_docs_path: Path) -> None:
+    """Test that the endpoint has its own documentation page.
+
+    AC-001: Documentation includes endpoint description
+    """
+    assert domains_docs_path.is_file(), (
+        "docs/api/domains.md must document the domain-listing endpoint"
+    )
+
+
+def test_domains_reference_documentation_content(domains_docs_path: Path) -> None:
+    """Test that the dedicated page covers the path, examples and errors.
+
+    AC-001: Documentation includes endpoint description
+    AC-002: Documentation includes request/response examples
+    AC-003: Documentation includes error response formats
+    """
+    content = domains_docs_path.read_text()
+
+    assert f"GET {DOMAINS_PATH}" in content, (
+        "The page must name the endpoint and its method"
+    )
+    assert "distinct" in content.lower(), "The page must describe the distinct list"
+    assert "alphabetical" in content.lower(), (
+        "The page must describe the alphabetical ordering"
+    )
+    assert "curl" in content, "The page must include example requests"
+    assert "503" in content and "405" in content, (
+        "The page must document the error codes the endpoint can answer"
+    )
+    assert '"detail"' in content, "The page must show the error response bodies"
+    assert "Database unavailable" in content, (
+        "The page must give the 503 detail in the words the API answers"
+    )
+    assert "[]" in content, "The page must show the empty-array answer"
+    arrays = _documented_domain_arrays(content)
+    assert arrays, "The page must show at least one example response array"
+    for array in arrays:
+        assert array == sorted(array), (
+            f"Documented example {array} must be in alphabetical order"
+        )
+
+
+def test_api_documentation_links_to_domains_reference(
+    api_docs_path: Path, domains_docs_path: Path
+) -> None:
+    """Test that the API index points at the dedicated domain-listing page.
+
+    AC-001: Documentation includes endpoint description
+    """
+    section = _domains_section(api_docs_path.read_text())
+
+    assert "domains.md" in section, (
+        "The User Domains section must link to the dedicated page"
+    )
+    assert domains_docs_path.is_file(), (
         "The linked page must exist for the link to resolve"
     )
