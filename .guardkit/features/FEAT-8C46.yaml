@@ -1,0 +1,72 @@
+id: FEAT-8C46
+name: "User Domain Discovery"
+description: "Add GET /users/domains endpoint that returns a sorted list of unique email domains"
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 4
+estimated_tasks: 4
+
+tasks:
+  - id: TASK-8C46-001
+    name: "Create domain extraction utility"
+    file_path: "tasks/backlog/user-domain-discovery/TASK-8C46-001-create-domain-extraction-utility.md"
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: direct
+
+  - id: TASK-8C46-002
+    name: "Implement domain discovery endpoint"
+    file_path: "tasks/backlog/user-domain-discovery/TASK-8C46-002-implement-domain-discovery-endpoint.md"
+    complexity: 5
+    dependencies:
+      - TASK-8C46-001
+    status: pending
+    implementation_mode: task-work
+
+  - id: TASK-8C46-003
+    name: "Add domain discovery tests"
+    file_path: "tasks/backlog/user-domain-discovery/TASK-8C46-003-add-domain-discovery-tests.md"
+    complexity: 3
+    dependencies:
+      - TASK-8C46-002
+    status: pending
+    implementation_mode: direct
+
+  - id: TASK-8C46-004
+    name: "Update API documentation"
+    file_path: "tasks/backlog/user-domain-discovery/TASK-8C46-004-update-api-documentation.md"
+    complexity: 2
+    dependencies:
+      - TASK-8C46-002
+    status: pending
+    implementation_mode: direct
+
+orchestration:
+  parallel_groups:
+    - - TASK-8C46-001
+    - - TASK-8C46-002
+    - - TASK-8C46-003
+      - TASK-8C46-004
+  estimated_duration_minutes: 120
+  recommended_parallel: 2
+
+scenario_owners:
+  "A request to the domains endpoint returns a sorted list of unique domains": TASK-8C46-002
+  "The domains endpoint returns an empty list when no users exist": TASK-8C46-002
+  "Malformed email addresses are excluded from the domain list": TASK-8C46-002
+  "Concurrent requests to the domains endpoint both succeed": TASK-8C46-002
+# feature_files: the repo-relative path(s) at which this feature's
+# specification is committed on the target branch, supplied with the
+# planning request. The scenario universe is explicit, never inferred.
+feature_files:
+  - "features/user-domain-discovery/user-domain-discovery.feature"
+scenarios:
+  "A request to the domains endpoint returns a sorted list of unique domains":
+    verifier: "hurl"
+  "The domains endpoint returns an empty list when no users exist":
+    verifier: "hurl"
+  "Malformed email addresses are excluded from the domain list":
+    verifier: "hurl"
+  "Concurrent requests to the domains endpoint both succeed":
+    verifier: "hurl"
