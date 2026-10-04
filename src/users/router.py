@@ -555,6 +555,78 @@ async def update_user(
     return UserPublic.model_validate(user)
 
 
+@router.patch(
+    "/{user_id}/deactivate",
+    response_model=UserPublic,
+    tags=["users"],
+    summary="Deactivate a user",
+    description=(
+        "Sets an active user's ``is_active`` flag to false and returns the "
+        "updated user. The row is kept, so the account can be reactivated "
+        "later with ``PUT /users/{user_id}``; use "
+        "``DELETE /users/{user_id}`` to soft-delete instead."
+    ),
+    responses={
+        200: {"description": "User deactivated successfully"},
+        400: {"description": "Invalid user ID format"},
+        404: {"description": "User not found"},
+        409: {"description": "User is already inactive"},
+        503: {"description": "Database unavailable"},
+    },
+)
+async def deactivate_user(
+    validated_user_id: str = Depends(get_validated_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> UserPublic:
+    """Deactivate a user by ID.
+
+    Returns 200 with the updated user when the user was active.
+    Returns 400 if the user ID format is invalid.
+    Returns 404 if no live user has that ID.
+    Returns 409 if the user is already inactive.
+    Returns 503 if the database is unavailable.
+    """
+    try:
+        user = await crud.get_user(db, validated_user_id)
+    except SQLAlchemyError as exc:
+        logger.error(
+            "Database error while fetching user %s for deactivation: %s",
+            validated_user_id,
+            exc,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+
+    if user is None:
+        raise UserNotFoundError(user_id=validated_user_id)
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=409,
+            detail=f"User with id '{validated_user_id}' is already inactive",
+        )
+
+    try:
+        updated = await crud.update_user(
+            db, validated_user_id, UserUpdate(is_active=False)
+        )
+    except SQLAlchemyError as exc:
+        logger.error(
+            "Database error while deactivating user %s: %s", validated_user_id, exc
+        )
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database unavailable: {exc}",
+        ) from exc
+
+    if updated is None:
+        raise UserNotFoundError(user_id=validated_user_id)
+
+    return UserPublic.model_validate(updated)
+
+
 @router.delete(
     "/by-email",
     status_code=204,
