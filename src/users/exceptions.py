@@ -21,6 +21,18 @@ class UserNotFoundError(HTTPException):
         super().__init__(status_code=HTTPStatus.NOT_FOUND, detail=detail)
 
 
+class UserAlreadyInactiveError(HTTPException):
+    """Exception raised when a user is already inactive."""
+
+    def __init__(self, user_id: str | None = None) -> None:
+        if user_id:
+            detail = f"User with id '{user_id}' is already inactive"
+        else:
+            detail = "User is already inactive"
+
+        super().__init__(status_code=HTTPStatus.CONFLICT, detail=detail)
+
+
 class UserAlreadyExistsError(HTTPException):
     """Exception raised when a user already exists."""
 

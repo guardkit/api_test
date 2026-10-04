@@ -5,12 +5,18 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
+from typing import Any, cast
 
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, select, update
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.users.exceptions import UserAlreadyExistsError
+from src.users.exceptions import (
+    UserAlreadyExistsError,
+    UserAlreadyInactiveError,
+    UserNotFoundError,
+)
 from src.users.models import User
 from src.users.schemas import UserCreate, UserUpdate
 
@@ -120,6 +126,76 @@ async def update_user(
     await db.flush()
     await db.refresh(user)
     await db.commit()
+    return user
+
+
+async def deactivate_user(db: AsyncSession, user_id: str) -> User:
+    """Set a live user's ``is_active`` flag to false.
+
+    The check and the write are one statement: the ``UPDATE`` carries
+    "still active and not deleted" in its own ``WHERE`` clause, so the row is
+    claimed only if it is in the state the caller asked about. A read-then-write
+    would let two concurrent callers both see an active user and both report
+    success; here exactly one claim can match, and whoever loses the race is
+    told the user was already inactive. Nothing is written when the claim does
+    not match, which is what makes repeating the call safe.
+
+    Args:
+        db: The async database session.
+        user_id: The ID of the user to deactivate.
+
+    Returns:
+        The deactivated User, reloaded from the database.
+
+    Raises:
+        UserNotFoundError: If no live user has that ID.
+        UserAlreadyInactiveError: If the user exists but is already inactive,
+            including when another caller deactivated it first.
+        SQLAlchemyError: If the write fails; the session is rolled back first.
+    """
+    try:
+        claim = cast(
+            "CursorResult[tuple[Any, ...]]",
+            await db.execute(
+                update(User)
+                .where(
+                    User.id == user_id,
+                    User.deleted_at.is_(None),
+                    User.is_active.is_(True),
+                )
+                .values(is_active=False)
+                # One guarded statement, with no session bookkeeping SELECT
+                # around it. The returned object is reloaded below, so nothing
+                # in this session is left reading the old flag.
+                .execution_options(synchronize_session=False)
+            ),
+        )
+
+        if claim.rowcount == 0:
+            # Either there is no live user with that id, or another writer
+            # claimed it first. Read past whatever this session already holds,
+            # so the answer comes from the row and not from a stale object.
+            current = (
+                await db.execute(
+                    select(User)
+                    .where(User.id == user_id, User.deleted_at.is_(None))
+                    .execution_options(populate_existing=True)
+                )
+            ).scalar_one_or_none()
+            if current is None:
+                raise UserNotFoundError(user_id=user_id)
+            raise UserAlreadyInactiveError(user_id=user_id)
+
+        await db.commit()
+    except SQLAlchemyError:
+        await db.rollback()
+        raise
+
+    user = await get_user(db, user_id)
+    if user is None:  # pragma: no cover - the claim just matched this row
+        raise UserNotFoundError(user_id=user_id)
+
+    await db.refresh(user)
     return user
 
 

@@ -1,0 +1,18 @@
+feature: Deactivate User Endpoint
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: Deactivating an active user succeeds
+  assumption: The returned user object includes the updated status field
+  confidence: low
+  basis: Inferred from the request statement 'returns the updated user'; exact shape
+    not specified
+  human_response: deferred
+- id: ASSUM-002
+  scenario: Concurrent deactivation requests for the same user are handled gracefully
+  assumption: Concurrent requests to deactivate the same user are handled gracefully
+  confidence: low
+  basis: Inferred from the edge-case category; exact concurrency model not specified
+  human_response: deferred

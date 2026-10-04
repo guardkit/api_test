@@ -1,0 +1,18 @@
+format_version: '2.0'
+task_id: TASK-2FDE-003
+registered_at:
+  sha: 396a14078f1967918f75e89c20c0d33c25a6bd38
+  date: '2026-10-04'
+auth_surface_bearing: false
+preconditions:
+- suite_green_vs_ledger
+- analyze_clean
+- build_artifact
+criteria:
+- id: deactivate-user-AC-001
+  text: Deactivating an active user succeeds
+  class: machine
+  evidence_kind: screenshot
+  runbook_ref: null
+negative_paths:
+- dependency_down_degradation

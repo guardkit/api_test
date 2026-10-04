@@ -947,6 +947,89 @@ HTTP/1.1 204 No Content
 
 ---
 
+### Deactivate User
+
+#### PATCH /users/{user_id}/deactivate
+
+Sets an existing, active user's ``is_active`` flag to ``false`` and returns the
+updated user. The record is kept, so the account can be brought back with
+``PUT /users/{user_id}`` (``{"is_active": true}``). Deactivation is not a
+delete: ``deleted_at`` is untouched, so the user still appears in ``GET /users``
+and moves from ``active_count`` to ``inactive_count`` in
+``GET /users/active-count``.
+
+**Detailed documentation**: [`docs/api/deactivate-user.md`](api/deactivate-user.md)
+
+**Tags**: `users`
+
+**Authentication**: None required. Unlike ``DELETE /users/{user_id}``, this route
+checks no ``X-Auth-Token`` header of its own.
+
+**Path Parameters**:
+
+| Parameter | Type   | Required | Description                 |
+|-----------|--------|----------|-----------------------------|
+| user_id   | string | Yes      | UUID of the user to deactivate |
+
+**Request Body**: None.
+
+**Response**: `200 OK`
+
+**Response Schema**: the `UserPublic` object, as returned by every other user
+endpoint — `id`, `email`, `domain`, `name`, `full_name`, `is_active`,
+`created_at`, `updated_at`, `deleted_at`.
+
+**Example Request**:
+```bash
+curl -X PATCH http://localhost:8000/users/550e8400-e29b-41d4-a716-446655440000/deactivate
+```
+
+**Example Response (200 OK)**:
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "john.doe@example.com",
+  "domain": "example.com",
+  "name": "John Doe",
+  "full_name": "John Doe",
+  "is_active": false,
+  "created_at": "2026-10-04T12:00:00+00:00",
+  "updated_at": "2026-10-04T12:05:00+00:00",
+  "deleted_at": null
+}
+```
+
+**Status Codes**:
+
+- `200 OK`: The user was active and is now inactive. The body is the updated user.
+- `400 Bad Request`: Invalid user ID format. The user_id parameter must be a valid UUID.
+- `404 Not Found`: No live user with that ID — the ID is unknown, or the user has been
+  soft-deleted with ``DELETE /users/{user_id}``.
+- `409 Conflict`: The user is already inactive, so there is nothing to deactivate.
+- `503 Service Unavailable`: Database error while reading or writing the user.
+
+**Use Cases**:
+
+- Disabling an account without losing its history
+- Letting a deactivation attempt tell "already done" apart from "no such user"
+
+**Implementation Notes**:
+
+- The route lives in ``src/users/router.py`` (``deactivate_user``) and writes
+  through ``crud.deactivate_user``, which commits, so the change is visible to
+  the next request
+- The check and the write are one guarded ``UPDATE`` whose ``WHERE`` clause
+  requires the row to be live and active, so two concurrent callers cannot both
+  report success — the one that claims nothing is the one that answers 409
+- When the claim matches nothing, one read decides the answer: no live row
+  answers 404, a live but inactive row answers 409
+- A soft-deleted user is neither claimed nor found, so deactivating one
+  answers 404 rather than reviving it
+- The route is registered with the rest of the users router in ``src/main.py``
+  and appears in the interactive docs at ``/docs``
+
+---
+
 ## Rate Limiting
 
 Currently, no rate limiting is enforced. This may be added in future versions.

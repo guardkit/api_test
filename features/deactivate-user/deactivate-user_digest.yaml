@@ -1,0 +1,36 @@
+feature: deactivate-user
+generated: '2026-07-09T14:32:00Z'
+endpoint:
+  method: PATCH
+  path: /users/{user_id}/deactivate
+scenarios:
+- title: Deactivating an active user succeeds
+  tags:
+  - '@key-example'
+  - '@smoke'
+  sentence: When you deactivate an active user, the system marks them as inactive and returns the updated user details.
+- title: Deactivating a non-existent user returns not found
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: If you try to deactivate a user that does not exist, the system reports that the user was not found.
+- title: Deactivating an already inactive user returns conflict
+  tags:
+  - '@boundary'
+  - '@negative'
+  sentence: If you try to deactivate a user who is already inactive, the system reports that the user is already inactive.
+- title: Concurrent deactivation requests for the same user are handled gracefully
+  tags:
+  - '@edge-case'
+  sentence: If two deactivation requests for the same user arrive at the same time, the system processes one successfully and the other reports the user is already inactive.
+- title: Deactivation fails gracefully when the user service is unavailable
+  tags:
+  - '@edge-case'
+  sentence: If the user service is unavailable, the deactivation request fails with a service unavailable response.
+assumptions:
+- id: ASSUM-001
+  text: The returned user object includes the updated status field
+  basis: Inferred from the request statement 'returns the updated user'; exact shape not specified
+- id: ASSUM-002
+  text: Concurrent requests to deactivate the same user are handled gracefully
+  basis: Inferred from the edge-case category; exact concurrency model not specified
