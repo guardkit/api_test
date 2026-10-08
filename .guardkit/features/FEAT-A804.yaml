@@ -1,0 +1,53 @@
+id: FEAT-A804
+name: "Normalize In-Memory SQLite URL"
+description: "Normalize the in-memory SQLite database URL to sqlite+aiosqlite:///%3Amemory%3A so tests pass with both SQLAlchemy 2.0 and 2.1 without pinning versions."
+created: "2026-07-09T14:32:00Z"
+status: planned
+complexity: 3
+estimated_tasks: 1
+
+feature_files:
+  - features/normalize-in-memory-sqlite-url/normalize-in-memory-sqlite-url.feature
+
+scenario_owners:
+  "The generated in-memory URL uses the encoded format required by SQLAlchemy 2.1": TASK-A804-001
+  "The normalized URL remains compatible with SQLAlchemy 2.0": TASK-A804-001
+  "The URL is not returned in the legacy unencoded format": TASK-A804-001
+  "No database URL is set in the environment": TASK-A804-001
+
+tasks:
+  - id: TASK-A804-001
+    name: "Normalize in-memory SQLite URL in test harness"
+    file_path: "tasks/backlog/normalize-in-memory-sqlite-url/TASK-A804-001-normalize-in-memory-sqlite-url.md"
+    complexity: 3
+    dependencies: []
+    status: pending
+    implementation_mode: direct
+    estimated_minutes: 30
+
+orchestration:
+  parallel_groups:
+    - - TASK-A804-001
+  estimated_duration_minutes: 30
+  recommended_parallel: 1
+
+smoke_gates:
+  after_wave: 1
+  command: |
+    set -e
+    .venv/bin/python -m pytest tests/acceptance -x -q
+  expected_exit: 0
+  timeout: 120
+scenarios:
+  # stamped by the model — no rule (R1-R10) could decide this title
+  "The generated in-memory URL uses the encoded format required by SQLAlchemy 2.1":
+    verifier: "hurl"
+  # stamped by the model — no rule (R1-R10) could decide this title
+  "The normalized URL remains compatible with SQLAlchemy 2.0":
+    verifier: "exam"
+  # stamped by the model — no rule (R1-R10) could decide this title
+  "The URL is not returned in the legacy unencoded format":
+    verifier: "exam"
+  # stamped by the model — no rule (R1-R10) could decide this title
+  "No database URL is set in the environment":
+    verifier: "probe:process"
