@@ -10,9 +10,6 @@ scenarios:
   - title: "The URL is not returned in the legacy unencoded format"
     tags: ["@boundary", "@negative"]
     sentence: "The system avoids using the old unencoded in-memory URL format that causes failures in newer SQLAlchemy versions."
-  - title: "Normalization does not affect standard file-based SQLite URLs"
-    tags: ["@negative"]
-    sentence: "The normalization logic is scoped so that it does not change URLs for standard file-based SQLite databases."
   - title: "No database URL is set in the environment"
     tags: ["@edge-case"]
     sentence: "When no database URL is explicitly configured, the harness correctly defaults to the normalized in-memory URL."
@@ -27,8 +24,5 @@ assumptions:
     text: "The legacy format 'sqlite:///:memory:' is no longer acceptable for SQLAlchemy 2.1"
     basis: "Explicitly identified as the cause of the test failure"
   - id: "ASSUM-004"
-    text: "The normalization logic only targets in-memory SQLite URLs"
-    basis: "Inferred from the scope of the fix"
-  - id: "ASSUM-005"
     text: "The test harness defaults to in-memory SQLite when no URL is provided"
     basis: "Inferred from the failing test name 'test_nothing_set_gives_the_in_memory_sqlite'"

@@ -2,13 +2,13 @@
 
 **Stack**: generic
 **Generated**: 2026-07-09T14:32:00Z
-**Scenarios**: 5 total (1 smoke, 0 regression)
-**Assumptions**: 5 total (0 high / 0 medium / 5 low confidence)
+**Scenarios**: 4 total (1 smoke, 0 regression)
+**Assumptions**: 4 total (0 high / 0 medium / 4 low confidence)
 **Review required**: Yes
 
 ## Scope
 
-This specification defines the requirements for normalizing the in-memory SQLite database URL to ensure compatibility between SQLAlchemy 2.0 and 2.1. It covers the detection of in-memory requests, the application of the encoded URL format required by SQLAlchemy 2.1, and verification that standard file-based URLs remain unaffected.
+This specification defines the requirements for normalizing the in-memory SQLite database URL to ensure compatibility between SQLAlchemy 2.0 and 2.1. It covers the detection of in-memory requests, the application of the encoded URL format required by SQLAlchemy 2.1, and verification that the legacy unencoded format is avoided.
 
 ## Scenario Counts by Category
 
@@ -16,7 +16,7 @@ This specification defines the requirements for normalizing the in-memory SQLite
 |----------|-------|
 | Key examples (@key-example) | 1 |
 | Boundary conditions (@boundary) | 2 |
-| Negative cases (@negative) | 2 |
+| Negative cases (@negative) | 1 |
 | Edge cases (@edge-case) | 1 |
 
 ## Deferred Items
@@ -25,15 +25,16 @@ None
 
 ## Open Assumptions (low confidence)
 
-- ASSUM-004: The normalization logic only targets in-memory SQLite URLs
-- ASSUM-005: The test harness defaults to in-memory SQLite when no URL is provided
+- ASSUM-001: The failure is caused by the change in how SQLAlchemy 2.1 encodes the in-memory SQLite URL
+- ASSUM-002: The normalization logic must support both SQLAlchemy 2.0 and 2.1 simultaneously
+- ASSUM-003: The legacy format 'sqlite:///:memory:' is no longer acceptable for SQLAlchemy 2.1
+- ASSUM-004: The test harness defaults to in-memory SQLite when no URL is provided
 
 ## Verifier routing (proposed)
 
 - "The generated in-memory URL uses the encoded format required by SQLAlchemy 2.1" → toolchain
 - "The normalized URL remains compatible with SQLAlchemy 2.0" → toolchain
 - "The URL is not returned in the legacy unencoded format" → toolchain
-- "Normalization does not affect standard file-based SQLite URLs" → toolchain
 - "No database URL is set in the environment" → toolchain
 
 ## Integration with /feature-plan

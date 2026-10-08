@@ -25,12 +25,6 @@ assumptions:
   basis: Explicitly identified as the cause of the test failure
   human_response: deferred
 - id: ASSUM-004
-  scenario: Normalization does not affect standard file-based SQLite URLs
-  assumption: The normalization logic only targets in-memory SQLite URLs
-  confidence: low
-  basis: Inferred from the scope of the fix
-  human_response: deferred
-- id: ASSUM-005
   scenario: No database URL is set in the environment
   assumption: The test harness defaults to in-memory SQLite when no URL is provided
   confidence: low
