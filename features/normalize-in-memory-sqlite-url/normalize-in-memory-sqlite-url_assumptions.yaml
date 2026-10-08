@@ -1,0 +1,32 @@
+feature: Normalize In-Memory SQLite URL
+generated: '2026-07-09T14:32:00Z'
+stack: generic
+review_required: true
+assumptions:
+- id: ASSUM-001
+  scenario: The generated in-memory URL uses the encoded format required by SQLAlchemy
+    2.1
+  assumption: The failure is caused by the change in how SQLAlchemy 2.1 encodes the
+    in-memory SQLite URL
+  confidence: low
+  basis: Directly stated in the problem description and request
+  human_response: deferred
+- id: ASSUM-002
+  scenario: The normalized URL remains compatible with SQLAlchemy 2.0
+  assumption: The normalization logic must support both SQLAlchemy 2.0 and 2.1 simultaneously
+  confidence: low
+  basis: Requirement to work with both versions without pinning
+  human_response: deferred
+- id: ASSUM-003
+  scenario: The URL is not returned in the legacy unencoded format
+  assumption: The legacy format 'sqlite:///:memory:' is no longer acceptable for SQLAlchemy
+    2.1
+  confidence: low
+  basis: Explicitly identified as the cause of the test failure
+  human_response: deferred
+- id: ASSUM-004
+  scenario: No database URL is set in the environment
+  assumption: The test harness defaults to in-memory SQLite when no URL is provided
+  confidence: low
+  basis: Inferred from the failing test name 'test_nothing_set_gives_the_in_memory_sqlite'
+  human_response: deferred
