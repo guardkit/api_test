@@ -52,9 +52,32 @@ def pytest_report_header() -> str:
     return WHAT_THIS_RUN_TESTS_AGAINST
 
 
+def _in_memory_database_url() -> str:
+    """Say the in-memory SQLite address the way this SQLAlchemy says it.
+
+    SQLAlchemy 2.1 writes the in-memory database name percent-encoded, as
+    ``sqlite+aiosqlite:///%3Amemory%3A``, and reads that spelling back as the
+    in-memory database. SQLAlchemy 2.0 writes it plainly, as
+    ``sqlite+aiosqlite:///:memory:``, and reads the encoded name as an ordinary
+    file to make in the working directory. So neither spelling is right for both
+    versions, and the address is settled by asking the installed SQLAlchemy
+    which of them names a real in-memory database. Nothing is pinned: whichever
+    2.x is installed, an engine built from the answer reports its own address
+    as the same string, which is what the harness's own tests compare.
+
+    Returns:
+        str: The in-memory SQLite address, already in the form this SQLAlchemy
+        renders it in.
+    """
+    encoded = make_url("sqlite+aiosqlite:///%3Amemory%3A")
+    if encoded.database == ":memory:":
+        return str(encoded)
+    return str(make_url("sqlite+aiosqlite:///:memory:"))
+
+
 # The in-memory database the tests have always used when nothing else is asked
 # for. A developer who runs pytest with no environment set gets exactly this.
-DEFAULT_TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+DEFAULT_TEST_DATABASE_URL = _in_memory_database_url()
 
 
 def configured_database_url() -> str | None:
